@@ -46,3 +46,15 @@ export async function respondOffer(_prev: { message?: string } | undefined, form
   }
   return {};
 }
+
+// 완료 보고와 강습 노트
+export async function completeLesson(_prev: { ok?: boolean; message?: string } | undefined, formData: FormData) {
+  await requireArea("instructor");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("complete_lesson", {
+    p_job_id: String(formData.get("job_id") ?? ""),
+    p_note: String(formData.get("note") ?? "").slice(0, 1000),
+  });
+  revalidatePath("/instructor");
+  return error ? { message: "보고하지 못했습니다. 새로고침 후 다시 시도해 주세요." } : { ok: true };
+}

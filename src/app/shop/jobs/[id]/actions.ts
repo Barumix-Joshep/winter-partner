@@ -57,3 +57,20 @@ export async function unpublishBid(formData: FormData) {
   revalidatePath(`/shop/jobs/${jobId}`);
   revalidatePath("/shop/jobs");
 }
+
+// 완료 보고 승인 (평가 선택)
+export async function approveLesson(_prev: { message?: string } | undefined, formData: FormData) {
+  await requireArea("shop");
+  const jobId = String(formData.get("job_id") ?? "");
+  const raw = String(formData.get("score") ?? "");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("approve_lesson", {
+    p_job_id: jobId,
+    p_score: /^[1-5]$/.test(raw) ? Number(raw) : null,
+    p_memo: String(formData.get("memo") ?? "").slice(0, 300),
+  });
+  if (error) return { message: "승인하지 못했습니다. 새로고침 후 다시 시도해 주세요." };
+  revalidatePath(`/shop/jobs/${jobId}`);
+  revalidatePath("/shop/jobs");
+  return {};
+}

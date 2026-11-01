@@ -6,6 +6,7 @@ import { getMyInstructorProfile } from "@/lib/instructor/profile";
 import { Placeholder } from "@/components/placeholder";
 import { Exclusive } from "./exclusive";
 import { Offers } from "./offers";
+import { ToReport } from "./to-report";
 import { getMyInstructorId } from "@/lib/instructor/profile";
 
 export default function InstructorHome() {
@@ -14,6 +15,7 @@ export default function InstructorHome() {
       <Suspense>
         <ProfilePrompt />
         <OffersSection />
+        <ToReportSection />
         <ExclusiveSection />
       </Suspense>
       <Placeholder title="오늘 강습" next="오늘 강습과 받은 의뢰가 여기에 들어옵니다 (P5-5)." />
@@ -48,4 +50,10 @@ async function OffersSection() {
   const user = await requireArea("instructor");
   const id = await getMyInstructorId(user.id);
   return id ? <Offers instructorId={id} now={requestTime()} /> : null;
+}
+
+async function ToReportSection() {
+  const user = await requireArea("instructor");
+  const id = await getMyInstructorId(user.id);
+  return id ? <ToReport instructorId={id} now={requestTime()} /> : null;
 }

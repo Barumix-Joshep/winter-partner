@@ -9,6 +9,7 @@ import { LESSON_TYPES, PATCH_PAID_BY, type LessonType, type PatchPaidBy } from "
 import { sendOffer, unpublishBid } from "./actions";
 import { SelectBidForm } from "./select-bid-form";
 import { PublishForm } from "./publish-form";
+import { ApproveForm } from "./approve-form";
 import { defaultBidClose, kstLocalInput } from "@/lib/shop/bid";
 
 export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
@@ -35,7 +36,7 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
   const { data: job } = await supabase
     .from("jobs")
     .select(
-      "id, shop_id, resort_id, sport_id, starts_at, ends_at, status, assign_mode, lesson_type, student_count, instructor_rate, patch_paid_by, note, sports(name), resorts(name), job_prices(customer_price), job_customers(customers(name, phone, level)), bid_closes_at, allow_team_bids, job_offers(id, status, expires_at, responded_at, instructors(profiles(name))), assignments(final_rate, instructors(profiles(name))), bids(id, amount, memo, status, created_at, bidder_type, instructors(profiles(name)), shops!bids_bidder_shop_id_fkey(name))",
+      "id, shop_id, resort_id, sport_id, starts_at, ends_at, status, assign_mode, lesson_type, student_count, instructor_rate, patch_paid_by, note, sports(name), resorts(name), job_prices(customer_price), job_customers(customers(name, phone, level)), bid_closes_at, allow_team_bids, job_offers(id, status, expires_at, responded_at, instructors(profiles(name))), assignments(final_rate, completed_at, lesson_note, approved_at, instructors(profiles(name))), bids(id, amount, memo, status, created_at, bidder_type, instructors(profiles(name)), shops!bids_bidder_shop_id_fkey(name))",
     )
     .eq("id", id)
     .eq("shop_id", shop.id)
@@ -60,7 +61,13 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
     job_prices: { customer_price: number | null } | null;
     job_customers: { customers: { name: string; phone: string | null; level: string | null } | null }[];
     job_offers: { id: string; status: string; expires_at: string | null; instructors: { profiles: { name: string } | null } | null }[];
-    assignments: { final_rate: number; instructors: { profiles: { name: string } | null } | null } | null;
+    assignments: {
+      final_rate: number;
+      completed_at: string | null;
+      lesson_note: string | null;
+      approved_at: string | null;
+      instructors: { profiles: { name: string } | null } | null;
+    } | null;
     bid_closes_at: string | null;
     allow_team_bids: boolean;
     bids: {
@@ -116,6 +123,14 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
         {j.note && <p className="mt-3 rounded-lg bg-surface p-3 text-sm">요청 사항 · {j.note}</p>}
         {j.assignments && (
           <p className="mt-3 text-sm font-medium text-brand">배정: {j.assignments.instructors?.profiles?.name}</p>
+        )}
+        {j.assignments?.completed_at && (
+          <div className="mt-3 rounded-lg border border-line p-3">
+            <p className="text-xs text-ink-muted">강사 강습 노트</p>
+            <p className="mt-1 text-sm whitespace-pre-wrap">{j.assignments.lesson_note ?? "노트 없음"}</p>
+            {j.status === "done" && <ApproveForm jobId={j.id} />}
+            {j.assignments.approved_at && <p className="mt-2 text-xs text-[#1E7B34]">승인했습니다. 이 금액이 월 정산에 들어갑니다.</p>}
+          </div>
         )}
       </section>
 
