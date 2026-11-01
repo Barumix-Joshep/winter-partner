@@ -10,6 +10,7 @@ import { sendOffer, unpublishBid } from "./actions";
 import { SelectBidForm } from "./select-bid-form";
 import { PublishForm } from "./publish-form";
 import { ApproveForm } from "./approve-form";
+import { CancelForm } from "./cancel-form";
 import { defaultBidClose, kstLocalInput } from "@/lib/shop/bid";
 
 export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
@@ -162,6 +163,8 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
       {canOffer && (
         <Candidates shopId={shop.id} job={j} />
       )}
+
+      {["draft", "open", "assigned"].includes(j.status) && <CancelForm jobId={j.id} assigned={j.status === "assigned"} />}
     </>
   );
 }

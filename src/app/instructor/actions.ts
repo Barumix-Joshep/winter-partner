@@ -58,3 +58,16 @@ export async function completeLesson(_prev: { ok?: boolean; message?: string } |
   revalidatePath("/instructor");
   return error ? { message: "보고하지 못했습니다. 새로고침 후 다시 시도해 주세요." } : { ok: true };
 }
+
+// 강사 일방 취소 (패널티). 강습은 샵으로 돌아간다.
+export async function cancelMyLesson(_prev: { ok?: boolean; message?: string } | undefined, formData: FormData) {
+  await requireArea("instructor");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("instructor_cancel", {
+    p_job_id: String(formData.get("job_id") ?? ""),
+    p_reason: String(formData.get("reason") ?? "").slice(0, 200),
+  });
+  revalidatePath("/instructor");
+  revalidatePath("/instructor/schedule");
+  return error ? { message: "취소하지 못했습니다. 완료 보고한 강습은 취소할 수 없습니다." } : { ok: true, message: `취소했습니다. 패널티 ${data}점이 기록됐습니다.` };
+}

@@ -7,6 +7,7 @@ import { busyCells, coveredCells, todayKst, weekDays, weekStartOf, weekWindow } 
 import { formatLessonTime } from "@/lib/shop/job-status";
 import { requestTime } from "@/lib/time";
 import { WeekGrid } from "./week-grid";
+import { CancelLesson } from "../cancel-lesson";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -44,7 +45,8 @@ async function Schedule({ searchParams }: { searchParams: SearchParams }) {
       .lt("jobs.starts_at", win.to)
       .gt("jobs.ends_at", win.from),
   ]);
-  const jobs = ((lessons ?? []) as unknown as { jobs: { id: string; starts_at: string; ends_at: string; sports: { name: string } | null; shops: { name: string } | null } }[])
+  const now = requestTime();
+  const jobs = ((lessons ?? []) as unknown as { jobs: { id: string; starts_at: string; ends_at: string; status: string; sports: { name: string } | null; shops: { name: string } | null } }[])
     .map((l) => l.jobs)
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
 
@@ -78,6 +80,9 @@ async function Schedule({ searchParams }: { searchParams: SearchParams }) {
             {jobs.map((j) => (
               <li key={j.id} className="rounded-xl border border-line bg-white px-4 py-3 text-sm">
                 <strong>{formatLessonTime(j.starts_at, j.ends_at)}</strong> {j.sports?.name} · {j.shops?.name}
+                {j.status === "assigned" && new Date(j.starts_at).getTime() > now && (
+                  <CancelLesson jobId={j.id} within24h={new Date(j.starts_at).getTime() - now < 86400_000} />
+                )}
               </li>
             ))}
           </ul>

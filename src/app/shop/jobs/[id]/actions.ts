@@ -74,3 +74,16 @@ export async function approveLesson(_prev: { message?: string } | undefined, for
   revalidatePath("/shop/jobs");
   return {};
 }
+
+// 손님 취소·샵 사정 취소. 배정 강사에게 바로 알림이 가고, 정산에서 빠진다.
+export async function cancelJob(_prev: { message?: string } | undefined, formData: FormData) {
+  await requireArea("shop");
+  const jobId = String(formData.get("job_id") ?? "");
+  const by = formData.get("by") === "shop" ? "shop" : "customer";
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("cancel_job", { p_job_id: jobId, p_by: by, p_reason: String(formData.get("reason") ?? "").slice(0, 200) });
+  if (error) return { message: "취소하지 못했습니다. 완료 보고된 강습은 취소할 수 없습니다." };
+  revalidatePath(`/shop/jobs/${jobId}`);
+  revalidatePath("/shop/jobs");
+  return {};
+}
