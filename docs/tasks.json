@@ -1,0 +1,282 @@
+[
+ {
+  "id": "P0-1",
+  "phase": "0 환경 세팅",
+  "title": "Next.js 프로젝트 생성 (TS·Tailwind·App Router)",
+  "status": "done",
+  "due": "2026-11-01",
+  "note": "~/Barumix/winter-partner. Mac에서 npm install 필요"
+ },
+ {
+  "id": "P0-2",
+  "phase": "0 환경 세팅",
+  "title": "개발 규칙 문서(CLAUDE.md)·작업 루프 설정",
+  "status": "done",
+  "due": "2026-11-01",
+  "note": "CLAUDE.md, docs/LOOP.md 작성"
+ },
+ {
+  "id": "P0-3",
+  "phase": "0 환경 세팅",
+  "title": "Supabase 프로젝트 연결 (.env)",
+  "status": "blocked",
+  "due": "2026-11-02",
+  "note": "프로젝트 URL·anon key를 .env.local에 넣어야 함"
+ },
+ {
+  "id": "P0-4",
+  "phase": "0 환경 세팅",
+  "title": "GitHub 저장소 연결·첫 커밋",
+  "status": "blocked",
+  "due": "2026-11-02",
+  "note": "로컬 git 커밋 완료. 원격 저장소 URL을 알려 주시면 연결"
+ },
+ {
+  "id": "P0-5",
+  "phase": "0 환경 세팅",
+  "title": "진척 대시보드 개설",
+  "status": "done",
+  "due": "2026-11-01",
+  "note": ""
+ },
+ {
+  "id": "P1-1",
+  "phase": "1 데이터 모델",
+  "title": "마이그레이션 SQL 작성 (기획서 데이터 모델)",
+  "status": "doing",
+  "due": "2026-11-03",
+  "note": "0001_init.sql·0002_seed_reference.sql 작성, Supabase 적용 전"
+ },
+ {
+  "id": "P1-2",
+  "phase": "1 데이터 모델",
+  "title": "RLS 정책 (shop_id 격리, 강사 본인 데이터)",
+  "status": "todo",
+  "due": "2026-11-04",
+  "note": ""
+ },
+ {
+  "id": "P1-3",
+  "phase": "1 데이터 모델",
+  "title": "시드 데이터 (스키장 13곳, 샘플 샵·강사)",
+  "status": "todo",
+  "due": "2026-11-04",
+  "note": ""
+ },
+ {
+  "id": "P2-1",
+  "phase": "2 인증·테넌트",
+  "title": "Supabase Auth 로그인 (이메일·카카오)",
+  "status": "todo",
+  "due": "2026-11-06",
+  "note": ""
+ },
+ {
+  "id": "P2-2",
+  "phase": "2 인증·테넌트",
+  "title": "역할 분기 (플랫폼 관리자·샵 관리자·강사)",
+  "status": "todo",
+  "due": "2026-11-06",
+  "note": ""
+ },
+ {
+  "id": "P2-3",
+  "phase": "2 인증·테넌트",
+  "title": "샵·강습팀 등록과 영업 스키장 선택",
+  "status": "todo",
+  "due": "2026-11-07",
+  "note": ""
+ },
+ {
+  "id": "P3-1",
+  "phase": "3 강사 프로필",
+  "title": "강사 프로필 등록 (종목·레벨·스키장·소개)",
+  "status": "todo",
+  "due": "2026-11-08",
+  "note": ""
+ },
+ {
+  "id": "P3-2",
+  "phase": "3 강사 프로필",
+  "title": "자격증 업로드와 본사 검증 상태",
+  "status": "todo",
+  "due": "2026-11-09",
+  "note": ""
+ },
+ {
+  "id": "P3-3",
+  "phase": "3 강사 프로필",
+  "title": "샵용 강사 찾기 화면 (스키장·종목 필터)",
+  "status": "todo",
+  "due": "2026-11-10",
+  "note": "프로토타입 Main 화면"
+ },
+ {
+  "id": "P3-4",
+  "phase": "3 강사 프로필",
+  "title": "전속 강사 등록·프리랜서 등록 불가 규칙",
+  "status": "todo",
+  "due": "2026-11-10",
+  "note": ""
+ },
+ {
+  "id": "P4-1",
+  "phase": "4 강습·입찰",
+  "title": "강습 등록 (손님·시간·종목·패치)",
+  "status": "todo",
+  "due": "2026-11-11",
+  "note": "프로토타입 Job 화면"
+ },
+ {
+  "id": "P4-2",
+  "phase": "4 강습·입찰",
+  "title": "직접 의뢰와 강사 수락·거절",
+  "status": "todo",
+  "due": "2026-11-12",
+  "note": ""
+ },
+ {
+  "id": "P4-3",
+  "phase": "4 강습·입찰",
+  "title": "입찰 공고 (전속 비공개)와 금액 제시",
+  "status": "todo",
+  "due": "2026-11-13",
+  "note": ""
+ },
+ {
+  "id": "P4-4",
+  "phase": "4 강습·입찰",
+  "title": "관리자 선정과 금액 조정",
+  "status": "todo",
+  "due": "2026-11-14",
+  "note": ""
+ },
+ {
+  "id": "P5-1",
+  "phase": "5 배정·완료",
+  "title": "배정과 샵 간 일정 충돌 검사",
+  "status": "todo",
+  "due": "2026-11-15",
+  "note": ""
+ },
+ {
+  "id": "P5-2",
+  "phase": "5 배정·완료",
+  "title": "강사 가능 일정 등록 (주간 캘린더)",
+  "status": "todo",
+  "due": "2026-11-16",
+  "note": "프로토타입 ICal 화면"
+ },
+ {
+  "id": "P5-3",
+  "phase": "5 배정·완료",
+  "title": "완료 보고·강습 노트와 샵 승인",
+  "status": "todo",
+  "due": "2026-11-17",
+  "note": ""
+ },
+ {
+  "id": "P5-4",
+  "phase": "5 배정·완료",
+  "title": "취소 규칙 (손님 취소·강사 취소·패널티)",
+  "status": "todo",
+  "due": "2026-11-18",
+  "note": ""
+ },
+ {
+  "id": "P5-5",
+  "phase": "5 배정·완료",
+  "title": "샵 오늘 일정 화면과 강사 홈 화면",
+  "status": "todo",
+  "due": "2026-11-18",
+  "note": "프로토타입 Today·IHome"
+ },
+ {
+  "id": "P6-1",
+  "phase": "6 정산",
+  "title": "월 정산 집계 (샵별·강사별, 3.3% 원천세)",
+  "status": "todo",
+  "due": "2026-11-20",
+  "note": ""
+ },
+ {
+  "id": "P6-2",
+  "phase": "6 정산",
+  "title": "정산서 PDF·Excel 내보내기",
+  "status": "todo",
+  "due": "2026-11-21",
+  "note": ""
+ },
+ {
+  "id": "P6-3",
+  "phase": "6 정산",
+  "title": "지급 완료 체크와 강사 정산 화면",
+  "status": "todo",
+  "due": "2026-11-21",
+  "note": "프로토타입 IPay"
+ },
+ {
+  "id": "P7-1",
+  "phase": "7 손님 관리",
+  "title": "손님 카드 (보호자·레벨·장비·이력·메모)",
+  "status": "todo",
+  "due": "2026-11-23",
+  "note": "프로토타입 Customer"
+ },
+ {
+  "id": "P7-2",
+  "phase": "7 손님 관리",
+  "title": "강사 노트 공유 범위와 개인정보 동의",
+  "status": "todo",
+  "due": "2026-11-24",
+  "note": ""
+ },
+ {
+  "id": "P8-1",
+  "phase": "8 알림",
+  "title": "카카오 알림톡 발신 프로필 신청",
+  "status": "blocked",
+  "due": "2026-11-05",
+  "note": "사업자 명의로 사장님이 신청해야 함"
+ },
+ {
+  "id": "P8-2",
+  "phase": "8 알림",
+  "title": "알림 발송 (의뢰·선정·취소·정산)",
+  "status": "todo",
+  "due": "2026-11-25",
+  "note": "알림톡 승인 전에는 웹푸시로"
+ },
+ {
+  "id": "P9-1",
+  "phase": "9 배포",
+  "title": "Vercel 배포와 도메인",
+  "status": "todo",
+  "due": "2026-11-26",
+  "note": ""
+ },
+ {
+  "id": "P9-2",
+  "phase": "9 배포",
+  "title": "PWA 설정 (홈 화면 추가·오프라인 셸)",
+  "status": "todo",
+  "due": "2026-11-27",
+  "note": ""
+ },
+ {
+  "id": "P10-1",
+  "phase": "10 시범 운영",
+  "title": "시범 샵 온보딩과 데이터 입력",
+  "status": "todo",
+  "due": "2026-11-29",
+  "note": ""
+ },
+ {
+  "id": "P10-2",
+  "phase": "10 시범 운영",
+  "title": "설문·인터뷰 결과 반영 (입찰 상한·패치 부담)",
+  "status": "todo",
+  "due": "2026-11-30",
+  "note": "설문 2주 내 수집"
+ }
+]
