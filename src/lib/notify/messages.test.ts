@@ -18,6 +18,17 @@ describe("notificationMessage", () => {
     );
   });
 
+  it("팀 강습 승인: 팀원에게는 금액 없이, 팀 관리자에게 금액", () => {
+    const m = notificationMessage("lesson_approved", { job_id: "j1", team: true }, job);
+    expect(m.body).not.toMatch(/원$/);
+    expect(m.body).toContain("팀 정산");
+    expect(notificationMessage("lesson_approved", { job_id: "j1", amount: 95000 }, job).body).toContain("95,000원");
+    expect(notificationMessage("team_lesson_approved", { job_id: "j1", amount: 185000 }, job)).toMatchObject({
+      body: "하이원 스노우렌탈 · 12/20(일) 10:00~12:00 · 185,000원",
+      url: "/shop/settlements",
+    });
+  });
+
   it("샵 알림은 강습 상세로 연결", () => {
     expect(notificationMessage("offer_accepted", { job_id: "j1" }, job).url).toBe("/shop/jobs/j1");
     expect(notificationMessage("instructor_canceled", { job_id: "j1" }, job).title).toBe("강사가 강습을 취소했습니다");

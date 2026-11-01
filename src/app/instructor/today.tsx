@@ -7,6 +7,7 @@ import { PreviousNotes } from "./previous-notes";
 
 type Lesson = {
   final_rate: number;
+  via_shop_id: string | null; // 팀 강습: 금액은 팀 몫이라 강사에게 보이지 않는다
   jobs: { id: string; starts_at: string; ends_at: string; status: string; lesson_type: LessonType; note: string | null; sports: { name: string } | null; shops: { name: string } | null };
 };
 
@@ -19,14 +20,14 @@ export async function InstructorToday({ instructorId, now, children }: { instruc
   const [{ data: lessons }, { data: monthRows }, { count: offers }] = await Promise.all([
     supabase
       .from("assignments")
-      .select("final_rate, jobs!inner(id, starts_at, ends_at, status, lesson_type, note, sports(name), shops(name))")
+      .select("final_rate, via_shop_id, jobs!inner(id, starts_at, ends_at, status, lesson_type, note, sports(name), shops(name))")
       .eq("instructor_id", instructorId)
       .neq("jobs.status", "canceled")
       .gte("jobs.starts_at", span.from)
       .lt("jobs.starts_at", span.to),
     supabase
       .from("assignments")
-      .select("final_rate, jobs!inner(status)")
+      .select("final_rate, via_shop_id, jobs!inner(status)")
       .eq("instructor_id", instructorId)
       .neq("jobs.status", "canceled")
       .gte("jobs.starts_at", month.from)
@@ -42,7 +43,8 @@ export async function InstructorToday({ instructorId, now, children }: { instruc
   const tomorrowFrom = new Date(dayWindowKst(shiftDate(today, 1)).from).getTime();
   const todays = all.filter((l) => new Date(l.jobs.starts_at).getTime() < tomorrowFrom);
   const tomorrows = all.filter((l) => new Date(l.jobs.starts_at).getTime() >= tomorrowFrom);
-  const monthTotal = ((monthRows ?? []) as { final_rate: number }[]).reduce((s, r) => s + r.final_rate, 0);
+  // 팀 강습은 팀이 정산받으므로 내 예정액에서 뺀다
+  const monthTotal = ((monthRows ?? []) as { final_rate: number; via_shop_id: string | null }[]).reduce((s, r) => s + (r.via_shop_id ? 0 : r.final_rate), 0);
   const levels = await Promise.all(
     todays.map(async (l) => {
       const { data } = await supabase.rpc("job_customer_levels", { p_job_id: l.jobs.id });
@@ -74,7 +76,7 @@ export async function InstructorToday({ instructorId, now, children }: { instruc
               {l.jobs.sports?.name} {LESSON_TYPES[l.jobs.lesson_type].label}
               {levels[i] ? ` · ${levels[i]}` : ""}
             </p>
-            <p className="text-xs text-ink-muted">{l.jobs.shops?.name} · {l.final_rate.toLocaleString("ko-KR")}원</p>
+            <p className="text-xs text-ink-muted">{l.jobs.shops?.name} · {l.via_shop_id ? "팀 강습 (팀 정산)" : `${l.final_rate.toLocaleString("ko-KR")}원`}</p>
             {l.jobs.note && <p className="rounded-lg bg-surface px-3 py-2 text-xs text-[#35466A]">손님 메모 · {l.jobs.note}</p>}
             <PreviousNotes jobId={l.jobs.id} />
           </article>

@@ -24,6 +24,7 @@ export default function PayPage({ searchParams }: { searchParams: SearchParams }
 
 type A = {
   final_rate: number;
+  via_shop_id: string | null; // 팀 강습: 팀이 정산받는다. 금액은 팀 몫이라 보이지 않는다
   jobs: { id: string; starts_at: string; ends_at: string; status: string; lesson_type: LessonType; canceled_by: string | null; sports: { name: string } | null; shops: { id: string; name: string } | null };
 };
 
@@ -56,7 +57,7 @@ async function Pay({ searchParams }: { searchParams: SearchParams }) {
   const [{ data: lessons }, { data: sts }] = await Promise.all([
     supabase
       .from("assignments")
-      .select("final_rate, jobs!inner(id, starts_at, ends_at, status, lesson_type, canceled_by, sports(name), shops(id, name))")
+      .select("final_rate, via_shop_id, jobs!inner(id, starts_at, ends_at, status, lesson_type, canceled_by, sports(name), shops(id, name))")
       .eq("instructor_id", me ?? "")
       .gte("jobs.starts_at", win.from)
       .lt("jobs.starts_at", win.to),
@@ -64,7 +65,7 @@ async function Pay({ searchParams }: { searchParams: SearchParams }) {
   ]);
   const rows = ((lessons ?? []) as unknown as A[]).sort((a, b) => b.jobs.starts_at.localeCompare(a.jobs.starts_at));
   const m = instructorMonth(
-    rows.map((r) => ({ amount: r.final_rate, status: r.jobs.status, shop: r.jobs.shops ?? { id: "", name: "" } })),
+    rows.filter((r) => !r.via_shop_id).map((r) => ({ amount: r.final_rate, status: r.jobs.status, shop: r.jobs.shops ?? { id: "", name: "" } })),
     (sts ?? []).map((s) => ({ id: s.id, shopId: s.shop_id, gross: s.gross, withholding: s.withholding, net: s.net, status: s.status })),
   );
   const mo = Number(month.slice(5));
@@ -134,7 +135,7 @@ async function Pay({ searchParams }: { searchParams: SearchParams }) {
                     {excluded && <p className="text-[11px] text-ink-muted">{r.jobs.canceled_by === "shop" ? "샵 사정 취소" : "손님 취소"}</p>}
                   </div>
                   <div className={`text-right ${st.cls}`}>
-                    <p className="text-sm font-bold">{excluded ? "0" : won(r.final_rate)}원</p>
+                    <p className="text-sm font-bold">{r.via_shop_id ? "팀 정산" : `${excluded ? "0" : won(r.final_rate)}원`}</p>
                     <p className="text-[11px]">{st.label}</p>
                   </div>
                 </div>

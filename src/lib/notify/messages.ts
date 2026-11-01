@@ -31,7 +31,12 @@ export function notificationMessage(kind: string, payload: Payload, job: JobInfo
     case "lesson_completed":
       return { title: "완료 보고가 들어왔습니다", body: `${when} · 승인해야 정산에 들어갑니다`, url: shopJob };
     case "lesson_approved":
-      return { title: "강습이 승인됐습니다", body: withAmount(payload.amount), url: "/instructor/pay" };
+      // 팀 강습은 금액 없이 (팀 몫은 팀이 정한다)
+      return payload.team
+        ? { title: "강습이 승인됐습니다", body: `${when} · 팀 정산으로 처리됩니다`, url: "/instructor/schedule" }
+        : { title: "강습이 승인됐습니다", body: withAmount(payload.amount), url: "/instructor/pay" };
+    case "team_lesson_approved":
+      return { title: "팀 강습이 승인됐습니다", body: withAmount(payload.amount), url: "/shop/settlements" };
     case "job_canceled":
       return { title: payload.by === "shop" ? "샵 사정으로 취소" : "손님 취소", body: `${when} · 정산에서 빠집니다`, url: "/instructor/schedule" };
     case "instructor_canceled":

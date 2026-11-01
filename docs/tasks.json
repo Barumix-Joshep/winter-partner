@@ -326,5 +326,45 @@
   "status": "done",
   "due": "2026-12-05",
   "note": "마이그레이션 team_bids(원격 적용): place_team_bid/withdraw_team_bid(승인된 강습팀, 팀 입찰 허용·마감·상한 확인, 공고당 1건), assign_team_instructor(우리 팀 전속만, 시간 겹침 차단, 팀원 알림), 팀원 일방 취소 시 배정은 팀에 남기고 강사만 비움(팀장에게 알림, 패널티는 그대로). 화면: 샵 메뉴 \"팀 입찰\"(강습팀만) — 공고 입찰·철회, 맡은 강습 팀원 지정/변경 · 정산에 \"팀으로 받을 정산\"(발행된 것, PDF) · 공고 샵 강습 상세에 \"팀명 (팀) · 팀원\". pgTAP 19개(전체 245) · E2E 팀 흐름(입찰→선정→팀원 지정→보고→승인→정산 원천세 0→팀 PDF) 통과. 남은 것: 팀원에게 가는 승인 알림 금액이 팀 확정 금액으로 표시됨, 팀→팀원 지급은 시스템 밖 (11/2)"
+ },
+ {
+  "id": "P12-1",
+  "phase": "12 운영 준비",
+  "title": "첫 플랫폼 관리자 지정 방법 (DB 관리자만 실행, 실행 전 확인)",
+  "status": "blocked",
+  "due": "2026-12-06",
+  "note": "준비 완료, 실행 전 사장님 확인 대기: 마이그레이션 *_platform_admin_grant.sql(private.grant_platform_admin(email): 인증된 가입 계정만, 강사·샵 연결 계정 거부, anon·authenticated·service_role 실행 권한 회수, 이메일은 저장소에 없음), pgTAP 8개 통과. 원격에는 아직 적용하지 않음. 확인 후: db push → SQL Editor에서 select private.grant_platform_admin('<이메일>') (11/2)"
+ },
+ {
+  "id": "P12-2",
+  "phase": "12 운영 준비",
+  "title": "Preview 환경 NEXT_PUBLIC_SUPABASE_URL 교체 (미리보기 배포 500)",
+  "status": "done",
+  "due": "2026-12-07",
+  "note": "Preview 환경 NEXT_PUBLIC_SUPABASE_URL을 .env.local 값으로 교체, 공개 값인 NEXT_PUBLIC_SUPABASE_ANON_KEY·NEXT_PUBLIC_VAPID_PUBLIC_KEY도 Preview에 추가(비밀값은 넣지 않음). 미리보기 배포 /, /login, /terms 200 확인. 주의: 미리보기도 운영 DB에 붙는다 (11/2)"
+ },
+ {
+  "id": "P12-3",
+  "phase": "12 운영 준비",
+  "title": "팀원 승인 알림에서 팀 확정 금액 숨기기",
+  "status": "done",
+  "due": "2026-12-08",
+  "note": "팀원 승인 알림은 금액 없이(\"팀 정산으로 처리됩니다\"), 팀 관리자에게 team_lesson_approved로 확정 금액. 강사 홈 예정액·강습 카드·정산 화면에서 팀 강습 금액을 빼고 \"팀 정산\"으로 표시. 마이그레이션 team_approve_notice 원격 적용. 팀장이 정한 몫은 데이터가 없어 보류 (11/2)"
+ },
+ {
+  "id": "P12-4",
+  "phase": "12 운영 준비",
+  "title": "운영 사이트 읽기 전용 점검 스크립트",
+  "status": "todo",
+  "due": "2026-12-09",
+  "note": ""
+ },
+ {
+  "id": "P12-5",
+  "phase": "12 운영 준비",
+  "title": "손님 카드 다음 연락일·연락 기록 화면",
+  "status": "todo",
+  "due": "2026-12-10",
+  "note": ""
  }
 ]
