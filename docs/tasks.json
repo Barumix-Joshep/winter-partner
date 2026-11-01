@@ -51,9 +51,9 @@
   "id": "P1-2",
   "phase": "1 데이터 모델",
   "title": "RLS 정책 (shop_id 격리, 강사 본인 데이터)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-11-04",
-  "note": ""
+  "note": "전 테이블 RLS + private 판단 함수, pgTAP 24개 통과, 원격 적용 (11/1). customer_price는 job_prices로 분리"
  },
  {
   "id": "P1-3",
