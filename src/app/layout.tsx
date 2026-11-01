@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
 import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 
@@ -17,7 +18,7 @@ export const viewport: Viewport = {
   themeColor: "#0F1E3D",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko" className={`${notoSansKr.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>

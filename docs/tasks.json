@@ -83,9 +83,9 @@
   "id": "P2-2",
   "phase": "2 인증·테넌트",
   "title": "역할 분기 (플랫폼 관리자·샵 관리자·강사)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-11-06",
-  "note": ""
+  "note": "/ → 역할별 첫 화면(/admin·/shop·/instructor), 샵 없으면 /shop/new, 역할 없으면 /onboarding. 구역 가드, 로컬에서 5가지 계정 확인 (11/1)"
  },
  {
   "id": "P2-3",

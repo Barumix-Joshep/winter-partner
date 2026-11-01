@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authErrorMessage, parseLogin, parseSignup, safeNext } from "./validate";
+import { authErrorMessage, parseLogin, parseOnboarding, parseSignup, safeNext } from "./validate";
 
 function form(fields: Record<string, string>) {
   const fd = new FormData();
@@ -65,5 +65,18 @@ describe("authErrorMessage", () => {
     expect(authErrorMessage("Email not confirmed")).toBe("이메일 인증을 먼저 완료해 주세요.");
     expect(authErrorMessage("User already registered")).toBe("이미 가입된 이메일입니다.");
     expect(authErrorMessage("something else")).toBe("잠시 후 다시 시도해 주세요.");
+  });
+});
+
+describe("parseOnboarding", () => {
+  it("이름과 역할을 받는다", () => {
+    expect(parseOnboarding(form({ name: " 김스키 ", role: "instructor" }))).toEqual({
+      ok: true,
+      data: { name: "김스키", role: "instructor" },
+    });
+  });
+
+  it("플랫폼 관리자는 고를 수 없다", () => {
+    expect(parseOnboarding(form({ name: "해커", role: "platform_admin" })).ok).toBe(false);
   });
 });

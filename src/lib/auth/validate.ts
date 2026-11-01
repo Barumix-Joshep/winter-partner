@@ -37,6 +37,16 @@ export function parseSignup(
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true, data: { name, email, password, role } };
 }
 
+// OAuth(카카오) 첫 로그인 때 역할 고르기
+export function parseOnboarding(fd: FormData): Result<{ name: string; role: SignupRole }> {
+  const name = text(fd, "name").trim();
+  const role = text(fd, "role") as SignupRole;
+  const errors: { name?: string; role?: string } = {};
+  if (!name) errors.name = "이름을 입력해 주세요.";
+  if (!SIGNUP_ROLES.includes(role)) errors.role = "샵 관리자 또는 강사를 골라 주세요.";
+  return Object.keys(errors).length ? { ok: false, errors } : { ok: true, data: { name, role } };
+}
+
 // 로그인 뒤 돌아갈 경로. 외부 주소로 보내는 열린 리다이렉트를 막는다.
 export function safeNext(next: string | null | undefined) {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/";
