@@ -379,9 +379,9 @@
   "id": "P13-2",
   "phase": "13 개인정보·손님 데이터",
   "title": "14세 미만: 출생 연도, 보호자 필수, 보호자 링크 직접 동의만 유효",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-12",
-  "note": ""
+  "note": "마이그레이션 customer_minors(원격 적용): customers.birth_year(선택), private.is_minor(올해 기준 14살 이하면 14세 미만—연도만이라 보수적), 14세 미만이면 보호자 이름·연락처 필수(트리거+폼 검증), 선택 동의 유효 조건에 \"14세 미만은 보호자 동의만\" 추가. 손님별 1회용 동의 링크(consent_links, 토큰 sha256 해시 저장, 7일, 한 번만) → 공개 페이지 /consent/[token](샵 이름·이름 첫 글자·14세 미만 여부만 노출, noindex, 보호자 확인 체크). 공개 함수는 service_role만 실행. 요청 제한 public_rate_limit(IP 해시 키). 함께 고친 버그: 손님 폼이 검증 오류 뒤 입력값을 비우던 문제(React 19 폼 초기화). pgTAP 301·E2E(14세 미만 보호자 동의) 통과. 문자 인증은 P13-2b blocked (11/2)"
  },
  {
   "id": "P13-2b",

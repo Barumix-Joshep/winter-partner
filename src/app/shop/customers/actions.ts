@@ -7,16 +7,23 @@ import { requireArea } from "@/lib/auth/session";
 import { getMyShop } from "@/lib/shop/my-shop";
 import { parseCustomer } from "@/lib/customer/validate";
 import { parseContact } from "@/lib/customer/contact";
+import { siteOrigin } from "@/lib/origin";
+import { kstYear } from "@/lib/customer/minor";
 
-export type CustomerFormState = { ok?: boolean; message?: string; errors?: Record<string, string | undefined> };
+// values: 검증에 실패했을 때 입력값을 돌려준다 (React 19 폼은 제출 뒤 입력 칸을 비운다)
+export type CustomerFormState = { ok?: boolean; message?: string; errors?: Record<string, string | undefined>; values?: Record<string, string> };
+
+function formValues(fd: FormData) {
+  return Object.fromEntries([...fd.entries()].filter(([k, v]) => typeof v === "string" && !k.startsWith("$")).map(([k, v]) => [k, v as string]));
+}
 
 // 손님 등록·수정 (RLS: 우리 샵 손님만)
 export async function saveCustomer(_prev: CustomerFormState | undefined, formData: FormData): Promise<CustomerFormState> {
   const user = await requireArea("shop");
   const shop = await getMyShop(user.id);
   if (!shop) redirect("/shop/new");
-  const parsed = parseCustomer(formData);
-  if (!parsed.ok) return { errors: parsed.errors };
+  const parsed = parseCustomer(formData, kstYear(Date.now()));
+  if (!parsed.ok) return { errors: parsed.errors, values: formValues(formData) };
 
   const supabase = await createClient();
   const id = String(formData.get("id") ?? "");
@@ -94,4 +101,13 @@ export async function recordStaffConsent(formData: FormData) {
     p_granted: formData.get("granted") === "true",
   });
   revalidatePath("/shop/customers");
+}
+
+// 손님(14세 미만은 보호자)이 직접 선택 동의를 고르는 1회용 링크 (7일). 원문 토큰은 이때 한 번만 보인다.
+export async function createConsentLink(_prev: { url?: string; message?: string } | undefined, formData: FormData) {
+  await requireArea("shop");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_consent_link", { p_customer_id: String(formData.get("id") ?? "") });
+  if (error || !data) return { message: "링크를 만들지 못했습니다." };
+  return { url: `${await siteOrigin()}/consent/${data}` };
 }

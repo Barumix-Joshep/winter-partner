@@ -12,6 +12,8 @@ import { CustomerForm } from "./customer-form";
 import { deleteContact, linkCustomer, recordStaffConsent, unlinkCustomer } from "./actions";
 import { CONSENT_METHOD_LABEL, CONSENT_SUBJECT_LABEL, OPTIONAL_CONSENTS, type OptionalConsentKind } from "@/lib/privacy/texts";
 import { ContactForm } from "./contact-form";
+import { ConsentLink } from "./consent-link";
+import { isMinor, kstYear } from "@/lib/customer/minor";
 import { CONTACT_CHANNELS, formatDay, type ContactChannel } from "@/lib/customer/contact";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -36,6 +38,7 @@ type Customer = {
   memo: string | null;
   next_contact_on: string | null;
   next_contact_note: string | null;
+  birth_year: number | null;
   owner: { name: string } | null;
 };
 
@@ -172,7 +175,7 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
     supabase
       .from("customers")
       .select(
-        "id, name, phone, guardian_name, guardian_phone, level, equipment_size, tags, memo, next_contact_on, next_contact_note, owner:profiles!customers_owner_user_id_fkey(name)",
+        "id, name, phone, guardian_name, guardian_phone, level, equipment_size, tags, memo, next_contact_on, next_contact_note, birth_year, owner:profiles!customers_owner_user_id_fkey(name)",
       )
       .eq("id", id)
       .eq("shop_id", shopId)
@@ -189,6 +192,7 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
   const contacts = (contactRows ?? []) as unknown as Contact[];
   if (!c) return <p className="rounded-[14px] border border-line bg-white p-5 text-sm text-ink-muted">손님을 찾을 수 없습니다.</p>;
   const cust = c as unknown as Customer;
+  const minor = isMinor(cust.birth_year, kstYear(await requestTime()));
   const history = ((hist ?? []) as unknown as History[])
     .map((h) => h.jobs)
     .filter((j): j is NonNullable<History["jobs"]> => !!j)
@@ -206,6 +210,7 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
         <div className="min-w-48 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-xl font-bold">{cust.name}</h2>
+            {minor && <span className="rounded-full bg-[#FFF1E0] px-2 py-0.5 text-[11px] font-medium text-[#B4560A]">14세 미만 · 보호자 동의</span>}
             {cust.tags.map((t) => (
               <span key={t} className="rounded-full bg-[#E3EBFF] px-2 py-0.5 text-[11px] font-medium text-brand">
                 #{t}
@@ -213,7 +218,7 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
             ))}
           </div>
           <p className="mt-1 text-sm text-ink-muted">
-            {[cust.level, cust.phone, cust.guardian_name && `보호자 ${cust.guardian_name} ${cust.guardian_phone ?? ""}`]
+            {[cust.birth_year && `${cust.birth_year}년생`, cust.level, cust.phone, cust.guardian_name && `보호자 ${cust.guardian_name} ${cust.guardian_phone ?? ""}`]
               .filter(Boolean)
               .join(" · ")}
           </p>
@@ -259,6 +264,7 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
             );
           })}
         </ul>
+        <ConsentLink id={cust.id} minor={minor} />
       </div>
       {cust.memo && <p className="rounded-[14px] border border-line bg-white p-4 text-sm whitespace-pre-wrap">샵 메모 · {cust.memo}</p>}
 

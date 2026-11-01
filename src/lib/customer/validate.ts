@@ -1,5 +1,6 @@
 // 손님 카드 폼 검증 (샵 관리자만 쓴다. 연락처는 샵만 본다)
 import { text } from "@/lib/form";
+import { isMinor, parseBirthYear } from "./minor";
 
 // null: 비움, undefined: 잘못된 번호
 export function normalizePhone(raw: string): string | null | undefined {
@@ -24,11 +25,12 @@ export type CustomerInput = {
   tags: string[];
   memo: string | null;
   next_contact_on: string | null;
+  birth_year: number | null;
 };
 
 type Result = { ok: true; data: CustomerInput } | { ok: false; errors: Partial<Record<keyof CustomerInput, string>> };
 
-export function parseCustomer(fd: FormData): Result {
+export function parseCustomer(fd: FormData, nowYear = new Date().getFullYear()): Result {
   const errors: Partial<Record<keyof CustomerInput, string>> = {};
   const name = text(fd, "name");
   const phone = normalizePhone(text(fd, "phone"));
@@ -41,6 +43,13 @@ export function parseCustomer(fd: FormData): Result {
   if (guardianPhone === undefined) errors.guardian_phone = "보호자 연락처를 확인해 주세요.";
   if (next && !/^\d{4}-\d{2}-\d{2}$/.test(next)) errors.next_contact_on = "날짜를 골라 주세요.";
   if (memo.length > 2000) errors.memo = "메모는 2,000자까지입니다.";
+  const birthYear = parseBirthYear(text(fd, "birth_year"), nowYear);
+  if (birthYear === undefined) errors.birth_year = "출생 연도를 네 자리로 입력해 주세요.";
+  // 14세 미만은 보호자 이름·연락처가 필요하다 (DB 트리거도 막는다)
+  if (isMinor(birthYear, nowYear)) {
+    if (!text(fd, "guardian_name")) errors.guardian_name = "14세 미만은 보호자 이름이 필요합니다.";
+    if (!guardianPhone) errors.guardian_phone ??= "14세 미만은 보호자 연락처가 필요합니다.";
+  }
 
   if (Object.keys(errors).length) return { ok: false, errors };
   return {
@@ -55,6 +64,7 @@ export function parseCustomer(fd: FormData): Result {
       tags: parseTags(text(fd, "tags")),
       memo: memo || null,
       next_contact_on: next || null,
+      birth_year: birthYear ?? null,
     },
   };
 }

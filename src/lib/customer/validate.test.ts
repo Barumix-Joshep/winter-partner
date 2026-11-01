@@ -53,6 +53,7 @@ describe("parseCustomer", () => {
         tags: ["가족"],
         memo: "동생과 같이 하면 집중도 좋음",
         next_contact_on: "2026-11-20",
+        birth_year: null,
       },
     });
   });
@@ -65,6 +66,17 @@ describe("parseCustomer", () => {
       expect(r.errors.phone).toBeDefined();
       expect(r.errors.next_contact_on).toBeDefined();
     }
+  });
+
+  it("14세 미만은 보호자 이름·연락처 필수", () => {
+    const r = parseCustomer(form({ ...base, birth_year: "2018", guardian_name: "", guardian_phone: "" }), 2026);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errors.guardian_name).toBeDefined();
+      expect(r.errors.guardian_phone).toBeDefined();
+    }
+    const ok = parseCustomer(form({ ...base, birth_year: "2018" }), 2026);
+    expect(ok.ok && ok.data.birth_year).toBe(2018);
   });
 
   it("동의 체크박스 값은 손님 정보에 들어가지 않는다 (선택 동의는 손님이 직접, P13-1)", () => {
