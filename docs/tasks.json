@@ -5,7 +5,7 @@
   "title": "Next.js 프로젝트 생성 (TS·Tailwind·App Router)",
   "status": "done",
   "due": "2026-11-01",
-  "note": "~/Barumix/winter-partner. Mac에서 npm install 필요"
+  "note": "Mac에서 npm install·build 통과 (11/1), 타입 검사 통과"
  },
  {
   "id": "P0-2",
