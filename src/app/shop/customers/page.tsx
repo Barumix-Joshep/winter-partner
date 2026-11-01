@@ -9,7 +9,8 @@ import { formatLessonTime } from "@/lib/shop/job-status";
 import { LESSON_TYPES, type LessonType } from "@/lib/shop/job";
 import { requestTime } from "@/lib/time";
 import { CustomerForm } from "./customer-form";
-import { deleteContact, linkCustomer, unlinkCustomer } from "./actions";
+import { deleteContact, linkCustomer, recordStaffConsent, unlinkCustomer } from "./actions";
+import { CONSENT_METHOD_LABEL, CONSENT_SUBJECT_LABEL, OPTIONAL_CONSENTS, type OptionalConsentKind } from "@/lib/privacy/texts";
 import { ContactForm } from "./contact-form";
 import { CONTACT_CHANNELS, formatDay, type ContactChannel } from "@/lib/customer/contact";
 
@@ -35,10 +36,21 @@ type Customer = {
   memo: string | null;
   next_contact_on: string | null;
   next_contact_note: string | null;
-  marketing_consent: boolean;
-  privacy_consent_at: string | null;
   owner: { name: string } | null;
 };
+
+type ConsentState = { kind: string; granted: boolean; subject: string; method: string; created_at: string; valid: boolean; needs_recheck: boolean };
+
+// 선택 동의 상태 문구: 유효한 것은 손님(보호자)이 직접 한 동의뿐
+function consentLabel(s: ConsentState | undefined): { text: string; cls: string } {
+  if (!s) return { text: "기록 없음", cls: "text-ink-muted" };
+  const when = s.created_at.slice(0, 10);
+  const how = `${CONSENT_SUBJECT_LABEL[s.subject]} · ${CONSENT_METHOD_LABEL[s.method]} · ${when}`;
+  if (!s.granted) return { text: `철회 (${how})`, cls: "text-ink-muted" };
+  if (s.valid) return { text: `동의 (${how})`, cls: "text-[#1B6B3A]" };
+  if (s.needs_recheck) return { text: `재확인 필요 (${how}) · 발송 제외`, cls: "text-[#B4560A]" };
+  return { text: `직원 기록 (${when}) · 손님이 직접 동의해야 유효`, cls: "text-[#B4560A]" };
+}
 
 type Contact = { id: string; channel: ContactChannel; memo: string | null; created_at: string; profiles: { name: string } | null };
 
@@ -66,10 +78,11 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
     const safe = q.replace(/[%,()]/g, "");
     list = list.or(`name.ilike.%${safe}%,phone.ilike.%${safe}%,tags.cs.{${safe.replace(/^#/, "")}}`);
   }
-  const [{ data: rows }, { data: dueRows }, { count: total }] = await Promise.all([
+  const [{ data: rows }, { data: dueRows }, { count: total }, { data: recipients }] = await Promise.all([
     list,
     supabase.from("customers").select("id, name").eq("shop_id", shop.id).lte("next_contact_on", today).order("next_contact_on"),
     supabase.from("customers").select("id", { count: "exact", head: true }).eq("shop_id", shop.id),
+    supabase.rpc("marketing_recipients", { p_shop_id: shop.id }),
   ]);
   const customers = (rows ?? []) as Pick<Customer, "id" | "name" | "phone" | "level" | "tags" | "next_contact_on">[];
   const due = dueRows ?? [];
@@ -83,6 +96,9 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
             + 손님 등록
           </Link>
         </div>
+        <p className="text-xs text-ink-muted">
+          광고 수신 가능 {(recipients ?? []).length}명 · 손님이 직접 동의했고 2년이 지나지 않은 경우만
+        </p>
         <form>
           <input type="search" name="q" defaultValue={q} placeholder="이름 · 연락처 · 태그 검색" aria-label="손님 검색" className="min-h-11 w-full rounded-lg border border-[#CBD3E1] px-3 text-sm" />
         </form>
@@ -152,11 +168,11 @@ type History = {
 
 async function Card({ shopId, id, others }: { shopId: string; id: string; others: { id: string; name: string }[] }) {
   const supabase = await createClient();
-  const [{ data: c }, { data: hist }, { data: links }, { data: contactRows }] = await Promise.all([
+  const [{ data: c }, { data: hist }, { data: links }, { data: contactRows }, { data: consentRows }] = await Promise.all([
     supabase
       .from("customers")
       .select(
-        "id, name, phone, guardian_name, guardian_phone, level, equipment_size, tags, memo, next_contact_on, next_contact_note, marketing_consent, privacy_consent_at, owner:profiles!customers_owner_user_id_fkey(name)",
+        "id, name, phone, guardian_name, guardian_phone, level, equipment_size, tags, memo, next_contact_on, next_contact_note, owner:profiles!customers_owner_user_id_fkey(name)",
       )
       .eq("id", id)
       .eq("shop_id", shopId)
@@ -167,7 +183,9 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
       .eq("customer_id", id),
     supabase.from("customer_links").select("customer_id, linked_customer_id").or(`customer_id.eq.${id},linked_customer_id.eq.${id}`),
     supabase.from("customer_contacts").select("id, channel, memo, created_at, profiles(name)").eq("customer_id", id).order("created_at", { ascending: false }).limit(20),
+    supabase.from("customer_consent_state").select("kind, granted, subject, method, created_at, valid, needs_recheck").eq("customer_id", id),
   ]);
+  const consents = new Map(((consentRows ?? []) as ConsentState[]).map((r) => [r.kind, r]));
   const contacts = (contactRows ?? []) as unknown as Contact[];
   if (!c) return <p className="rounded-[14px] border border-line bg-white p-5 text-sm text-ink-muted">손님을 찾을 수 없습니다.</p>;
   const cust = c as unknown as Customer;
@@ -195,7 +213,7 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
             ))}
           </div>
           <p className="mt-1 text-sm text-ink-muted">
-            {[cust.level, cust.phone, cust.guardian_name && `보호자 ${cust.guardian_name} ${cust.guardian_phone ?? ""}`, cust.marketing_consent ? "마케팅 수신 동의" : null]
+            {[cust.level, cust.phone, cust.guardian_name && `보호자 ${cust.guardian_name} ${cust.guardian_phone ?? ""}`]
               .filter(Boolean)
               .join(" · ")}
           </p>
@@ -220,11 +238,28 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
         />
       </div>
 
-      {!cust.privacy_consent_at && (
-        <p className="rounded-[14px] border border-[#F3D4A8] bg-[#FFF1E0] p-4 text-sm text-[#7A3E06]">
-          개인정보 수집·이용 동의 기록이 없습니다. 동의를 받으면 정보 고치기에서 체크해 주세요. 그 전에는 수업 메모가 다음 담당 강사에게 공유되지 않습니다.
-        </p>
-      )}
+      <div className="rounded-[14px] border border-line bg-white p-5">
+        <h3 className="text-base font-bold">선택 동의</h3>
+        <p className="mt-1 text-xs text-ink-muted">손님(14세 미만은 보호자)이 링크·QR에서 직접 한 동의만 유효합니다. 직원이 남긴 기록은 참고용이고, 철회는 바로 반영됩니다.</p>
+        <ul className="mt-2">
+          {(Object.keys(OPTIONAL_CONSENTS) as OptionalConsentKind[]).map((k) => {
+            const st = consents.get(k);
+            const l = consentLabel(st);
+            return (
+              <li key={k} className="flex flex-wrap items-center gap-2 border-t border-[#EEF1F6] py-2.5 text-sm first:border-t-0">
+                <span className="min-w-40 flex-1">{OPTIONAL_CONSENTS[k].label.replace(" (선택)", "")}</span>
+                <span className={`text-xs ${l.cls}`}>{l.text}</span>
+                <form action={recordStaffConsent}>
+                  <input type="hidden" name="id" value={cust.id} />
+                  <input type="hidden" name="kind" value={k} />
+                  <input type="hidden" name="granted" value={st?.granted ? "false" : "true"} />
+                  <button className="min-h-11 px-2 text-xs text-ink-muted underline">{st?.granted ? "철회 기록" : "직원 기록 남기기"}</button>
+                </form>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
       {cust.memo && <p className="rounded-[14px] border border-line bg-white p-4 text-sm whitespace-pre-wrap">샵 메모 · {cust.memo}</p>}
 
       <div className="rounded-[14px] border border-line bg-white p-5">

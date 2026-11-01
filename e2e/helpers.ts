@@ -81,7 +81,6 @@ export async function createJob(page: Page, j: NewJob) {
   await page.getByLabel("이름", { exact: true }).fill(j.customer);
   await page.getByLabel("연락처", { exact: true }).fill(j.phone);
   await page.getByLabel("레벨", { exact: true }).fill("초급");
-  await page.getByLabel(/개인정보 수집·이용/).check();
   if (j.note) await page.getByLabel(/요청 사항/).fill(j.note);
   await page.getByLabel(/손님 강습료/).fill(String(j.price ?? j.rate * 2));
   await page.getByLabel(/강사 지급액/).fill(String(j.rate));

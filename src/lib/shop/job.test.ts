@@ -40,7 +40,7 @@ describe("parseJob", () => {
       patchPaidBy: "shop",
       note: "둘 다 처음",
       customerId: null,
-      newCustomer: { name: "박민준", phone: "010-1234-5678", level: "초급", privacy_consent: false },
+      newCustomer: { name: "박민준", phone: "010-1234-5678", level: "초급" },
     });
   });
 

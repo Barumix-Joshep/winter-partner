@@ -53,8 +53,6 @@ describe("parseCustomer", () => {
         tags: ["가족"],
         memo: "동생과 같이 하면 집중도 좋음",
         next_contact_on: "2026-11-20",
-        marketing_consent: true,
-        privacy_consent: true,
       },
     });
   });
@@ -69,8 +67,9 @@ describe("parseCustomer", () => {
     }
   });
 
-  it("동의 체크가 없으면 false", () => {
-    const r = parseCustomer(form(Object.fromEntries(Object.entries(base).filter(([k]) => k !== "marketing_consent"))));
-    expect(r.ok && r.data.marketing_consent).toBe(false);
+  it("동의 체크박스 값은 손님 정보에 들어가지 않는다 (선택 동의는 손님이 직접, P13-1)", () => {
+    const r = parseCustomer(form(base));
+    expect(r.ok && "marketing_consent" in r.data).toBe(false);
+    expect(r.ok && "privacy_consent" in r.data).toBe(false);
   });
 });

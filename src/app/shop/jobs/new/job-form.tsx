@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { createJob, type JobFormState } from "./actions";
 import { LESSON_TYPES, PATCH_PAID_BY, type LessonType } from "@/lib/shop/job";
+import { CollectionNotice } from "@/components/collection-notice";
 
 const field = "flex flex-col gap-1.5 text-xs text-ink-muted";
 const input = "min-h-11 rounded-lg border border-[#CBD3E1] bg-white px-3 text-sm text-ink";
@@ -100,6 +101,7 @@ export function JobForm({ resorts, sports, customers, defaultCustomerId = "" }: 
 
       <fieldset className="flex flex-col gap-3 rounded-[10px] border border-line p-3">
         <legend className="px-1.5 text-xs text-ink-muted">손님 (연락처는 샵만 봅니다)</legend>
+        <CollectionNotice />
         <label className={field}>
           기존 손님
           <select name="customer_id" value={customerId} onChange={(ev) => setCustomerId(ev.target.value)} className={input}>
@@ -126,10 +128,6 @@ export function JobForm({ resorts, sports, customers, defaultCustomerId = "" }: 
             <label className={field}>
               레벨
               <input name="new_customer_level" placeholder="초급" className={input} />
-            </label>
-            <label className="flex min-h-11 items-start gap-2 text-sm text-ink sm:col-span-3">
-              <input type="checkbox" name="new_customer_privacy_consent" className="mt-1 size-4" />
-              손님에게 개인정보 수집·이용 및 담당 강사 제공 동의를 받았습니다
             </label>
           </div>
         )}

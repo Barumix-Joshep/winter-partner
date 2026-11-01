@@ -371,9 +371,9 @@
   "id": "P13-1",
   "phase": "13 개인정보·손님 데이터",
   "title": "손님 정보 수집 근거 재구성 (계약 이행 안내, 선택 동의 기록 테이블, 2년 재확인, 기존 동의 '직원 기록' 이관)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-11",
-  "note": ""
+  "note": "마이그레이션 customer_consents(원격 적용). 설정 테이블 private.app_settings(consent_recheck_years=2, customer_retention_seasons=3, access_log_retention_years=2). customer_consents: 종류(marketing/photo)·동의/철회·주체(본인/보호자/직원 기록)·방법(QR/링크/현장)·문구 버전, 추가만(수정 트리거 차단, 삭제 정책 없음). customer_consent_state 뷰: 유효=본인·보호자 동의이고 2년 이내, 재확인 필요 표시. marketing_recipients(shop)=발송 대상. 직원 기록은 record_staff_consent(무효, 철회는 유효). 기존 marketing_consent·privacy_consent_at은 지우지 않고 직원 기록(legacy)으로 이관, 열은 남기고 사용 중지. 수업 메모 공유: 동의 조건 제거, 같은 샵 강습 안에서만. 화면: 손님 카드·강습 등록의 동의 체크박스 → 수집 안내 문구(lib/privacy/texts.ts, 초안), 손님 카드 선택 동의 상태·직원 기록/철회 버튼, 목록에 광고 수신 가능 인원. pgTAP 279·E2E 8 통과 (11/2)"
  },
  {
   "id": "P13-2",

@@ -45,7 +45,8 @@ select ok((select terms_agreed_at is null from profiles where id = '00000000-000
 select pg_temp.login('00000000-0000-0000-0000-0000000bbb01');
 select is((select array_agg(note) from previous_lesson_notes('40000000-0000-0000-0000-0000000bb003')), array['사이드슬립까지'],
   '다음 강사는 동의한 손님의 지난 수업 메모를 본다');
-select is((select count(*) from previous_lesson_notes('40000000-0000-0000-0000-0000000bb004')), 0::bigint, '동의하지 않은 손님의 메모는 공유되지 않는다');
+-- P13-1: 계약 이행 근거로 같은 샵 안에서는 동의와 무관하게 공유 (다른 샵 차단은 아래 테스트)
+select is((select count(*) from previous_lesson_notes('40000000-0000-0000-0000-0000000bb004')), 1::bigint, '같은 샵 손님의 지난 메모는 다음 강사에게 공유된다');
 
 select pg_temp.login('00000000-0000-0000-0000-0000000bbc01');
 select throws_ok($$select * from previous_lesson_notes('40000000-0000-0000-0000-0000000bb003')$$, '42501', null, '맡지 않은 강사는 볼 수 없다');

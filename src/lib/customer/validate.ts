@@ -24,8 +24,6 @@ export type CustomerInput = {
   tags: string[];
   memo: string | null;
   next_contact_on: string | null;
-  marketing_consent: boolean;
-  privacy_consent: boolean; // 개인정보 수집·이용 및 담당 강사 제공 동의 (저장 시 privacy_consent_at으로)
 };
 
 type Result = { ok: true; data: CustomerInput } | { ok: false; errors: Partial<Record<keyof CustomerInput, string>> };
@@ -57,8 +55,6 @@ export function parseCustomer(fd: FormData): Result {
       tags: parseTags(text(fd, "tags")),
       memo: memo || null,
       next_contact_on: next || null,
-      marketing_consent: fd.get("marketing_consent") === "on",
-      privacy_consent: fd.get("privacy_consent") === "on",
     },
   };
 }
