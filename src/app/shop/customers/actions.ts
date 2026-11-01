@@ -9,6 +9,7 @@ import { parseCustomer } from "@/lib/customer/validate";
 import { parseContact } from "@/lib/customer/contact";
 import { siteOrigin } from "@/lib/origin";
 import { kstYear } from "@/lib/customer/minor";
+import { detectHealthTerms, healthWarning } from "@/lib/privacy/health";
 
 // values: 검증에 실패했을 때 입력값을 돌려준다 (React 19 폼은 제출 뒤 입력 칸을 비운다)
 export type CustomerFormState = { ok?: boolean; message?: string; errors?: Record<string, string | undefined>; values?: Record<string, string> };
@@ -28,11 +29,13 @@ export async function saveCustomer(_prev: CustomerFormState | undefined, formDat
   const supabase = await createClient();
   const id = String(formData.get("id") ?? "");
   const fields = parsed.data;
+  const health = detectHealthTerms(fields.memo);
   if (id) {
     const { error } = await supabase.from("customers").update(fields).eq("id", id).eq("shop_id", shop.id);
     if (error) return { message: "저장하지 못했습니다." };
+    if (health.length) await supabase.rpc("record_health_warning", { p_field: "customer_memo", p_customer_id: id, p_job_id: null, p_terms: health });
     revalidatePath("/shop/customers");
-    return { ok: true, message: "저장했습니다." };
+    return health.length ? { ok: false, message: healthWarning(health) } : { ok: true, message: "저장했습니다." };
   }
   const { data, error } = await supabase
     .from("customers")
@@ -40,6 +43,9 @@ export async function saveCustomer(_prev: CustomerFormState | undefined, formDat
     .select("id")
     .single();
   if (error || !data) return { message: "등록하지 못했습니다." };
+  if (health.length) {
+    await supabase.rpc("record_health_warning", { p_field: "customer_memo", p_customer_id: data.id, p_job_id: null, p_terms: health });
+  }
   redirect(`/shop/customers?id=${data.id}`);
 }
 
@@ -79,6 +85,11 @@ export async function logContact(_prev: CustomerFormState | undefined, formData:
   });
   revalidatePath("/shop/customers");
   if (error) return { message: "기록하지 못했습니다. 새로고침 후 다시 시도해 주세요." };
+  const health = detectHealthTerms(parsed.data.memo);
+  if (health.length) {
+    await supabase.rpc("record_health_warning", { p_field: "contact_memo", p_customer_id: id, p_job_id: null, p_terms: health });
+    return { ok: false, message: `연락을 기록했습니다. ${healthWarning(health)}` };
+  }
   return { ok: true, message: "연락을 기록했습니다." };
 }
 

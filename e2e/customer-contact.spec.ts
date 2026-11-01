@@ -15,7 +15,7 @@ test("연락 기록을 남기면 다음 연락일·목적이 바뀌고 기록이
   await shop.getByLabel("내용").fill("E2E 시즌 오픈 안내");
   await shop.getByLabel("다음 연락일").fill(next);
   await shop.getByLabel("다음 연락 목적").fill("예약 확정 연락");
-  await shop.getByRole("button", { name: "연락 기록" }).click();
+  await shop.getByRole("button", { name: "연락 기록", exact: true }).click();
 
   await expect(shop.getByText("E2E 시즌 오픈 안내")).toBeVisible();
   await expect(shop.getByText(formatDay(next))).toBeVisible();
@@ -27,4 +27,15 @@ test("연락 기록을 남기면 다음 연락일·목적이 바뀌고 기록이
     const { data } = await c.from("customer_contacts").select("id");
     expect(data, email).toEqual([]);
   }
+});
+
+test("건강 정보로 보이는 메모는 저장하되 경고하고 기록한다", async ({ browser }) => {
+  const shop = await as(browser, "shop1@winter.test");
+  await shop.goto(`/shop/customers?id=${CUSTOMER}`);
+  await expect(shop.getByText("부상·질환 등 건강 정보는 적지 마세요.").first()).toBeVisible();
+  await shop.getByLabel("내용").fill("무릎 인대 부상으로 이번 주 취소");
+  await shop.getByRole("button", { name: "연락 기록", exact: true }).click();
+  await expect(shop.getByText(/건강 정보로 보이는 단어\(부상, 인대\)/)).toBeVisible();
+  await shop.reload();
+  await expect(shop.getByRole("alert").filter({ hasText: "메모에 건강 정보로 보이는 단어가 있었습니다" })).toBeVisible();
 });

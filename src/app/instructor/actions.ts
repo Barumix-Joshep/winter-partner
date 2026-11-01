@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notifyAfterResponse } from "@/lib/notify/dispatch";
 import { requireArea } from "@/lib/auth/session";
 import { withNotice } from "@/lib/instructor/notice";
+import { detectHealthTerms } from "@/lib/privacy/health";
 
 // 전속 제안 수락은 함수로 (전속 등록·진행 중 입찰 철회·다른 제안 거절을 한 번에)
 export async function acceptInvite(formData: FormData) {
@@ -64,6 +65,11 @@ export async function completeLesson(_prev: { ok?: boolean; message?: string } |
   });
   revalidatePath("/instructor");
   if (error) return { message: "보고하지 못했습니다. 새로고침 후 다시 시도해 주세요." };
+  const health = detectHealthTerms(String(formData.get("note") ?? ""));
+  if (health.length) {
+    await supabase.rpc("record_health_warning", { p_field: "lesson_note", p_customer_id: null, p_job_id: String(formData.get("job_id") ?? ""), p_terms: health });
+    redirect(withNotice("/instructor", "reported-health"));
+  }
   redirect(withNotice("/instructor", "reported"));
 }
 

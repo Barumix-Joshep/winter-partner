@@ -185,7 +185,7 @@ type History = {
 
 async function Card({ shopId, id, others }: { shopId: string; id: string; others: { id: string; name: string }[] }) {
   const supabase = await createClient();
-  const [{ data: c }, { data: hist }, { data: links }, { data: contactRows }, { data: consentRows }] = await Promise.all([
+  const [{ data: c }, { data: hist }, { data: links }, { data: contactRows }, { data: consentRows }, { data: healthData }] = await Promise.all([
     supabase
       .from("customers")
       .select(
@@ -201,7 +201,9 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
     supabase.from("customer_links").select("customer_id, linked_customer_id").or(`customer_id.eq.${id},linked_customer_id.eq.${id}`),
     supabase.from("customer_contacts").select("id, channel, memo, created_at, profiles(name)").eq("customer_id", id).order("created_at", { ascending: false }).limit(20),
     supabase.from("customer_consent_state").select("kind, granted, subject, method, created_at, valid, needs_recheck").eq("customer_id", id),
+    supabase.from("health_warnings").select("terms, created_at").eq("customer_id", id).order("created_at", { ascending: false }).limit(5),
   ]);
+  const healthRows = (healthData ?? []) as { terms: string[]; created_at: string }[];
   const consents = new Map(((consentRows ?? []) as ConsentState[]).map((r) => [r.kind, r]));
   const contacts = (contactRows ?? []) as unknown as Contact[];
   if (!c) return <p className="rounded-[14px] border border-line bg-white p-5 text-sm text-ink-muted">손님을 찾을 수 없습니다.</p>;
@@ -303,6 +305,11 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
         </ul>
         <ConsentLink id={cust.id} minor={minor} />
       </div>
+      {healthRows.length > 0 && (
+        <p role="alert" className="rounded-[14px] border border-[#F3D4A8] bg-[#FFF1E0] p-4 text-sm text-[#7A3E06]">
+          메모에 건강 정보로 보이는 단어가 있었습니다 ({[...new Set(healthRows.flatMap((h) => h.terms))].join(", ")}). 건강 정보는 받지 않는 것이 원칙입니다. 꼭 필요한 내용이 아니면 샵 메모에서 지워 주세요.
+        </p>
+      )}
       {cust.memo && <p className="rounded-[14px] border border-line bg-white p-4 text-sm whitespace-pre-wrap">샵 메모 · {cust.memo}</p>}
 
       <div className="rounded-[14px] border border-line bg-white p-5">
@@ -335,7 +342,7 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
       <div className="rounded-[14px] border border-line bg-white p-5">
         <h3 className="text-base font-bold">연락 기록</h3>
         <div className="mt-3">
-          <ContactForm key={cust.next_contact_on ?? "none"} id={cust.id} nextOn={cust.next_contact_on} nextNote={cust.next_contact_note} />
+          <ContactForm id={cust.id} nextOn={cust.next_contact_on} nextNote={cust.next_contact_note} />
         </div>
         {contacts.length === 0 ? (
           <p className="mt-3 text-sm text-ink-muted">아직 연락 기록이 없습니다.</p>

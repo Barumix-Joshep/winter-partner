@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { saveCustomer, type CustomerFormState } from "./actions";
 import { CollectionNotice } from "@/components/collection-notice";
+import { HEALTH_HINT } from "@/lib/privacy/health";
 
 export type CustomerValues = {
   id?: string;
@@ -76,12 +77,16 @@ export function CustomerForm({ values }: { values: CustomerValues }) {
         </label>
       </div>
       <label className={field}>
-        샵 메모 <span>(샵만 봅니다)</span>
+        샵 메모 <span>(샵만 봅니다. {HEALTH_HINT})</span>
         <textarea name="memo" rows={3} maxLength={2000} defaultValue={v("memo", values.memo ?? "")} className={`${input} py-2`} />
         {err(e.memo)}
       </label>
       <CollectionNotice />
-      {state?.message && <p className={`text-sm ${state.ok ? "text-brand" : "text-danger"}`}>{state.message}</p>}
+      {state?.message && (
+        <p role={state.ok ? "status" : "alert"} className={`text-sm ${state.ok ? "text-brand" : "text-danger"}`}>
+          {state.message}
+        </p>
+      )}
       <button disabled={pending} className="min-h-11 self-end rounded-[10px] bg-brand px-5 text-sm font-medium text-white disabled:opacity-60">
         {pending ? "저장 중…" : values.id ? "저장" : "손님 등록"}
       </button>

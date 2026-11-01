@@ -4,6 +4,7 @@ import { noticeMessage, withNotice } from "./notice";
 describe("noticeMessage", () => {
   it("완료 보고·수락·취소 안내", () => {
     expect(noticeMessage("reported")).toBe("완료 보고했습니다. 샵이 승인하면 정산에 들어갑니다.");
+    expect(noticeMessage("reported-health")).toContain("건강 정보");
     expect(noticeMessage("accepted")).toBe("의뢰를 수락했습니다. 일정에서 확인할 수 있습니다.");
     expect(noticeMessage("canceled-1")).toBe("취소했습니다. 패널티 1점이 기록됐습니다.");
     expect(noticeMessage("canceled-3")).toBe("취소했습니다. 패널티 3점이 기록됐습니다.");

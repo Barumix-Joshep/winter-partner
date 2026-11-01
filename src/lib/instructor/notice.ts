@@ -1,11 +1,13 @@
 // 강사 화면의 한 번 띄우는 안내 (?notice=…). 처리한 카드가 목록에서 빠져도 결과를 알려 준다.
 // 정해진 값만 문구로 바꾼다 (주소로 임의 문구를 띄울 수 없게).
-export type Notice = "reported" | "accepted" | "canceled-1" | "canceled-3";
+export type Notice = "reported" | "reported-health" | "accepted" | "canceled-1" | "canceled-3";
 
 export function noticeMessage(v: string | null | undefined): string | null {
   switch (v) {
     case "reported":
       return "완료 보고했습니다. 샵이 승인하면 정산에 들어갑니다.";
+    case "reported-health":
+      return "완료 보고했습니다. 노트에 건강 정보로 보이는 단어가 있어 기록해 두었습니다. 부상·질환은 노트에 적지 말고 샵에 직접 알려 주세요.";
     case "accepted":
       return "의뢰를 수락했습니다. 일정에서 확인할 수 있습니다.";
     case "canceled-1":

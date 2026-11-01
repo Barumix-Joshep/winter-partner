@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { logContact, type CustomerFormState } from "./actions";
 import { CONTACT_CHANNELS } from "@/lib/customer/contact";
+import { HEALTH_HINT } from "@/lib/privacy/health";
 
 const field = "flex flex-col gap-1.5 text-xs text-ink-muted";
 const input = "min-h-11 rounded-lg border border-[#CBD3E1] bg-white px-3 text-sm text-ink";
@@ -26,7 +27,8 @@ export function ContactForm({ id, nextOn, nextNote }: { id: string; nextOn: stri
         </label>
         <label className={field}>
           내용
-          <input name="memo" maxLength={500} placeholder="시즌 오픈 안내, 12월 둘째 주 예약 희망" className={input} />
+          <input name="memo" maxLength={500} placeholder="시즌 오픈 안내, 12월 둘째 주 예약 희망" aria-describedby="contact-health" className={input} />
+          <span id="contact-health">{HEALTH_HINT}</span>
         </label>
         <label className={field}>
           다음 연락일
