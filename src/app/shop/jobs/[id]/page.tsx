@@ -7,6 +7,8 @@ import { getMyShop } from "@/lib/shop/my-shop";
 import { formatLessonTime, jobStatusLabel } from "@/lib/shop/job-status";
 import { LESSON_TYPES, PATCH_PAID_BY, type LessonType, type PatchPaidBy } from "@/lib/shop/job";
 import { sendOffer } from "./actions";
+import { PublishForm } from "./publish-form";
+import { defaultBidClose, kstLocalInput } from "@/lib/shop/bid";
 
 export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
   return (
@@ -32,7 +34,7 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
   const { data: job } = await supabase
     .from("jobs")
     .select(
-      "id, shop_id, resort_id, sport_id, starts_at, ends_at, status, assign_mode, lesson_type, student_count, instructor_rate, patch_paid_by, note, sports(name), resorts(name), job_prices(customer_price), job_customers(customers(name, phone, level)), job_offers(id, status, expires_at, responded_at, instructors(profiles(name))), assignments(final_rate, instructors(profiles(name)))",
+      "id, shop_id, resort_id, sport_id, starts_at, ends_at, status, assign_mode, lesson_type, student_count, instructor_rate, patch_paid_by, note, sports(name), resorts(name), job_prices(customer_price), job_customers(customers(name, phone, level)), bid_closes_at, allow_team_bids, job_offers(id, status, expires_at, responded_at, instructors(profiles(name))), assignments(final_rate, instructors(profiles(name))), bids(id, amount, memo, status, created_at, bidder_type, instructors(profiles(name)), shops!bids_bidder_shop_id_fkey(name))",
     )
     .eq("id", id)
     .eq("shop_id", shop.id)
@@ -58,6 +60,17 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
     job_customers: { customers: { name: string; phone: string | null; level: string | null } | null }[];
     job_offers: { id: string; status: string; expires_at: string | null; instructors: { profiles: { name: string } | null } | null }[];
     assignments: { final_rate: number; instructors: { profiles: { name: string } | null } | null } | null;
+    bid_closes_at: string | null;
+    allow_team_bids: boolean;
+    bids: {
+      id: string;
+      amount: number;
+      memo: string | null;
+      status: string;
+      bidder_type: string;
+      instructors: { profiles: { name: string } | null } | null;
+      shops: { name: string } | null;
+    }[];
   };
   const s = jobStatusLabel(j);
   const canOffer = j.status === "draft" || (j.status === "open" && j.assign_mode === "direct");
@@ -119,6 +132,17 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
         </section>
       )}
 
+      {j.assign_mode === "bid" && j.status !== "draft" && <Bids job={j} />}
+
+      {j.status === "draft" && (
+        <section>
+          <h2 className="text-base font-bold">입찰 공고</h2>
+          <div className="mt-2">
+            <PublishForm jobId={j.id} defaultClose={defaultBidClose(j.starts_at)} ceiling={j.instructor_rate} />
+          </div>
+        </section>
+      )}
+
       {canOffer && (
         <Candidates shopId={shop.id} job={j} />
       )}
@@ -174,6 +198,48 @@ async function Candidates({ shopId, job }: { shopId: string; job: { id: string; 
                   의뢰 보내기
                 </button>
               </form>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+type BidJob = {
+  bid_closes_at: string | null;
+  allow_team_bids: boolean;
+  instructor_rate: number | null;
+  bids: { id: string; amount: number; memo: string | null; status: string; bidder_type: string; instructors: { profiles: { name: string } | null } | null; shops: { name: string } | null }[];
+};
+
+// 받은 입찰 (선정·금액 조정은 P4-4)
+function Bids({ job }: { job: BidJob }) {
+  const open = job.bids.filter((b) => b.status === "open").sort((a, b) => a.amount - b.amount);
+  return (
+    <section className="rounded-[14px] border border-line bg-white p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-base font-bold">입찰 현황</h2>
+        <span className="rounded-full bg-[#FFF1E0] px-2.5 py-1 text-xs font-medium text-[#B4560A]">입찰 {open.length}건</span>
+      </div>
+      <p className="mt-1 text-xs text-ink-muted">
+        상한 {job.instructor_rate?.toLocaleString("ko-KR")}원
+        {job.bid_closes_at ? ` · 마감 ${kstLocalInput(job.bid_closes_at).replace("T", " ")}` : ""}
+        {job.allow_team_bids ? " · 강습팀 입찰 허용" : ""}
+      </p>
+      {open.length === 0 ? (
+        <p className="mt-3 text-sm text-ink-muted">아직 입찰이 없습니다.</p>
+      ) : (
+        <ul className="mt-3 flex flex-col gap-2">
+          {open.map((b) => (
+            <li key={b.id} className="flex items-center gap-3 rounded-[10px] border border-[#EEF1F6] p-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold">
+                  {b.bidder_type === "shop" ? `${b.shops?.name ?? "강습팀"} (팀)` : b.instructors?.profiles?.name}
+                </p>
+                {b.memo && <p className="mt-0.5 text-xs text-[#35466A]">{b.memo}</p>}
+              </div>
+              <p className="text-base font-bold">{b.amount.toLocaleString("ko-KR")}원</p>
             </li>
           ))}
         </ul>

@@ -14,6 +14,11 @@ const NAV: Partial<Record<Area, { href: string; label: string }[]>> = {
     { href: "/shop/jobs", label: "강습 등록·입찰" },
     { href: "/shop/team", label: "전속 강사" },
   ],
+  instructor: [
+    { href: "/instructor", label: "홈" },
+    { href: "/instructor/bids", label: "공고" },
+    { href: "/instructor/profile", label: "프로필" },
+  ],
 };
 
 // 구역 레이아웃: 역할 가드 + 상단 바. 세션을 읽으므로 Suspense 안에 둔다.
