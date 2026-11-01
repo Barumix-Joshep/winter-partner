@@ -355,9 +355,9 @@
   "id": "P12-4",
   "phase": "12 운영 준비",
   "title": "운영 사이트 읽기 전용 점검 스크립트",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-09",
-  "note": ""
+  "note": "npm run check:prod [주소] (scripts/check-prod.mjs): GET만, 15개 항목 — 주요 페이지 200·로그인 화면·약관 본문·PWA manifest와 아이콘·서비스 워커·크론 401(비밀값 없음/틀림)·보호 화면은 로그인으로 이동하고 연락처 없음·정산서 PDF 401. 운영 15/15 통과 (11/2)"
  },
  {
   "id": "P12-5",
