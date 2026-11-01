@@ -259,9 +259,9 @@
   "id": "P9-1",
   "phase": "9 배포",
   "title": "Vercel 배포와 도메인",
-  "status": "blocked",
+  "status": "done",
   "due": "2026-11-26",
-  "note": "Vercel 계정·프로젝트 연결과 도메인은 외부 계정 결정이라 확인 필요. 배포 때 환경변수: NEXT_PUBLIC_SUPABASE_URL·ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, CRON_SECRET. Supabase Auth URL 설정(사이트 주소·/auth/confirm)도 함께"
+  "note": "배포 완료 https://winter-partner.vercel.app (Vercel 팀 barumix-default, 함수 리전 icn1, GitHub main push 시 자동 배포). production 환경변수 7개 등록(.env.local 값, VAPID_SUBJECT=mailto:joshep.koh@barumix.com, CRON_SECRET 새로 생성·Vercel에만 저장). 고친 것: prepare 스크립트가 git 없는 빌드에서 실패 → git 저장소에서만 실행, 기존 NEXT_PUBLIC_SUPABASE_URL(production) 값이 URL이 아니어서 .env.local 값으로 교체. /, /login, /terms, /privacy, /offline 200 확인, /api/notify/dispatch는 비밀값 없이 401. 크론은 하루 1번(09:00 KST). 사장님이 Supabase 대시보드 Authentication → URL Configuration에 넣을 값: Site URL = https://winter-partner.vercel.app, Redirect URLs = https://winter-partner.vercel.app/auth/confirm (로컬 개발용으로 http://localhost:3000/auth/confirm 도 추가 권장). 남은 것: Preview 환경의 NEXT_PUBLIC_SUPABASE_URL도 옛 값이라 미리보기 배포는 500 (production만 승인 범위라 그대로 둠), 실제 휴대폰 PWA 설치·푸시·PDF 확인 (11/2)"
  },
  {
   "id": "P9-2",
@@ -315,9 +315,9 @@
   "id": "P11-4",
   "phase": "11 검증·마무리",
   "title": "원격 Supabase 마이그레이션 적용 확인 (migration list --linked, 미적용 시 적용 전 확인 받기)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-04",
-  "note": ""
+  "note": "npx supabase migration list --linked: 로컬 22개 모두 원격 적용됨, 빠진 것 없음 (11/2)"
  },
  {
   "id": "P11-5",
