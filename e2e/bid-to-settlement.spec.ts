@@ -51,6 +51,7 @@ test("입찰부터 정산서 PDF까지", async ({ browser }) => {
   // 보고하면 '완료 보고 필요' 목록에서 빠지고 오늘 강습에 '승인 필요'로 보인다
   await expect(kim.getByRole("button", { name: "완료 보고하기" })).toHaveCount(0);
   await expect(kim.getByText("승인 필요")).toBeVisible();
+  await expect(kim.getByRole("status")).toContainText("완료 보고했습니다. 샵이 승인하면 정산에 들어갑니다.");
 
   // 샵 승인
   await shop.goto(`/shop/jobs/${jobId}`);

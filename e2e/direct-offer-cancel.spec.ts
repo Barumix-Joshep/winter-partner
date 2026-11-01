@@ -18,6 +18,7 @@ async function offerAndAccept(browser: import("@playwright/test").Browser, date:
   const offer = park.locator("section").filter({ hasText: note }).filter({ has: park.getByRole("button", { name: "수락" }) });
   await expect(offer).not.toContainText("010-0000-3001"); // 강사는 연락처를 못 본다
   await offer.getByRole("button", { name: "수락" }).click();
+  await expect(park.getByRole("status")).toContainText("의뢰를 수락했습니다");
   await shop.reload();
   await expect(shop.getByText("배정: 박스키")).toBeVisible();
   return { shop, park, jobId };
@@ -53,6 +54,7 @@ test("강사 일방 취소: 배정 해제, 패널티 기록", async ({ browser }
   await expect(lesson).toContainText("패널티 1점");
   await lesson.getByPlaceholder("사유").fill("부상");
   await lesson.getByRole("button", { name: "취소 확정" }).click();
+  await expect(park.getByRole("status")).toContainText("취소했습니다. 패널티 1점이 기록됐습니다.");
   await expect(park.getByText("이번 주 확정 강습").locator("..")).toContainText("없습니다.");
 
   const db = admin();

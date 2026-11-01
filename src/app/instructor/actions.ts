@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { notifyAfterResponse } from "@/lib/notify/dispatch";
 import { requireArea } from "@/lib/auth/session";
+import { withNotice } from "@/lib/instructor/notice";
 
 // 전속 제안 수락은 함수로 (전속 등록·진행 중 입찰 철회·다른 제안 거절을 한 번에)
 export async function acceptInvite(formData: FormData) {
@@ -46,6 +48,8 @@ export async function respondOffer(_prev: { message?: string } | undefined, form
   if (error) {
     return { message: error.message.includes("같은 시간") ? "같은 시간에 다른 강습이 있어 수락할 수 없습니다." : "이미 끝났거나 응답할 수 없는 의뢰입니다." };
   }
+  // 카드가 목록에서 빠지므로 결과는 페이지 안내로 (먼 날짜 강습은 홈에 안 보인다)
+  if (formData.get("decision") === "accept") redirect(withNotice("/instructor", "accepted"));
   return {};
 }
 
@@ -59,7 +63,8 @@ export async function completeLesson(_prev: { ok?: boolean; message?: string } |
     p_note: String(formData.get("note") ?? "").slice(0, 1000),
   });
   revalidatePath("/instructor");
-  return error ? { message: "보고하지 못했습니다. 새로고침 후 다시 시도해 주세요." } : { ok: true };
+  if (error) return { message: "보고하지 못했습니다. 새로고침 후 다시 시도해 주세요." };
+  redirect(withNotice("/instructor", "reported"));
 }
 
 // 강사 일방 취소 (패널티). 강습은 샵으로 돌아간다.
@@ -73,5 +78,6 @@ export async function cancelMyLesson(_prev: { ok?: boolean; message?: string } |
   });
   revalidatePath("/instructor");
   revalidatePath("/instructor/schedule");
-  return error ? { message: "취소하지 못했습니다. 완료 보고한 강습은 취소할 수 없습니다." } : { ok: true, message: `취소했습니다. 패널티 ${data}점이 기록됐습니다.` };
+  if (error) return { message: "취소하지 못했습니다. 완료 보고한 강습은 취소할 수 없습니다." };
+  redirect(withNotice(String(formData.get("back") ?? ""), data === 3 ? "canceled-3" : "canceled-1"));
 }

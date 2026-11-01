@@ -5,7 +5,6 @@ import { completeLesson } from "./actions";
 
 export function ReportForm({ jobId }: { jobId: string }) {
   const [state, action, pending] = useActionState(completeLesson, undefined);
-  if (state?.ok) return <p className="mt-2 text-sm text-brand">보고했습니다. 샵이 승인하면 정산에 들어갑니다.</p>;
   return (
     <form action={action} className="mt-3 flex flex-col gap-2">
       <input type="hidden" name="job_id" value={jobId} />
