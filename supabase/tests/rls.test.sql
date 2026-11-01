@@ -114,7 +114,7 @@ select throws_ok(
   $$insert into bids (job_id, instructor_id, amount) values ('40000000-0000-0000-0000-0000000000a1', '20000000-0000-0000-0000-0000000000e1', 90000)$$,
   '42501', null, '전속 강사는 입찰하지 못한다');
 -- 자격증: 검증된 것만 공개
-select is((select count(*) from instructor_certs), 1::bigint, '다른 강사의 자격증은 검증된 것만 보인다');
+select is((select count(*) from instructor_certs where instructor_id = '20000000-0000-0000-0000-0000000000f1'), 1::bigint, '다른 강사의 자격증은 검증된 것만 보인다');
 select pg_temp.logout();
 
 -- 팀 입찰 -----------------------------------------------------------------

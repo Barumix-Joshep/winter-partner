@@ -59,9 +59,9 @@
   "id": "P1-3",
   "phase": "1 데이터 모델",
   "title": "시드 데이터 (스키장 13곳, 샘플 샵·강사)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-11-04",
-  "note": ""
+  "note": "supabase/seed.sql (로컬 db reset 전용, 비번 winter1234): 샵2·팀1·강사4(전속1)·손님3·강습3. 원격에는 넣지 않음 (11/1)"
  },
  {
   "id": "P2-1",
