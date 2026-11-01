@@ -22,7 +22,7 @@ export default function InstructorHome() {
 async function Home() {
   const user = await requireArea("instructor");
   const [id, profile] = await Promise.all([getMyInstructorId(user.id), getMyInstructorProfile(user.id)]);
-  const now = requestTime();
+  const now = await requestTime();
   const incomplete = !profile || profile.sportIds.length === 0 || profile.resortIds.length === 0;
   return (
     <>

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { notifyAfterResponse } from "@/lib/notify/dispatch";
 import { requireArea } from "@/lib/auth/session";
 import { getMyShop } from "@/lib/shop/my-shop";
 
@@ -30,6 +31,7 @@ export async function issue(formData: FormData) {
 // 지급 완료 체크·취소 (송금은 직접 하고 여기서는 표시만)
 export async function setPaid(formData: FormData) {
   await requireArea("shop");
+  notifyAfterResponse(); // 이 작업이 쌓는 알림을 응답 뒤에 보낸다
   const supabase = await createClient();
   await supabase.rpc("set_settlement_paid", {
     p_settlement_id: String(formData.get("id") ?? ""),

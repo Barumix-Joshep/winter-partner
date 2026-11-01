@@ -46,7 +46,7 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
   const q = one(sp.q).trim();
   const selectedId = one(sp.id);
   const isNew = one(sp.new) === "1";
-  const today = todayKst(requestTime());
+  const today = todayKst(await requestTime());
 
   const supabase = await createClient();
   let list = supabase

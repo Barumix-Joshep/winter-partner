@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { notifyAfterResponse } from "@/lib/notify/dispatch";
 import { requireArea } from "@/lib/auth/session";
 
 // 전속 제안 수락은 함수로 (전속 등록·진행 중 입찰 철회·다른 제안 거절을 한 번에)
@@ -35,6 +36,7 @@ export async function leaveExclusive() {
 // 직접 의뢰 응답. respond_job_offer가 본인·만료·시간 충돌을 확인하고 배정을 만든다.
 export async function respondOffer(_prev: { message?: string } | undefined, formData: FormData) {
   await requireArea("instructor");
+  notifyAfterResponse(); // 이 작업이 쌓는 알림을 응답 뒤에 보낸다
   const supabase = await createClient();
   const { error } = await supabase.rpc("respond_job_offer", {
     p_offer_id: String(formData.get("id") ?? ""),
@@ -50,6 +52,7 @@ export async function respondOffer(_prev: { message?: string } | undefined, form
 // 완료 보고와 강습 노트
 export async function completeLesson(_prev: { ok?: boolean; message?: string } | undefined, formData: FormData) {
   await requireArea("instructor");
+  notifyAfterResponse(); // 이 작업이 쌓는 알림을 응답 뒤에 보낸다
   const supabase = await createClient();
   const { error } = await supabase.rpc("complete_lesson", {
     p_job_id: String(formData.get("job_id") ?? ""),
@@ -62,6 +65,7 @@ export async function completeLesson(_prev: { ok?: boolean; message?: string } |
 // 강사 일방 취소 (패널티). 강습은 샵으로 돌아간다.
 export async function cancelMyLesson(_prev: { ok?: boolean; message?: string } | undefined, formData: FormData) {
   await requireArea("instructor");
+  notifyAfterResponse(); // 이 작업이 쌓는 알림을 응답 뒤에 보낸다
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("instructor_cancel", {
     p_job_id: String(formData.get("job_id") ?? ""),

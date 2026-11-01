@@ -49,7 +49,7 @@ async function Pay({ searchParams }: { searchParams: SearchParams }) {
   const user = await requireArea("instructor");
   const me = await getMyInstructorId(user.id);
   const q = (await searchParams).month;
-  const month = typeof q === "string" && /^\d{4}-\d{2}$/.test(q) ? q : todayKst(requestTime()).slice(0, 7);
+  const month = typeof q === "string" && /^\d{4}-\d{2}$/.test(q) ? q : todayKst(await requestTime()).slice(0, 7);
   const win = monthWindowKst(`${month}-01`);
 
   const supabase = await createClient();

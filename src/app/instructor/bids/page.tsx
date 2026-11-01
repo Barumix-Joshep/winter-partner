@@ -42,7 +42,7 @@ async function OpenBids() {
   const user = await requireArea("instructor");
   const me = await getMyInstructorId(user.id);
   const supabase = await createClient();
-  const now = new Date(requestTime()).toISOString();
+  const now = new Date(await requestTime()).toISOString();
   const [{ data: exclusive }, { data: myResorts }, { data: jobs }, { data: myBids }] = await Promise.all([
     supabase.from("shop_instructors").select("shop_id").eq("instructor_id", me ?? "").maybeSingle(),
     supabase.from("instructor_resorts").select("resort_id").eq("instructor_id", me ?? ""),

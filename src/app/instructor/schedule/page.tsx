@@ -27,7 +27,7 @@ const shift = (week: string, days: number) => new Date(new Date(`${week}T00:00:0
 async function Schedule({ searchParams }: { searchParams: SearchParams }) {
   const user = await requireArea("instructor");
   const me = await getMyInstructorId(user.id);
-  const today = todayKst(requestTime());
+  const today = todayKst(await requestTime());
   const q = (await searchParams).week;
   const raw = typeof q === "string" && /^\d{4}-\d{2}-\d{2}$/.test(q) ? q : today;
   const week = weekStartOf(raw);
@@ -45,7 +45,7 @@ async function Schedule({ searchParams }: { searchParams: SearchParams }) {
       .lt("jobs.starts_at", win.to)
       .gt("jobs.ends_at", win.from),
   ]);
-  const now = requestTime();
+  const now = await requestTime();
   const jobs = ((lessons ?? []) as unknown as { jobs: { id: string; starts_at: string; ends_at: string; status: string; sports: { name: string } | null; shops: { name: string } | null } }[])
     .map((l) => l.jobs)
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at));

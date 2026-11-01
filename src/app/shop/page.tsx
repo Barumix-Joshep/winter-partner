@@ -44,7 +44,7 @@ async function Today({ searchParams }: { searchParams: SearchParams }) {
   const shop = await getMyShop(user.id);
   if (!shop) redirect("/shop/new");
 
-  const now = requestTime();
+  const now = await requestTime();
   const today = todayKst(now);
   const q = (await searchParams).date;
   const date = typeof q === "string" && /^\d{4}-\d{2}-\d{2}$/.test(q) ? q : today;

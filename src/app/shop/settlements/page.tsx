@@ -58,7 +58,7 @@ async function Settlements({ searchParams }: { searchParams: SearchParams }) {
   const shop = await getMyShop(user.id);
   if (!shop) redirect("/shop/new");
   const q = (await searchParams).month;
-  const month = typeof q === "string" && /^\d{4}-\d{2}$/.test(q) ? q : todayKst(requestTime()).slice(0, 7);
+  const month = typeof q === "string" && /^\d{4}-\d{2}$/.test(q) ? q : todayKst(await requestTime()).slice(0, 7);
 
   const supabase = await createClient();
   const { data } = await supabase

@@ -251,9 +251,9 @@
   "id": "P8-2",
   "phase": "8 알림",
   "title": "알림 발송 (의뢰·선정·취소·정산)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-11-25",
-  "note": "알림톡 승인 전에는 웹푸시로"
+  "note": "웹푸시: push_subscriptions, public/sw.js, 알림 켜기(/notifications), claim_notifications(service_role만)로 응답 뒤 발송(after) + /api/notify/dispatch 재발송(CRON_SECRET). 의뢰·수락/거절·입찰·선정/탈락·완료 보고·승인·취소·지급 완료. 앱 알림 목록·읽지 않음 표시. VAPID 키는 .env.local(배포 시 Vercel 환경변수 필요) (11/2)"
  },
  {
   "id": "P9-1",

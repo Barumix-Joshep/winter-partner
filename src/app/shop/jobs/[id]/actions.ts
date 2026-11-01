@@ -2,12 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { notifyAfterResponse } from "@/lib/notify/dispatch";
 import { requireArea } from "@/lib/auth/session";
 import { parseKstLocal } from "@/lib/shop/bid";
 
 // 직접 의뢰 보내기. send_job_offer가 샵 멤버·상태·지급액·다른 샵 전속 여부를 확인한다.
 export async function sendOffer(formData: FormData) {
   await requireArea("shop");
+  notifyAfterResponse(); // 이 작업이 쌓는 알림을 응답 뒤에 보낸다
   const jobId = String(formData.get("job_id") ?? "");
   const supabase = await createClient();
   await supabase.rpc("send_job_offer", { p_job_id: jobId, p_instructor_id: String(formData.get("instructor_id") ?? "") });
@@ -36,6 +38,7 @@ export async function publishBid(_prev: { message?: string } | undefined, formDa
 // 입찰 선정 (금액 조정 가능). select_bid가 권한·상태·시간 겹침을 확인한다.
 export async function selectBid(_prev: { message?: string } | undefined, formData: FormData) {
   await requireArea("shop");
+  notifyAfterResponse(); // 이 작업이 쌓는 알림을 응답 뒤에 보낸다
   const jobId = String(formData.get("job_id") ?? "");
   const raw = String(formData.get("final_rate") ?? "").replace(/,/g, "").trim();
   if (!/^\d+$/.test(raw) || Number(raw) <= 0) return { message: "확정 금액을 숫자로 입력해 주세요." };
@@ -61,6 +64,7 @@ export async function unpublishBid(formData: FormData) {
 // 완료 보고 승인 (평가 선택)
 export async function approveLesson(_prev: { message?: string } | undefined, formData: FormData) {
   await requireArea("shop");
+  notifyAfterResponse(); // 이 작업이 쌓는 알림을 응답 뒤에 보낸다
   const jobId = String(formData.get("job_id") ?? "");
   const raw = String(formData.get("score") ?? "");
   const supabase = await createClient();
@@ -78,6 +82,7 @@ export async function approveLesson(_prev: { message?: string } | undefined, for
 // 손님 취소·샵 사정 취소. 배정 강사에게 바로 알림이 가고, 정산에서 빠진다.
 export async function cancelJob(_prev: { message?: string } | undefined, formData: FormData) {
   await requireArea("shop");
+  notifyAfterResponse(); // 이 작업이 쌓는 알림을 응답 뒤에 보낸다
   const jobId = String(formData.get("job_id") ?? "");
   const by = formData.get("by") === "shop" ? "shop" : "customer";
   const supabase = await createClient();

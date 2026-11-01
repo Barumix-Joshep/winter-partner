@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { notifyAfterResponse } from "@/lib/notify/dispatch";
 import { requireArea } from "@/lib/auth/session";
 import { parseBidAmount } from "@/lib/shop/bid";
 
@@ -10,6 +11,7 @@ export type BidState = { ok?: boolean; message?: string };
 // 금액 제시. place_bid가 전속·마감·상한·시간 겹침을 다시 확인한다.
 export async function placeBid(_prev: BidState | undefined, formData: FormData): Promise<BidState> {
   await requireArea("instructor");
+  notifyAfterResponse(); // 이 작업이 쌓는 알림을 응답 뒤에 보낸다
   const jobId = String(formData.get("job_id") ?? "");
   const amount = parseBidAmount(String(formData.get("amount") ?? ""), Number(formData.get("ceiling") ?? 0));
   if (!amount.ok) return { message: amount.message };
