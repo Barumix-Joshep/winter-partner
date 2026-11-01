@@ -333,7 +333,7 @@
   "title": "첫 플랫폼 관리자 지정 방법 (DB 관리자만 실행, 실행 전 확인)",
   "status": "blocked",
   "due": "2026-12-06",
-  "note": "준비 완료, 실행 전 사장님 확인 대기: 마이그레이션 *_platform_admin_grant.sql(private.grant_platform_admin(email): 인증된 가입 계정만, 강사·샵 연결 계정 거부, anon·authenticated·service_role 실행 권한 회수, 이메일은 저장소에 없음), pgTAP 8개 통과. 원격에는 아직 적용하지 않음. 확인 후: db push → SQL Editor에서 select private.grant_platform_admin('<이메일>') (11/2)"
+  "note": "준비 완료, 실행 전 사장님 확인 대기: 마이그레이션 20261101235900_platform_admin_grant.sql(private.grant_platform_admin(email): 인증된 가입 계정만, 강사·샵 연결 계정 거부, anon·authenticated·service_role 실행 권한 회수, 이메일은 저장소에 없음), pgTAP 8개 통과. 원격에는 아직 적용하지 않음. 확인 후: db push → SQL Editor에서 select private.grant_platform_admin('<이메일>') (11/2)"
  },
  {
   "id": "P12-2",
@@ -363,8 +363,8 @@
   "id": "P12-5",
   "phase": "12 운영 준비",
   "title": "손님 카드 다음 연락일·연락 기록 화면",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-10",
-  "note": ""
+  "note": "마이그레이션 customer_contacts(원격 적용): customers.next_contact_note, customer_contacts 테이블(샵 멤버만 조회·삭제, 강사 비공개), log_customer_contact(기록 + 다음 연락일·목적 갱신, 비우면 오늘 연락할 손님에서 빠짐). 손님 카드: 다음 연락 상자에 요일·목적·담당, 연락 기록 양식(전화·문자·방문·기타)과 최근 20건. pgTAP 10개(전체 263)·E2E 1개(전체 8) 통과 (11/2)"
  }
 ]

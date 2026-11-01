@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireArea } from "@/lib/auth/session";
 import { getMyShop } from "@/lib/shop/my-shop";
 import { parseCustomer } from "@/lib/customer/validate";
+import { parseContact } from "@/lib/customer/contact";
 
 export type CustomerFormState = { ok?: boolean; message?: string; errors?: Record<string, string | undefined> };
 
@@ -55,5 +56,31 @@ export async function unlinkCustomer(formData: FormData) {
   const b = String(formData.get("other") ?? "");
   const supabase = await createClient();
   await supabase.from("customer_links").delete().or(`and(customer_id.eq.${a},linked_customer_id.eq.${b}),and(customer_id.eq.${b},linked_customer_id.eq.${a})`);
+  revalidatePath("/shop/customers");
+}
+
+// 연락 기록 + 다음 연락일·목적 (log_customer_contact가 우리 샵 손님인지 다시 확인한다)
+export async function logContact(_prev: CustomerFormState | undefined, formData: FormData): Promise<CustomerFormState> {
+  await requireArea("shop");
+  const parsed = parseContact(formData);
+  if (!parsed.ok) return { message: parsed.message };
+  const id = String(formData.get("id") ?? "");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("log_customer_contact", {
+    p_customer_id: id,
+    p_channel: parsed.data.channel,
+    p_memo: parsed.data.memo,
+    p_next_on: parsed.data.nextOn,
+    p_next_note: parsed.data.nextNote,
+  });
+  revalidatePath("/shop/customers");
+  if (error) return { message: "기록하지 못했습니다. 새로고침 후 다시 시도해 주세요." };
+  return { ok: true, message: "연락을 기록했습니다." };
+}
+
+export async function deleteContact(formData: FormData) {
+  await requireArea("shop");
+  const supabase = await createClient();
+  await supabase.from("customer_contacts").delete().eq("id", String(formData.get("contact_id") ?? ""));
   revalidatePath("/shop/customers");
 }

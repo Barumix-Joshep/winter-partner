@@ -9,7 +9,9 @@ import { formatLessonTime } from "@/lib/shop/job-status";
 import { LESSON_TYPES, type LessonType } from "@/lib/shop/job";
 import { requestTime } from "@/lib/time";
 import { CustomerForm } from "./customer-form";
-import { linkCustomer, unlinkCustomer } from "./actions";
+import { deleteContact, linkCustomer, unlinkCustomer } from "./actions";
+import { ContactForm } from "./contact-form";
+import { CONTACT_CHANNELS, formatDay, type ContactChannel } from "@/lib/customer/contact";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -32,9 +34,13 @@ type Customer = {
   tags: string[];
   memo: string | null;
   next_contact_on: string | null;
+  next_contact_note: string | null;
   marketing_consent: boolean;
   privacy_consent_at: string | null;
+  owner: { name: string } | null;
 };
+
+type Contact = { id: string; channel: ContactChannel; memo: string | null; created_at: string; profiles: { name: string } | null };
 
 const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
 
@@ -146,10 +152,12 @@ type History = {
 
 async function Card({ shopId, id, others }: { shopId: string; id: string; others: { id: string; name: string }[] }) {
   const supabase = await createClient();
-  const [{ data: c }, { data: hist }, { data: links }] = await Promise.all([
+  const [{ data: c }, { data: hist }, { data: links }, { data: contactRows }] = await Promise.all([
     supabase
       .from("customers")
-      .select("id, name, phone, guardian_name, guardian_phone, level, equipment_size, tags, memo, next_contact_on, marketing_consent, privacy_consent_at")
+      .select(
+        "id, name, phone, guardian_name, guardian_phone, level, equipment_size, tags, memo, next_contact_on, next_contact_note, marketing_consent, privacy_consent_at, owner:profiles!customers_owner_user_id_fkey(name)",
+      )
       .eq("id", id)
       .eq("shop_id", shopId)
       .maybeSingle(),
@@ -158,9 +166,11 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
       .select("jobs(id, starts_at, ends_at, status, lesson_type, sports(name), resorts(name), job_prices(customer_price), assignments(lesson_note, instructors(profiles(name))))")
       .eq("customer_id", id),
     supabase.from("customer_links").select("customer_id, linked_customer_id").or(`customer_id.eq.${id},linked_customer_id.eq.${id}`),
+    supabase.from("customer_contacts").select("id, channel, memo, created_at, profiles(name)").eq("customer_id", id).order("created_at", { ascending: false }).limit(20),
   ]);
+  const contacts = (contactRows ?? []) as unknown as Contact[];
   if (!c) return <p className="rounded-[14px] border border-line bg-white p-5 text-sm text-ink-muted">손님을 찾을 수 없습니다.</p>;
-  const cust = c as Customer;
+  const cust = c as unknown as Customer;
   const history = ((hist ?? []) as unknown as History[])
     .map((h) => h.jobs)
     .filter((j): j is NonNullable<History["jobs"]> => !!j)
@@ -202,7 +212,12 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
       <div className="grid gap-3 sm:grid-cols-3">
         <Box label="현재 레벨" value={cust.level ?? "—"} />
         <Box label="장비 사이즈" value={cust.equipment_size ?? "—"} />
-        <Box label="다음 연락" value={cust.next_contact_on ?? "—"} warn={!!cust.next_contact_on} />
+        <Box
+          label="다음 연락"
+          value={cust.next_contact_on ? formatDay(cust.next_contact_on) : "—"}
+          sub={cust.next_contact_on ? [cust.next_contact_note, cust.owner?.name && `담당 ${cust.owner.name}`].filter(Boolean).join(" · ") : undefined}
+          warn={!!cust.next_contact_on}
+        />
       </div>
 
       {!cust.privacy_consent_at && (
@@ -237,6 +252,36 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
           </div>
         ))}
         <p className="pt-2 text-xs text-ink-muted">수업 메모는 강사가 완료 보고 때 남깁니다. 다른 강사가 맡아도 이어서 가르칠 수 있도록 여기 쌓입니다.</p>
+      </div>
+
+      <div className="rounded-[14px] border border-line bg-white p-5">
+        <h3 className="text-base font-bold">연락 기록</h3>
+        <div className="mt-3">
+          <ContactForm key={cust.next_contact_on ?? "none"} id={cust.id} nextOn={cust.next_contact_on} nextNote={cust.next_contact_note} />
+        </div>
+        {contacts.length === 0 ? (
+          <p className="mt-3 text-sm text-ink-muted">아직 연락 기록이 없습니다.</p>
+        ) : (
+          <ul className="mt-3">
+            {contacts.map((k) => (
+              <li key={k.id} className="flex items-start gap-3 border-t border-[#EEF1F6] py-2.5 text-sm">
+                <span className="w-24 shrink-0 text-xs text-ink-muted">
+                  {formatDay(new Date(Date.parse(k.created_at) + 9 * 3600_000).toISOString().slice(0, 10))} · {CONTACT_CHANNELS[k.channel]}
+                </span>
+                <span className="min-w-0 flex-1">
+                  {k.memo ?? "—"}
+                  {k.profiles?.name && <span className="text-xs text-ink-muted"> · {k.profiles.name}</span>}
+                </span>
+                <form action={deleteContact}>
+                  <input type="hidden" name="contact_id" value={k.id} />
+                  <button aria-label="이 연락 기록 지우기" className="min-h-11 min-w-11 text-ink-muted">
+                    ×
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <details className="rounded-[14px] border border-line bg-white p-5">
@@ -277,11 +322,12 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
   );
 }
 
-function Box({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+function Box({ label, value, sub, warn }: { label: string; value: string; sub?: string; warn?: boolean }) {
   return (
     <div className="rounded-xl border border-line bg-white p-4">
       <p className="text-xs text-ink-muted">{label}</p>
       <p className={`mt-1 text-base font-bold ${warn ? "text-[#B4560A]" : ""}`}>{value}</p>
+      {sub && <p className="text-xs text-ink-muted">{sub}</p>}
     </div>
   );
 }
