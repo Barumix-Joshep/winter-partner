@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { requireArea } from "@/lib/auth/session";
 import { getMyInstructorProfile, getReferenceData } from "@/lib/instructor/profile";
 import { ProfileForm } from "./profile-form";
+import { Certs } from "./certs";
 
 export default function ProfilePage() {
   return (
@@ -19,6 +20,7 @@ async function Profile() {
       <h1 className="text-lg font-bold">내 프로필</h1>
       <p className="mt-1 text-sm text-ink-muted">샵이 강사를 찾을 때 이 정보가 보입니다. 연락처는 보이지 않습니다.</p>
       <ProfileForm profile={profile} sports={ref.sports} resorts={ref.resorts} />
+      <Certs userId={user.id} />
     </div>
   );
 }
