@@ -8,7 +8,7 @@ import { todayKst } from "@/lib/instructor/schedule";
 import { formatLessonTime } from "@/lib/shop/job-status";
 import { LESSON_TYPES, type LessonType } from "@/lib/shop/job";
 import { requestTime } from "@/lib/time";
-import { generate, issue } from "./actions";
+import { generate, issue, setPaid } from "./actions";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -125,7 +125,21 @@ async function Settlements({ searchParams }: { searchParams: SearchParams }) {
                       <span className="text-sm text-ink-muted">원천세 {won(r.withholding)}</span>
                       <span className="text-sm font-bold">실지급 {won(r.net)}</span>
                     </summary>
-                    <div className="flex justify-end border-t border-[#EEF1F6] px-4 pt-2">
+                    <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[#EEF1F6] px-4 pt-2">
+                      {r.status !== "draft" && (
+                        <form action={setPaid}>
+                          <input type="hidden" name="id" value={r.id} />
+                          <input type="hidden" name="paid" value={r.status === "paid" ? "false" : "true"} />
+                          <button
+                            className={`min-h-11 rounded-[10px] px-4 text-sm font-medium ${
+                              r.status === "paid" ? "text-ink-muted" : "bg-[#1B6B3A] text-white"
+                            }`}
+                          >
+                            {r.status === "paid" ? "지급 완료 취소" : `${won(r.net)} 송금했어요 · 지급 완료`}
+                          </button>
+                        </form>
+                      )}
+                      {r.status === "draft" && <span className="text-xs text-ink-muted">발행하면 지급 완료로 표시할 수 있습니다</span>}
                       <a href={`/settlements/${r.id}/pdf`} className="flex min-h-11 items-center text-sm font-medium text-brand">
                         정산서 PDF
                       </a>

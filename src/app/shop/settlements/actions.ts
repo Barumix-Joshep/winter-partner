@@ -26,3 +26,14 @@ export async function issue(formData: FormData) {
   await supabase.from("settlements").update({ status: "issued" }).eq("shop_id", shop.id).eq("month", `${month}-01`).eq("status", "draft");
   revalidatePath("/shop/settlements");
 }
+
+// 지급 완료 체크·취소 (송금은 직접 하고 여기서는 표시만)
+export async function setPaid(formData: FormData) {
+  await requireArea("shop");
+  const supabase = await createClient();
+  await supabase.rpc("set_settlement_paid", {
+    p_settlement_id: String(formData.get("id") ?? ""),
+    p_paid: formData.get("paid") === "true",
+  });
+  revalidatePath("/shop/settlements");
+}
