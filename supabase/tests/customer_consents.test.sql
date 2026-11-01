@@ -1,7 +1,7 @@
 -- P13-1 손님 선택 동의 기록 (pgTAP)
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(18);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-0000000eee01', 'cs-shop@t', '{"role":"shop_admin","name":"동의샵"}'),
@@ -60,6 +60,9 @@ select is((select count(*)::int from customer_consents), 0, '다른 샵은 동�
 select throws_ok($$select record_staff_consent('d0000000-0000-0000-0000-0000000eee02', 'marketing', true)$$, '42501', null, '다른 샵 손님에 기록 불가');
 select pg_temp.login('00000000-0000-0000-0000-0000000eee03');
 select is((select count(*)::int from customer_consent_state), 0, '강사는 동의 상태를 못 본다');
+
+select throws_ok($$select * from private.app_settings$$, '42501', null, '설정 테이블은 로그인 사용자가 읽을 수 없다');
+select is(private.setting_int('consent_recheck_years'), 2, '설정값은 함수로 읽힌다');
 
 select * from finish();
 rollback;

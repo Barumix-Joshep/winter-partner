@@ -36,14 +36,16 @@ for (const f of files) {
   });
 }
 
-// 3. RLS: 마이그레이션에서 만든 public 테이블은 모두 RLS를 켜야 한다
+// 3. RLS: 마이그레이션에서 만든 테이블은 모두 RLS를 켜야 한다 (private 등 스키마가 붙은 이름은 스키마까지 본다)
 const migs = files.filter((f) => /^supabase\/migrations\/.*\.sql$/.test(f)).sort();
 const created = new Set(), rls = new Set(), dropped = new Set();
 for (const f of migs) {
   const sql = readFileSync(f, 'utf8').replace(/--.*$/gm, '');
-  for (const m of sql.matchAll(/create\s+table\s+(?:if\s+not\s+exists\s+)?(?:public\.)?("?)(\w+)\1/gi)) created.add(m[2].toLowerCase());
-  for (const m of sql.matchAll(/alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?(?:public\.)?("?)(\w+)\1\s+enable\s+row\s+level\s+security/gi)) rls.add(m[2].toLowerCase());
-  for (const m of sql.matchAll(/drop\s+table\s+(?:if\s+exists\s+)?(?:public\.)?("?)(\w+)\1/gi)) dropped.add(m[2].toLowerCase());
+  const NAME = String.raw`(?:public\.)?((?:\w+\.)?"?\w+"?)`;
+  const norm = (n) => n.replace(/"/g, '').toLowerCase();
+  for (const m of sql.matchAll(new RegExp(String.raw`create\s+table\s+(?:if\s+not\s+exists\s+)?` + NAME, 'gi'))) created.add(norm(m[1]));
+  for (const m of sql.matchAll(new RegExp(String.raw`alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?` + NAME + String.raw`\s+enable\s+row\s+level\s+security`, 'gi'))) rls.add(norm(m[1]));
+  for (const m of sql.matchAll(new RegExp(String.raw`drop\s+table\s+(?:if\s+exists\s+)?` + NAME, 'gi'))) dropped.add(norm(m[1]));
 }
 for (const t of created) if (!rls.has(t) && !dropped.has(t)) problems.push(`RLS가 꺼진 테이블: ${t} (alter table ${t} enable row level security 필요)`);
 
