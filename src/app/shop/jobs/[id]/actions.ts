@@ -32,3 +32,28 @@ export async function publishBid(_prev: { message?: string } | undefined, formDa
   revalidatePath("/shop/jobs");
   return {};
 }
+
+// 입찰 선정 (금액 조정 가능). select_bid가 권한·상태·시간 겹침을 확인한다.
+export async function selectBid(_prev: { message?: string } | undefined, formData: FormData) {
+  await requireArea("shop");
+  const jobId = String(formData.get("job_id") ?? "");
+  const raw = String(formData.get("final_rate") ?? "").replace(/,/g, "").trim();
+  if (!/^\d+$/.test(raw) || Number(raw) <= 0) return { message: "확정 금액을 숫자로 입력해 주세요." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("select_bid", { p_bid_id: String(formData.get("bid_id") ?? ""), p_final_rate: Number(raw) });
+  if (error) {
+    return { message: error.message.includes("같은 시간") ? "이 강사는 그 사이 같은 시간 강습이 확정됐습니다. 다른 입찰을 골라 주세요." : "선정하지 못했습니다. 새로고침 후 다시 시도해 주세요." };
+  }
+  revalidatePath(`/shop/jobs/${jobId}`);
+  revalidatePath("/shop/jobs");
+  return {};
+}
+
+export async function unpublishBid(formData: FormData) {
+  await requireArea("shop");
+  const jobId = String(formData.get("job_id") ?? "");
+  const supabase = await createClient();
+  await supabase.rpc("unpublish_bid_job", { p_job_id: jobId });
+  revalidatePath(`/shop/jobs/${jobId}`);
+  revalidatePath("/shop/jobs");
+}

@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyShop } from "@/lib/shop/my-shop";
 import { formatLessonTime, jobStatusLabel } from "@/lib/shop/job-status";
 import { LESSON_TYPES, PATCH_PAID_BY, type LessonType, type PatchPaidBy } from "@/lib/shop/job";
-import { sendOffer } from "./actions";
+import { sendOffer, unpublishBid } from "./actions";
+import { SelectBidForm } from "./select-bid-form";
 import { PublishForm } from "./publish-form";
 import { defaultBidClose, kstLocalInput } from "@/lib/shop/bid";
 
@@ -132,7 +133,7 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
         </section>
       )}
 
-      {j.assign_mode === "bid" && j.status !== "draft" && <Bids job={j} />}
+      {j.assign_mode === "bid" && j.status !== "draft" && <Bids job={j} jobId={j.id} selectable={j.status === "open"} />}
 
       {j.status === "draft" && (
         <section>
@@ -213,8 +214,8 @@ type BidJob = {
   bids: { id: string; amount: number; memo: string | null; status: string; bidder_type: string; instructors: { profiles: { name: string } | null } | null; shops: { name: string } | null }[];
 };
 
-// 받은 입찰 (선정·금액 조정은 P4-4)
-function Bids({ job }: { job: BidJob }) {
+// 받은 입찰. 선정할 때 금액을 조정할 수 있고, 확정 금액이 정산 기준이다.
+function Bids({ job, jobId, selectable }: { job: BidJob; jobId: string; selectable: boolean }) {
   const open = job.bids.filter((b) => b.status === "open").sort((a, b) => a.amount - b.amount);
   return (
     <section className="rounded-[14px] border border-line bg-white p-5">
@@ -240,9 +241,19 @@ function Bids({ job }: { job: BidJob }) {
                 {b.memo && <p className="mt-0.5 text-xs text-[#35466A]">{b.memo}</p>}
               </div>
               <p className="text-base font-bold">{b.amount.toLocaleString("ko-KR")}원</p>
+              {selectable && <SelectBidForm jobId={jobId} bidId={b.id} amount={b.amount} />}
             </li>
           ))}
         </ul>
+      )}
+      {selectable && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#EEF1F6] pt-3">
+          <p className="text-xs text-ink-muted">선정하면 나머지 입찰은 탈락 처리되고 강사에게 알림이 갑니다.</p>
+          <form action={unpublishBid}>
+            <input type="hidden" name="job_id" value={jobId} />
+            <button className="min-h-11 px-2 text-xs text-ink-muted">공고 내리기</button>
+          </form>
+        </div>
       )}
     </section>
   );
