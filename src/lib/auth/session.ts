@@ -9,6 +9,7 @@ export type CurrentUser = {
   name: string | null;
   role: Role | null; // null: 역할을 아직 고르지 않음 (OAuth 가입)
   hasShop: boolean; // 샵 멤버인가 (샵 관리자)
+  termsAgreed: boolean; // 이용약관·개인정보 처리방침 동의
 };
 
 // 로그인한 사용자. 없으면 /login으로 보낸다. 세션을 읽으므로 Suspense 안에서 부른다.
@@ -19,7 +20,7 @@ export async function getCurrentUser(): Promise<CurrentUser> {
   if (!claims?.sub) redirect("/login");
 
   const [{ data: profile }, { count }] = await Promise.all([
-    supabase.from("profiles").select("name, role").eq("id", claims.sub).maybeSingle(),
+    supabase.from("profiles").select("name, role, terms_agreed_at").eq("id", claims.sub).maybeSingle(),
     supabase.from("shop_members").select("shop_id", { count: "exact", head: true }).eq("user_id", claims.sub),
   ]);
   return {
@@ -28,6 +29,7 @@ export async function getCurrentUser(): Promise<CurrentUser> {
     name: profile?.name ?? null,
     role: profile?.role ?? null,
     hasShop: (count ?? 0) > 0,
+    termsAgreed: !!profile?.terms_agreed_at,
   };
 }
 

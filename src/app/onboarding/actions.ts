@@ -15,7 +15,10 @@ export async function chooseRole(_prev: FormState | undefined, formData: FormDat
   const uid = data?.claims?.sub;
   if (!uid) redirect("/login");
 
-  const { error } = await supabase.from("profiles").insert({ id: uid, role: parsed.data.role, name: parsed.data.name });
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("profiles")
+    .insert({ id: uid, role: parsed.data.role, name: parsed.data.name, terms_agreed_at: now, privacy_agreed_at: now });
   if (error) return { message: "저장하지 못했습니다. 잠시 후 다시 시도해 주세요." };
   if (parsed.data.role === "instructor") {
     const { error: e2 } = await supabase.from("instructors").insert({ user_id: uid });

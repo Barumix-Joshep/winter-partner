@@ -27,7 +27,7 @@ export type JobInput = {
   patchPaidBy: PatchPaidBy | null;
   note: string | null;
   customerId: string | null;
-  newCustomer: { name: string; phone: string | null; level: string | null } | null;
+  newCustomer: { name: string; phone: string | null; level: string | null; privacy_consent: boolean } | null;
 };
 
 type Field = "resortId" | "sportId" | "date" | "start" | "end" | "studentCount" | "customerPrice" | "instructorRate" | "customer";
@@ -87,7 +87,12 @@ export function parseJob(fd: FormData, shopResortIds: number[]): Result {
       customerId: customerId || null,
       newCustomer:
         !customerId && newName
-          ? { name: newName, phone: text(fd, "new_customer_phone") || null, level: text(fd, "new_customer_level") || null }
+          ? {
+              name: newName,
+              phone: text(fd, "new_customer_phone") || null,
+              level: text(fd, "new_customer_level") || null,
+              privacy_consent: fd.get("new_customer_privacy_consent") === "on",
+            }
           : null,
     },
   };

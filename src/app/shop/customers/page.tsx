@@ -33,6 +33,7 @@ type Customer = {
   memo: string | null;
   next_contact_on: string | null;
   marketing_consent: boolean;
+  privacy_consent_at: string | null;
 };
 
 const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
@@ -148,7 +149,7 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
   const [{ data: c }, { data: hist }, { data: links }] = await Promise.all([
     supabase
       .from("customers")
-      .select("id, name, phone, guardian_name, guardian_phone, level, equipment_size, tags, memo, next_contact_on, marketing_consent")
+      .select("id, name, phone, guardian_name, guardian_phone, level, equipment_size, tags, memo, next_contact_on, marketing_consent, privacy_consent_at")
       .eq("id", id)
       .eq("shop_id", shopId)
       .maybeSingle(),
@@ -204,6 +205,11 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
         <Box label="다음 연락" value={cust.next_contact_on ?? "—"} warn={!!cust.next_contact_on} />
       </div>
 
+      {!cust.privacy_consent_at && (
+        <p className="rounded-[14px] border border-[#F3D4A8] bg-[#FFF1E0] p-4 text-sm text-[#7A3E06]">
+          개인정보 수집·이용 동의 기록이 없습니다. 동의를 받으면 정보 고치기에서 체크해 주세요. 그 전에는 수업 메모가 다음 담당 강사에게 공유되지 않습니다.
+        </p>
+      )}
       {cust.memo && <p className="rounded-[14px] border border-line bg-white p-4 text-sm whitespace-pre-wrap">샵 메모 · {cust.memo}</p>}
 
       <div className="rounded-[14px] border border-line bg-white p-5">

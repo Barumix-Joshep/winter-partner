@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatLessonTime } from "@/lib/shop/job-status";
 import { LESSON_TYPES, PATCH_PAID_BY, type LessonType, type PatchPaidBy } from "@/lib/shop/job";
 import { OfferButtons } from "./offer-buttons";
+import { PreviousNotes } from "./previous-notes";
 
 type Offer = {
   id: string;
@@ -66,6 +67,9 @@ export async function Offers({ instructorId, now }: { instructorId: string; now:
               {j.instructor_rate != null ? ` · ${j.instructor_rate.toLocaleString("ko-KR")}원` : ""}
             </p>
             {j.note && <p className="mt-2 rounded-lg bg-white/70 px-3 py-2 text-xs">요청 사항 · {j.note}</p>}
+            <div className="mt-2">
+              <PreviousNotes jobId={j.id} />
+            </div>
             <OfferButtons offerId={o.id} />
           </section>
         );

@@ -37,6 +37,14 @@ export function OnboardingForm() {
         />
         {state?.errors?.name && <p className="mt-1 text-xs text-danger">{state.errors.name}</p>}
       </label>
+      <label className="flex min-h-11 items-start gap-2 text-sm">
+        <input type="checkbox" name="agree" required className="mt-1 size-4" />
+        <span>
+          <a href="/terms" target="_blank" className="text-brand underline">이용약관</a>과{" "}
+          <a href="/privacy" target="_blank" className="text-brand underline">개인정보 처리방침</a>에 동의합니다 (필수)
+        </span>
+      </label>
+      {state?.errors?.agree && <p className="text-xs text-danger">{state.errors.agree}</p>}
       {state?.message && (
         <p role="alert" className="text-sm text-danger">
           {state.message}

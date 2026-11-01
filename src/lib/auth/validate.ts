@@ -2,10 +2,12 @@
 
 export type SignupRole = "shop_admin" | "instructor";
 
-type Result<T> = { ok: true; data: T } | { ok: false; errors: Partial<Record<keyof T, string>> };
+// E: 데이터에는 없지만 오류로 알릴 필드 (예: 동의 체크)
+type Result<T, E extends string = never> = { ok: true; data: T } | { ok: false; errors: Partial<Record<keyof T | E, string>> };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SIGNUP_ROLES: readonly SignupRole[] = ["shop_admin", "instructor"];
+const AGREE_REQUIRED = "이용약관과 개인정보 처리방침에 동의해 주세요.";
 
 function text(fd: FormData, key: string) {
   const v = fd.get(key);
@@ -23,14 +25,15 @@ export function parseLogin(fd: FormData): Result<{ email: string; password: stri
 
 export function parseSignup(
   fd: FormData,
-): Result<{ name: string; email: string; password: string; role: SignupRole }> {
+): Result<{ name: string; email: string; password: string; role: SignupRole }, "agree"> {
   const name = text(fd, "name").trim();
   const email = text(fd, "email").trim().toLowerCase();
   const password = text(fd, "password");
   const role = text(fd, "role") as SignupRole;
-  const errors: { name?: string; email?: string; password?: string; role?: string } = {};
+  const errors: { name?: string; email?: string; password?: string; role?: string; agree?: string } = {};
   if (!name) errors.name = "이름을 입력해 주세요.";
   if (!EMAIL.test(email)) errors.email = "이메일 형식을 확인해 주세요.";
+  if (fd.get("agree") !== "on") errors.agree = AGREE_REQUIRED;
   if (password.length < 8) errors.password = "비밀번호는 8자 이상이어야 합니다.";
   // 플랫폼 관리자는 가입으로 만들 수 없다 (DB 트리거도 막는다)
   if (!SIGNUP_ROLES.includes(role)) errors.role = "샵 관리자 또는 강사를 골라 주세요.";
@@ -38,10 +41,11 @@ export function parseSignup(
 }
 
 // OAuth(카카오) 첫 로그인 때 역할 고르기
-export function parseOnboarding(fd: FormData): Result<{ name: string; role: SignupRole }> {
+export function parseOnboarding(fd: FormData): Result<{ name: string; role: SignupRole }, "agree"> {
   const name = text(fd, "name").trim();
   const role = text(fd, "role") as SignupRole;
-  const errors: { name?: string; role?: string } = {};
+  const errors: { name?: string; role?: string; agree?: string } = {};
+  if (fd.get("agree") !== "on") errors.agree = AGREE_REQUIRED;
   if (!name) errors.name = "이름을 입력해 주세요.";
   if (!SIGNUP_ROLES.includes(role)) errors.role = "샵 관리자 또는 강사를 골라 주세요.";
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true, data: { name, role } };

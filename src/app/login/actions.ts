@@ -33,7 +33,7 @@ export async function signUp(_prev: FormState | undefined, formData: FormData): 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name, role }, emailRedirectTo: `${origin}/auth/confirm` },
+    options: { data: { name, role, agreed: true }, emailRedirectTo: `${origin}/auth/confirm` },
   });
   if (error) return { message: authErrorMessage(error.message) };
 
@@ -46,4 +46,11 @@ export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+// 약관·개인정보 처리방침 동의 (가입 때 동의하지 않은 기존 회원)
+export async function recordAgreement() {
+  const supabase = await createClient();
+  await supabase.rpc("record_terms_agreement");
+  redirect("/");
 }

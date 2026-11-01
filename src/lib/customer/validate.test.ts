@@ -37,6 +37,7 @@ describe("parseCustomer", () => {
     memo: "동생과 같이 하면 집중도 좋음",
     next_contact_on: "2026-11-20",
     marketing_consent: "on",
+    privacy_consent: "on",
   };
 
   it("손님 정보를 다듬는다", () => {
@@ -53,6 +54,7 @@ describe("parseCustomer", () => {
         memo: "동생과 같이 하면 집중도 좋음",
         next_contact_on: "2026-11-20",
         marketing_consent: true,
+        privacy_consent: true,
       },
     });
   });

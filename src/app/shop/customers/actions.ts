@@ -19,13 +19,21 @@ export async function saveCustomer(_prev: CustomerFormState | undefined, formDat
 
   const supabase = await createClient();
   const id = String(formData.get("id") ?? "");
+  const { privacy_consent, ...fields } = parsed.data;
+  const now = new Date().toISOString();
   if (id) {
-    const { error } = await supabase.from("customers").update(parsed.data).eq("id", id).eq("shop_id", shop.id);
+    const { data: prev } = await supabase.from("customers").select("privacy_consent_at").eq("id", id).maybeSingle();
+    const privacy_consent_at = privacy_consent ? (prev?.privacy_consent_at ?? now) : null;
+    const { error } = await supabase.from("customers").update({ ...fields, privacy_consent_at }).eq("id", id).eq("shop_id", shop.id);
     if (error) return { message: "저장하지 못했습니다." };
     revalidatePath("/shop/customers");
     return { ok: true, message: "저장했습니다." };
   }
-  const { data, error } = await supabase.from("customers").insert({ ...parsed.data, shop_id: shop.id, owner_user_id: user.id }).select("id").single();
+  const { data, error } = await supabase
+    .from("customers")
+    .insert({ ...fields, privacy_consent_at: privacy_consent ? now : null, shop_id: shop.id, owner_user_id: user.id })
+    .select("id")
+    .single();
   if (error || !data) return { message: "등록하지 못했습니다." };
   redirect(`/shop/customers?id=${data.id}`);
 }

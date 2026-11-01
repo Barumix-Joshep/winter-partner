@@ -127,6 +127,10 @@ export function JobForm({ resorts, sports, customers, defaultCustomerId = "" }: 
               레벨
               <input name="new_customer_level" placeholder="초급" className={input} />
             </label>
+            <label className="flex min-h-11 items-start gap-2 text-sm text-ink sm:col-span-3">
+              <input type="checkbox" name="new_customer_privacy_consent" className="mt-1 size-4" />
+              손님에게 개인정보 수집·이용 및 담당 강사 제공 동의를 받았습니다
+            </label>
           </div>
         )}
       </fieldset>

@@ -15,6 +15,7 @@ export type CustomerValues = {
   memo?: string | null;
   next_contact_on?: string | null;
   marketing_consent?: boolean;
+  privacy_consent_at?: string | null;
 };
 
 const field = "flex flex-col gap-1.5 text-xs text-ink-muted";
@@ -70,9 +71,15 @@ export function CustomerForm({ values }: { values: CustomerValues }) {
         <textarea name="memo" rows={3} maxLength={2000} defaultValue={values.memo ?? ""} className={`${input} py-2`} />
         {err(e.memo)}
       </label>
+      <label className="flex min-h-11 items-start gap-2 text-sm">
+        <input type="checkbox" name="privacy_consent" defaultChecked={!!values.privacy_consent_at} className="mt-1 size-4" />
+        <span>
+          개인정보 수집·이용 및 담당 강사 제공 동의 <span className="text-ink-muted">(강습 진행 목적. 동의한 손님만 레벨·수업 메모가 다음 담당 강사에게 공유됩니다)</span>
+        </span>
+      </label>
       <label className="flex min-h-11 items-center gap-2 text-sm">
         <input type="checkbox" name="marketing_consent" defaultChecked={values.marketing_consent} className="size-4" />
-        마케팅 수신 동의 (시즌 안내 문자 등)
+        마케팅 수신 동의 (선택, 시즌 안내 문자 등)
       </label>
       {state?.message && <p className={`text-sm ${state.ok ? "text-brand" : "text-danger"}`}>{state.message}</p>}
       <button disabled={pending} className="min-h-11 self-end rounded-[10px] bg-brand px-5 text-sm font-medium text-white disabled:opacity-60">

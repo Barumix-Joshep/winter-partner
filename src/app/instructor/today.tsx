@@ -3,6 +3,7 @@ import { todayKst } from "@/lib/instructor/schedule";
 import { formatLessonTime } from "@/lib/shop/job-status";
 import { LESSON_TYPES, type LessonType } from "@/lib/shop/job";
 import { PHASE_LABEL, dayWindowKst, lessonPhase, monthWindowKst, shiftDate } from "@/lib/shop/today";
+import { PreviousNotes } from "./previous-notes";
 
 type Lesson = {
   final_rate: number;
@@ -75,6 +76,7 @@ export async function InstructorToday({ instructorId, now, children }: { instruc
             </p>
             <p className="text-xs text-ink-muted">{l.jobs.shops?.name} · {l.final_rate.toLocaleString("ko-KR")}원</p>
             {l.jobs.note && <p className="rounded-lg bg-surface px-3 py-2 text-xs text-[#35466A]">손님 메모 · {l.jobs.note}</p>}
+            <PreviousNotes jobId={l.jobs.id} />
           </article>
         );
       })}

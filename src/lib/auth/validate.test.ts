@@ -26,10 +26,10 @@ describe("parseLogin", () => {
 });
 
 describe("parseSignup", () => {
-  const base = { name: "김스키", email: "kim@winter.test", password: "winter1234", role: "instructor" };
+  const base = { name: "김스키", email: "kim@winter.test", password: "winter1234", role: "instructor", agree: "on" };
 
   it("강사·샵 관리자 가입을 받는다", () => {
-    expect(parseSignup(form(base))).toEqual({ ok: true, data: base });
+    expect(parseSignup(form(base))).toEqual({ ok: true, data: { name: "김스키", email: "kim@winter.test", password: "winter1234", role: "instructor" } });
     expect(parseSignup(form({ ...base, role: "shop_admin" })).ok).toBe(true);
   });
 
@@ -46,6 +46,18 @@ describe("parseSignup", () => {
       expect(r.errors.name).toBeDefined();
       expect(r.errors.password).toBeDefined();
     }
+  });
+});
+
+describe("가입 동의", () => {
+  it("약관·개인정보 동의 없이는 가입할 수 없다", () => {
+    const r = parseSignup(form({ name: "김스키", email: "kim@winter.test", password: "winter1234", role: "instructor" }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.agree).toBeDefined();
+  });
+
+  it("역할 선택(카카오 첫 로그인)도 동의가 필요하다", () => {
+    expect(parseOnboarding(form({ name: "김스키", role: "instructor" })).ok).toBe(false);
   });
 });
 
@@ -70,13 +82,13 @@ describe("authErrorMessage", () => {
 
 describe("parseOnboarding", () => {
   it("이름과 역할을 받는다", () => {
-    expect(parseOnboarding(form({ name: " 김스키 ", role: "instructor" }))).toEqual({
+    expect(parseOnboarding(form({ name: " 김스키 ", role: "instructor", agree: "on" }))).toEqual({
       ok: true,
       data: { name: "김스키", role: "instructor" },
     });
   });
 
   it("플랫폼 관리자는 고를 수 없다", () => {
-    expect(parseOnboarding(form({ name: "해커", role: "platform_admin" })).ok).toBe(false);
+    expect(parseOnboarding(form({ name: "해커", role: "platform_admin", agree: "on" })).ok).toBe(false);
   });
 });

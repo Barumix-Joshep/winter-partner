@@ -2,7 +2,7 @@ import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { requireArea } from "@/lib/auth/session";
 import type { Area } from "@/lib/auth/routing";
-import { signOut } from "@/app/login/actions";
+import { recordAgreement, signOut } from "@/app/login/actions";
 
 const TITLE: Record<Area, string> = { admin: "본사 관리", shop: "샵 관리", instructor: "강사" };
 
@@ -65,7 +65,18 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
           </nav>
         )}
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-6 md:px-8">{children}</main>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-6 md:px-8">
+        {!user.termsAgreed && (
+          <form action={recordAgreement} className="mb-4 flex flex-wrap items-center gap-3 rounded-[14px] border border-[#BFD0FF] bg-[#E3EBFF] p-4 text-sm text-brand-dark">
+            <span className="min-w-0 flex-1">
+              <a href="/terms" target="_blank" className="underline">이용약관</a>과{" "}
+              <a href="/privacy" target="_blank" className="underline">개인정보 처리방침</a>에 동의해 주세요.
+            </span>
+            <button className="min-h-11 rounded-[10px] bg-brand px-4 font-medium text-white">동의합니다</button>
+          </form>
+        )}
+        {children}
+      </main>
     </div>
   );
 }
