@@ -19,9 +19,9 @@
   "id": "P0-3",
   "phase": "0 환경 세팅",
   "title": "Supabase 프로젝트 연결 (.env)",
-  "status": "blocked",
+  "status": "done",
   "due": "2026-11-02",
-  "note": "프로젝트 URL·anon key를 .env.local에 넣어야 함"
+  "note": "프로젝트 winter-partner 연결 완료"
  },
  {
   "id": "P0-4",
@@ -43,9 +43,9 @@
   "id": "P1-1",
   "phase": "1 데이터 모델",
   "title": "마이그레이션 SQL 작성 (기획서 데이터 모델)",
-  "status": "doing",
+  "status": "done",
   "due": "2026-11-03",
-  "note": "0001_init.sql·0002_seed_reference.sql 작성, Supabase 적용 전"
+  "note": "0001·0002 원격 적용 확인 (11/1)"
  },
  {
   "id": "P1-2",

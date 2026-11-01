@@ -32,4 +32,4 @@
 
 ## 명령
 - `npm run dev` · `npm run build` · `npm run lint` · `npx tsc --noEmit`
-- `npx supabase db push` (마이그레이션 적용, 로그인 필요)
+- `npx supabase db push --linked` (원격 프로젝트 winter-partner에 마이그레이션 적용). 새 마이그레이션 파일명은 `npx supabase migration new <이름>`으로 만든다
