@@ -111,3 +111,20 @@ export async function createConsentLink(_prev: { url?: string; message?: string 
   if (error || !data) return { message: "링크를 만들지 못했습니다." };
   return { url: `${await siteOrigin()}/consent/${data}` };
 }
+
+// 셀프 등록 카드를 기존 카드로 합치거나(되돌릴 수 없음) 따로 둔다
+export async function mergeCustomer(formData: FormData) {
+  await requireArea("shop");
+  const keep = String(formData.get("keep") ?? "");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("merge_customers", { p_keep: keep, p_dup: String(formData.get("dup") ?? "") });
+  revalidatePath("/shop/customers");
+  if (!error) redirect(`/shop/customers?id=${keep}`);
+}
+
+export async function dismissMerge(formData: FormData) {
+  await requireArea("shop");
+  const supabase = await createClient();
+  await supabase.rpc("dismiss_merge", { p_id: String(formData.get("id") ?? "") });
+  revalidatePath("/shop/customers");
+}

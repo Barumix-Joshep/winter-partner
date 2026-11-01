@@ -97,7 +97,7 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
   ]);
   const unread = count ?? 0;
   const agreement = !user.termsAgreed && (
-    <form action={recordAgreement} className="mb-4 flex flex-wrap items-center gap-3 rounded-[14px] border border-[#BFD0FF] bg-[#E3EBFF] p-4 text-sm text-brand-dark">
+    <form action={recordAgreement} className="mb-4 flex print:hidden flex-wrap items-center gap-3 rounded-[14px] border border-[#BFD0FF] bg-[#E3EBFF] p-4 text-sm text-brand-dark">
       <span className="min-w-0 flex-1">
         <a href="/terms" target="_blank" className="underline">이용약관</a>과{" "}
         <a href="/privacy" target="_blank" className="underline">개인정보 처리방침</a>에 동의해 주세요.
@@ -139,7 +139,7 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
   const nav = NAV[area];
   return (
     <div className="flex flex-1 flex-col md:flex-row">
-      <header className="flex flex-col bg-navy px-5 pt-14 pb-5 text-white md:w-[220px] md:shrink-0 md:px-4 md:pt-6">
+      <header className="flex flex-col bg-navy px-5 pt-14 pb-5 text-white md:w-[220px] md:shrink-0 md:px-4 md:pt-6 print:hidden">
         <div className="flex items-end justify-between gap-3 md:flex-col md:items-stretch">
           <div className="flex items-center gap-2.5 md:px-2 md:pb-2">
             <Logo />

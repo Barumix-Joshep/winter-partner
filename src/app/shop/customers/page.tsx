@@ -9,7 +9,7 @@ import { formatLessonTime } from "@/lib/shop/job-status";
 import { LESSON_TYPES, type LessonType } from "@/lib/shop/job";
 import { requestTime } from "@/lib/time";
 import { CustomerForm } from "./customer-form";
-import { deleteContact, linkCustomer, recordStaffConsent, unlinkCustomer } from "./actions";
+import { deleteContact, dismissMerge, linkCustomer, mergeCustomer, recordStaffConsent, unlinkCustomer } from "./actions";
 import { CONSENT_METHOD_LABEL, CONSENT_SUBJECT_LABEL, OPTIONAL_CONSENTS, type OptionalConsentKind } from "@/lib/privacy/texts";
 import { ContactForm } from "./contact-form";
 import { ConsentLink } from "./consent-link";
@@ -39,6 +39,8 @@ type Customer = {
   next_contact_on: string | null;
   next_contact_note: string | null;
   birth_year: number | null;
+  source: "staff" | "self";
+  merge_candidate_id: string | null;
   owner: { name: string } | null;
 };
 
@@ -52,6 +54,8 @@ function consentLabel(s: ConsentState | undefined): { text: string; cls: string 
   if (!s.granted) return { text: `철회 (${how})`, cls: "text-ink-muted" };
   if (s.valid) return { text: `동의 (${how})`, cls: "text-[#1B6B3A]" };
   if (s.needs_recheck) return { text: `재확인 필요 (${how}) · 발송 제외`, cls: "text-[#B4560A]" };
+  if (s.subject === "guardian") return { text: `보호자 확인 필요 (${how}) · 보호자 동의 링크로 다시 받으세요`, cls: "text-[#B4560A]" };
+  if (s.subject === "self") return { text: `본인 동의 무효 (14세 미만, ${how}) · 보호자 동의 필요`, cls: "text-[#B4560A]" };
   return { text: `직원 기록 (${when}) · 손님이 직접 동의해야 유효`, cls: "text-[#B4560A]" };
 }
 
@@ -72,7 +76,7 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
   const supabase = await createClient();
   let list = supabase
     .from("customers")
-    .select("id, name, phone, level, tags, next_contact_on")
+    .select("id, name, phone, level, tags, next_contact_on, merge_candidate_id")
     .eq("shop_id", shop.id)
     .order("name")
     .limit(200);
@@ -87,7 +91,8 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
     supabase.from("customers").select("id", { count: "exact", head: true }).eq("shop_id", shop.id),
     supabase.rpc("marketing_recipients", { p_shop_id: shop.id }),
   ]);
-  const customers = (rows ?? []) as Pick<Customer, "id" | "name" | "phone" | "level" | "tags" | "next_contact_on">[];
+  const customers = (rows ?? []) as (Pick<Customer, "id" | "name" | "phone" | "level" | "tags" | "next_contact_on"> & { merge_candidate_id: string | null })[];
+  const toConfirm = customers.filter((c) => c.merge_candidate_id).length;
   const due = dueRows ?? [];
 
   return (
@@ -99,6 +104,14 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
             + 손님 등록
           </Link>
         </div>
+        <Link href="/shop/register-qr" className="flex min-h-11 items-center text-sm text-brand underline">
+          손님 셀프 등록 QR
+        </Link>
+        {toConfirm > 0 && (
+          <p className="rounded-lg bg-[#FFF1E0] p-3 text-xs text-[#7A3E06]">
+            <strong>셀프 등록 확인 필요 {toConfirm}명</strong> · 같은 연락처 손님이 있습니다. 카드에서 합치거나 따로 두세요.
+          </p>
+        )}
         <p className="text-xs text-ink-muted">
           광고 수신 가능 {(recipients ?? []).length}명 · 손님이 직접 동의했고 2년이 지나지 않은 경우만
         </p>
@@ -129,6 +142,7 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium">
                     {c.name} <span className="text-[11px] font-normal text-ink-muted">{c.tags.map((t) => `#${t}`).join(" ")}</span>
+                    {c.merge_candidate_id && <span className="ml-1 rounded-full bg-[#FFF1E0] px-1.5 py-0.5 text-[10px] font-medium text-[#B4560A]">확인 필요</span>}
                   </span>
                   <span className="block truncate text-[11px] text-ink-muted">{[c.level, c.phone].filter(Boolean).join(" · ") || "정보 없음"}</span>
                 </span>
@@ -175,7 +189,7 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
     supabase
       .from("customers")
       .select(
-        "id, name, phone, guardian_name, guardian_phone, level, equipment_size, tags, memo, next_contact_on, next_contact_note, birth_year, owner:profiles!customers_owner_user_id_fkey(name)",
+        "id, name, phone, guardian_name, guardian_phone, level, equipment_size, tags, memo, next_contact_on, next_contact_note, birth_year, source, merge_candidate_id, owner:profiles!customers_owner_user_id_fkey(name)",
       )
       .eq("id", id)
       .eq("shop_id", shopId)
@@ -193,6 +207,9 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
   if (!c) return <p className="rounded-[14px] border border-line bg-white p-5 text-sm text-ink-muted">손님을 찾을 수 없습니다.</p>;
   const cust = c as unknown as Customer;
   const minor = isMinor(cust.birth_year, kstYear(await requestTime()));
+  const { data: candidate } = cust.merge_candidate_id
+    ? await supabase.from("customers").select("id, name, phone, level").eq("id", cust.merge_candidate_id).eq("shop_id", shopId).maybeSingle()
+    : { data: null };
   const history = ((hist ?? []) as unknown as History[])
     .map((h) => h.jobs)
     .filter((j): j is NonNullable<History["jobs"]> => !!j)
@@ -205,11 +222,31 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
 
   return (
     <>
+      {candidate && (
+        <div className="flex flex-col gap-3 rounded-[14px] border border-[#F3D4A8] bg-[#FFF1E0] p-4 text-sm text-[#7A3E06]">
+          <p>
+            <strong>셀프 등록 · 확인 필요</strong> · 같은 연락처의 기존 손님 <strong>{candidate.name}</strong>
+            {candidate.level ? ` (${candidate.level})` : ""}이(가) 있습니다. 같은 사람이면 기존 카드로 합치세요. 합치면 되돌릴 수 없습니다.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <form action={mergeCustomer}>
+              <input type="hidden" name="keep" value={candidate.id} />
+              <input type="hidden" name="dup" value={cust.id} />
+              <button className="min-h-11 rounded-[10px] bg-brand px-4 font-medium text-white">기존 카드로 합치기</button>
+            </form>
+            <form action={dismissMerge}>
+              <input type="hidden" name="id" value={cust.id} />
+              <button className="min-h-11 rounded-[10px] border border-[#D9A46A] bg-white px-4">다른 사람 · 따로 두기</button>
+            </form>
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-4 rounded-[14px] border border-line bg-white p-5">
         <span className="flex size-16 items-center justify-center rounded-full bg-[#E3EBFF] text-2xl font-bold text-brand">{cust.name.slice(0, 1)}</span>
         <div className="min-w-48 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-xl font-bold">{cust.name}</h2>
+            {cust.source === "self" && <span className="rounded-full bg-[#EEF1F6] px-2 py-0.5 text-[11px] font-medium text-ink-muted">셀프 등록</span>}
             {minor && <span className="rounded-full bg-[#FFF1E0] px-2 py-0.5 text-[11px] font-medium text-[#B4560A]">14세 미만 · 보호자 동의</span>}
             {cust.tags.map((t) => (
               <span key={t} className="rounded-full bg-[#E3EBFF] px-2 py-0.5 text-[11px] font-medium text-brand">

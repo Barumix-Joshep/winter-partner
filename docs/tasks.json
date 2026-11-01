@@ -395,9 +395,9 @@
   "id": "P13-3",
   "phase": "13 개인정보·손님 데이터",
   "title": "손님 셀프 등록 (샵별 QR·링크 토큰, 공개 페이지, 요청 제한, 병합 확인, QR 인쇄)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-13",
-  "note": ""
+  "note": "마이그레이션 self_registration(원격 적용): registration_links(샵 관리자 발급·폐기, 1~180일, 토큰 해시), customers.source(staff/self)·merge_candidate_id. 공개 함수(service_role만): public_registration_context(샵 이름만), public_register_customer(토큰의 샵에만 카드 생성, 아무것도 돌려주지 않음, 입력 길이 검증, 같은 샵 같은 연락처면 병합 후보 표시—다른 샵과는 엮지 않음). merge_customers(이름 유지·손님 입력값 갱신, 동의 기록은 그대로 옮겨 적고 중복 카드 삭제)·dismiss_merge. 14세 미만 동의는 보호자 휴대폰 링크(method=link)에서 한 것만 유효(QR은 보호자 확인 불가). 화면: 공개 /join/[token](noindex, 요청 제한 IP 10분 10회·링크 하루 300회), 샵 /shop/register-qr(발급 즉시 QR·주소 1회 표시, 인쇄용 화면, 폐기), 손님 목록 \"셀프 등록 확인 필요\"·카드 병합/따로 두기. pgTAP 323·E2E(QR 등록→병합→강습 등록) 포함 10개 통과 (11/2)"
  },
  {
   "id": "P13-4",

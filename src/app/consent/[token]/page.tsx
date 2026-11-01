@@ -36,7 +36,7 @@ async function Consent({ params }: { params: Promise<{ token: string }> }) {
         <p className="text-xs text-ink-muted">{ctx.shop_name}</p>
         <h1 className="mt-1 text-xl font-bold">{ctx.customer_initial}○○ 손님 선택 동의</h1>
       </div>
-      <CollectionNotice />
+      <CollectionNotice audience="customer" />
       <ConsentForm token={token} minor={ctx.is_minor} />
     </>
   );
