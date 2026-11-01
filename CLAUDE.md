@@ -21,6 +21,7 @@
 - 1단계에서는 대금 중개(PG)를 하지 않는다.
 
 ## 작업 방식
+- Superpowers 플러그인을 쓴다(.claude/settings.json). 새 기능은 brainstorming → writing-plans → executing-plans(또는 subagent-driven-development) 순서, 구현은 test-driven-development, 버그는 systematic-debugging, 완료 선언 전에는 verification-before-completion을 따른다. 계획 문서는 `docs/plans/`에 둔다.
 - 작업 단위는 진척 대시보드의 번호(P1-1 …)다. 한 작업을 끝내면: lint·typecheck 통과 → 커밋(`feat(P1-1): …`) → 대시보드 상태 갱신.
 - 막힌 작업(blocked)은 건너뛰고 다음 작업으로 간다. 막힌 이유는 대시보드 메모에 적는다.
 - 되돌리기 어려운 결정(결제, 외부 계정, 데이터 삭제)은 멈추고 묻는다.

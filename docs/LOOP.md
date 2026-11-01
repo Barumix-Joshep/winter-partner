@@ -9,11 +9,21 @@ claude.ai 진척 대시보드는 이 파일을 반영해 보여 준다.
 3. `npx supabase login` → `npx supabase link --project-ref <ref>` → `npx supabase db push`
 4. `git remote add origin <GitHub 저장소 URL>` → `git push -u origin main`
 
+## Superpowers 플러그인
+`.claude/settings.json`에 등록돼 있어, 이 폴더에서 `claude`를 처음 열고 폴더를 신뢰하면 설치를 묻는다. 묻지 않으면 Claude Code 안에서 직접:
+
+```text
+/plugin marketplace add obra/superpowers-marketplace
+/plugin install superpowers@superpowers-marketplace
+```
+
+설치 후 Claude Code를 다시 시작하고 `/plugin`에서 superpowers가 켜졌는지 확인한다.
+
 ## 루프 돌리기
 터미널에서 이 폴더로 와서 `claude` 실행 후:
 
 ```text
-/loop docs/tasks.json에서 status가 todo인 첫 작업(due 순)을 골라 진행해. CLAUDE.md 규칙을 따르고,
+/loop docs/tasks.json에서 status가 todo인 첫 작업(due 순)을 골라 진행해. CLAUDE.md 규칙과 Superpowers 스킬(계획→TDD→검증)을 따르고,
 끝나면 lint·tsc 통과 확인 → 커밋 → tasks.json의 status를 done으로, 막히면 blocked와 이유를 note에 적고 다음 작업으로 가.
 되돌리기 어려운 결정이나 외부 계정이 필요한 일은 멈추고 나에게 물어.
 ```
