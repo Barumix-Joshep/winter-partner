@@ -3,8 +3,8 @@ import { parseSearch, slotRange } from "./search";
 
 describe("slotRange", () => {
   it("한국 시간 기준 시간대를 돌려준다", () => {
-    expect(slotRange("2026-12-20", "am")).toEqual({ from: "2026-12-20T09:00:00+09:00", to: "2026-12-20T12:00:00+09:00" });
-    expect(slotRange("2026-12-20", "pm")).toEqual({ from: "2026-12-20T13:00:00+09:00", to: "2026-12-20T17:00:00+09:00" });
+    expect(slotRange("2026-12-20", "am")).toEqual({ from: "2026-12-20T09:00:00+09:00", to: "2026-12-20T13:00:00+09:00" });
+    expect(slotRange("2026-12-20", "pm")).toEqual({ from: "2026-12-20T13:00:00+09:00", to: "2026-12-20T18:00:00+09:00" });
     expect(slotRange("2026-12-20", "night")).toEqual({ from: "2026-12-20T18:00:00+09:00", to: "2026-12-20T22:00:00+09:00" });
   });
 
@@ -30,7 +30,7 @@ describe("parseSearch", () => {
       sportId: 2,
       date: "2026-12-20",
       slot: "pm",
-      range: { from: "2026-12-20T13:00:00+09:00", to: "2026-12-20T17:00:00+09:00" },
+      range: { from: "2026-12-20T13:00:00+09:00", to: "2026-12-20T18:00:00+09:00" },
     });
     expect(parseSearch({ sport: "abc" }, resorts).sportId).toBeNull();
   });

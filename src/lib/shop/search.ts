@@ -1,8 +1,9 @@
 // 강사 찾기 검색 조건 (URL 쿼리 → 검색 인자)
 
+// 시간대는 이어 붙어 있다 (강사 가능 시간을 합쳐 저장할 수 있게)
 export const SLOTS = {
-  am: { label: "오전", from: "09:00", to: "12:00" },
-  pm: { label: "오후", from: "13:00", to: "17:00" },
+  am: { label: "오전", from: "09:00", to: "13:00" },
+  pm: { label: "오후", from: "13:00", to: "18:00" },
   night: { label: "야간", from: "18:00", to: "22:00" },
 } as const;
 export type Slot = keyof typeof SLOTS;
