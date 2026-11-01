@@ -27,9 +27,9 @@
   "id": "P0-4",
   "phase": "0 환경 세팅",
   "title": "GitHub 저장소 연결·첫 커밋",
-  "status": "blocked",
+  "status": "done",
   "due": "2026-11-02",
-  "note": "로컬 git 커밋 완료. 원격 저장소 URL을 알려 주시면 연결"
+  "note": "github.com/Barumix-Joshep/winter-partner (비공개) 연결·첫 push 완료"
  },
  {
   "id": "P0-5",
