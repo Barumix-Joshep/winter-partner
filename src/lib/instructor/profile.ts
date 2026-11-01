@@ -37,3 +37,9 @@ export async function getReferenceData() {
   ]);
   return { sports: (sports ?? []) as { id: number; name: string }[], resorts: (resorts ?? []) as { id: number; name: string; region: string }[] };
 }
+
+export async function getMyInstructorId(userId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("instructors").select("id").eq("user_id", userId).maybeSingle();
+  return (data?.id as string | undefined) ?? null;
+}

@@ -63,7 +63,8 @@ async function Jobs() {
         const s = jobStatusLabel(j);
         const who = j.job_customers.map((c) => c.customers?.name).filter(Boolean).join(", ");
         return (
-          <li key={j.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-line bg-white p-4">
+          <li key={j.id}>
+            <Link href={`/shop/jobs/${j.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-line bg-white p-4 hover:border-brand">
             <div className="min-w-0">
               <p className="text-sm font-bold">
                 {formatLessonTime(j.starts_at, j.ends_at)} · {j.sports?.name} {LESSON_TYPES[j.lesson_type].label}
@@ -76,6 +77,7 @@ async function Jobs() {
               </p>
             </div>
             <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${s.cls}`}>{s.label}</span>
+            </Link>
           </li>
         );
       })}

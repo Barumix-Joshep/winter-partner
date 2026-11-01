@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireArea } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -162,14 +163,12 @@ async function Search({ searchParams }: { searchParams: SearchParams }) {
                 <p className="text-[11px] text-ink-muted">2시간 기본 단가</p>
                 <p className="text-[17px] font-bold">{r.base_rate ? `${r.base_rate.toLocaleString("ko-KR")}원` : "협의"}</p>
               </div>
-              {/* 직접 의뢰는 P4-2에서 연결 */}
-              <button
-                disabled
-                title="강습 등록 기능과 함께 열립니다"
-                className="min-h-10 rounded-lg border-[1.5px] border-brand px-3.5 text-[13px] font-medium text-brand opacity-50"
+              <Link
+                href="/shop/jobs"
+                className="flex min-h-10 items-center rounded-lg border-[1.5px] border-brand px-3.5 text-[13px] font-medium text-brand"
               >
-                직접 의뢰
-              </button>
+                강습 건에서 의뢰
+              </Link>
             </div>
           </li>
         ))}

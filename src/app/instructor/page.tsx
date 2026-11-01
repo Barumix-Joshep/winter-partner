@@ -1,15 +1,19 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { requireArea } from "@/lib/auth/session";
+import { requestTime } from "@/lib/time";
 import { getMyInstructorProfile } from "@/lib/instructor/profile";
 import { Placeholder } from "@/components/placeholder";
 import { Exclusive } from "./exclusive";
+import { Offers } from "./offers";
+import { getMyInstructorId } from "@/lib/instructor/profile";
 
 export default function InstructorHome() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4">
       <Suspense>
         <ProfilePrompt />
+        <OffersSection />
         <ExclusiveSection />
       </Suspense>
       <Placeholder title="오늘 강습" next="오늘 강습과 받은 의뢰가 여기에 들어옵니다 (P5-5)." />
@@ -38,4 +42,10 @@ async function ProfilePrompt() {
 async function ExclusiveSection() {
   const user = await requireArea("instructor");
   return <Exclusive userId={user.id} />;
+}
+
+async function OffersSection() {
+  const user = await requireArea("instructor");
+  const id = await getMyInstructorId(user.id);
+  return id ? <Offers instructorId={id} now={requestTime()} /> : null;
 }

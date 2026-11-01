@@ -31,3 +31,18 @@ export async function leaveExclusive() {
   if (me) await supabase.from("shop_instructors").delete().eq("instructor_id", me.id);
   revalidatePath("/instructor");
 }
+
+// 직접 의뢰 응답. respond_job_offer가 본인·만료·시간 충돌을 확인하고 배정을 만든다.
+export async function respondOffer(_prev: { message?: string } | undefined, formData: FormData) {
+  await requireArea("instructor");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("respond_job_offer", {
+    p_offer_id: String(formData.get("id") ?? ""),
+    p_accept: formData.get("decision") === "accept",
+  });
+  revalidatePath("/instructor");
+  if (error) {
+    return { message: error.message.includes("같은 시간") ? "같은 시간에 다른 강습이 있어 수락할 수 없습니다." : "이미 끝났거나 응답할 수 없는 의뢰입니다." };
+  }
+  return {};
+}
