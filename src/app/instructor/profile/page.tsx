@@ -3,12 +3,18 @@ import { requireArea } from "@/lib/auth/session";
 import { getMyInstructorProfile, getReferenceData } from "@/lib/instructor/profile";
 import { ProfileForm } from "./profile-form";
 import { Certs } from "./certs";
+import { signOut } from "@/app/login/actions";
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<p className="text-sm text-ink-muted">불러오는 중…</p>}>
-      <Profile />
-    </Suspense>
+    <>
+      <Suspense fallback={<p className="text-sm text-ink-muted">불러오는 중…</p>}>
+        <Profile />
+      </Suspense>
+      <form action={signOut} className="mx-auto mt-10 max-w-md">
+        <button className="min-h-11 w-full rounded-[10px] border border-line bg-white text-sm text-ink-muted">로그아웃</button>
+      </form>
+    </>
   );
 }
 
