@@ -26,6 +26,8 @@ export function notificationMessage(kind: string, payload: Payload, job: JobInfo
       return { title: "입찰에 선정됐습니다", body: withAmount(payload.amount), url: "/instructor" };
     case "bid_rejected":
       return { title: "다른 강사가 선정됐습니다", body: when, url: "/instructor/bids" };
+    case "team_assigned":
+      return { title: "팀 강습을 맡게 됐습니다", body: when, url: "/instructor/schedule" };
     case "lesson_completed":
       return { title: "완료 보고가 들어왔습니다", body: `${when} · 승인해야 정산에 들어갑니다`, url: shopJob };
     case "lesson_approved":

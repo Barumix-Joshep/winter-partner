@@ -155,7 +155,10 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
         </div>
         {nav && (
           <nav aria-label="샵 메뉴" className="-mx-5 mt-4 flex gap-1 overflow-x-auto px-5 md:mx-0 md:mt-4 md:flex-col md:px-0">
-            <SideNav items={nav} root="/shop" />
+            <SideNav
+              items={shop?.type === "lesson_team" ? [...nav.slice(0, 3), { href: "/shop/team-bids", label: "팀 입찰" }, ...nav.slice(3)] : nav}
+              root="/shop"
+            />
             <Link href="/notifications" className="hidden min-h-11 shrink-0 items-center justify-between rounded-lg px-3 text-sm text-[#C9D4EA] hover:bg-navy-2 hover:text-white md:flex">
               알림 {!!unread && <span className="rounded-full bg-[#F2994A] px-2 text-xs text-white">{unread}</span>}
             </Link>

@@ -165,7 +165,44 @@ async function Settlements({ searchParams }: { searchParams: SearchParams }) {
           </ul>
         </>
       )}
+      {shop.type === "lesson_team" && <Received shopId={shop.id} month={month} />}
     </>
+  );
+}
+
+// 강습팀이 받을 정산 (팀 입찰로 맡은 강습, 원천세 없음). 공고 샵이 발행한 것부터 보인다.
+async function Received({ shopId, month }: { shopId: string; month: string }) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("settlements")
+    .select("id, net, status, shops!settlements_shop_id_fkey(name), settlement_items(amount)")
+    .eq("payee_shop_id", shopId)
+    .eq("month", `${month}-01`)
+    .neq("status", "draft");
+  const rows = (data ?? []) as unknown as { id: string; net: number; status: string; shops: { name: string } | null; settlement_items: { amount: number }[] }[];
+  return (
+    <section>
+      <h2 className="text-base font-bold">팀으로 받을 정산</h2>
+      <p className="mt-1 text-xs text-ink-muted">팀 입찰로 맡은 강습을 공고 샵이 정산서로 발행하면 여기에 보입니다. 팀원 지급은 팀이 따로 합니다.</p>
+      {rows.length === 0 ? (
+        <p className="mt-2 rounded-[14px] border border-line bg-white p-5 text-sm text-ink-muted">이 달 받은 정산서가 없습니다.</p>
+      ) : (
+        <ul className="mt-2 flex flex-col gap-2">
+          {rows.map((r) => (
+            <li key={r.id} className="flex flex-wrap items-center gap-3 rounded-[14px] border border-line bg-white p-4">
+              <span className="flex-1 font-bold">
+                {r.shops?.name} <span className="text-xs font-normal text-ink-muted">{r.settlement_items.length}건</span>
+              </span>
+              <span className="text-sm font-bold">받을 금액 {won(r.net)}</span>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS[r.status].cls}`}>{STATUS[r.status].label}</span>
+              <a href={`/settlements/${r.id}/pdf`} className="flex min-h-11 items-center text-sm font-medium text-brand">
+                정산서 PDF
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

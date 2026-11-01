@@ -37,7 +37,7 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
   const { data: job } = await supabase
     .from("jobs")
     .select(
-      "id, shop_id, resort_id, sport_id, starts_at, ends_at, status, assign_mode, lesson_type, student_count, instructor_rate, patch_paid_by, note, sports(name), resorts(name), job_prices(customer_price), job_customers(customers(name, phone, level)), bid_closes_at, allow_team_bids, job_offers(id, status, expires_at, responded_at, instructors(profiles(name))), assignments(final_rate, completed_at, lesson_note, approved_at, instructors(profiles(name))), bids(id, amount, memo, status, created_at, bidder_type, instructors(profiles(name)), shops!bids_bidder_shop_id_fkey(name))",
+      "id, shop_id, resort_id, sport_id, starts_at, ends_at, status, assign_mode, lesson_type, student_count, instructor_rate, patch_paid_by, note, sports(name), resorts(name), job_prices(customer_price), job_customers(customers(name, phone, level)), bid_closes_at, allow_team_bids, job_offers(id, status, expires_at, responded_at, instructors(profiles(name))), assignments(final_rate, completed_at, lesson_note, approved_at, instructors(profiles(name)), shops!assignments_via_shop_id_fkey(name)), bids(id, amount, memo, status, created_at, bidder_type, instructors(profiles(name)), shops!bids_bidder_shop_id_fkey(name))",
     )
     .eq("id", id)
     .eq("shop_id", shop.id)
@@ -68,6 +68,7 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
       lesson_note: string | null;
       approved_at: string | null;
       instructors: { profiles: { name: string } | null } | null;
+      shops: { name: string } | null;
     } | null;
     bid_closes_at: string | null;
     allow_team_bids: boolean;
@@ -123,7 +124,12 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
         </dl>
         {j.note && <p className="mt-3 rounded-lg bg-surface p-3 text-sm">요청 사항 · {j.note}</p>}
         {j.assignments && (
-          <p className="mt-3 text-sm font-medium text-brand">배정: {j.assignments.instructors?.profiles?.name}</p>
+          <p className="mt-3 text-sm font-medium text-brand">
+            배정:{" "}
+            {j.assignments.shops
+              ? `${j.assignments.shops.name} (팀) · ${j.assignments.instructors?.profiles?.name ?? "팀원 지정 전"}`
+              : j.assignments.instructors?.profiles?.name}
+          </p>
         )}
         {j.assignments?.completed_at && (
           <div className="mt-3 rounded-lg border border-line p-3">
