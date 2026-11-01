@@ -11,6 +11,7 @@ const NAV: Partial<Record<Area, { href: string; label: string }[]>> = {
   shop: [
     { href: "/shop", label: "오늘 일정" },
     { href: "/shop/instructors", label: "강사 찾기" },
+    { href: "/shop/team", label: "전속 강사" },
   ],
 };
 

@@ -3,12 +3,14 @@ import Link from "next/link";
 import { requireArea } from "@/lib/auth/session";
 import { getMyInstructorProfile } from "@/lib/instructor/profile";
 import { Placeholder } from "@/components/placeholder";
+import { Exclusive } from "./exclusive";
 
 export default function InstructorHome() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4">
       <Suspense>
         <ProfilePrompt />
+        <ExclusiveSection />
       </Suspense>
       <Placeholder title="오늘 강습" next="오늘 강습과 받은 의뢰가 여기에 들어옵니다 (P5-5)." />
     </div>
@@ -31,4 +33,9 @@ async function ProfilePrompt() {
       <span aria-hidden>›</span>
     </Link>
   );
+}
+
+async function ExclusiveSection() {
+  const user = await requireArea("instructor");
+  return <Exclusive userId={user.id} />;
 }

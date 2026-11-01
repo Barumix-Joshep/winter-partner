@@ -4,6 +4,7 @@ import { requireArea } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getMyShop } from "@/lib/shop/my-shop";
 import { parseSearch, SLOTS } from "@/lib/shop/search";
+import { proposeExclusive } from "../team/actions";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -45,8 +46,9 @@ async function Search({ searchParams }: { searchParams: SearchParams }) {
 
   const q = parseSearch(await searchParams, shop.resorts.map((r) => r.id));
   const supabase = await createClient();
-  const [{ data: sports }, { data, error }] = await Promise.all([
+  const [{ data: sports }, { data: invites }, { data, error }] = await Promise.all([
     supabase.from("sports").select("id, name").order("id"),
+    supabase.from("exclusive_invites").select("instructor_id").eq("shop_id", shop.id).eq("status", "pending"),
     q.resortId
       ? supabase.rpc("search_instructors", {
           p_shop_id: shop.id,
@@ -59,6 +61,8 @@ async function Search({ searchParams }: { searchParams: SearchParams }) {
   ]);
   const rows = (data ?? []) as Row[];
   const mine = rows.filter((r) => r.is_mine).length;
+  const invited = new Set((invites ?? []).map((i) => i.instructor_id as string));
+  const canInvite = shop.status === "approved";
 
   return (
     <>
@@ -143,6 +147,16 @@ async function Search({ searchParams }: { searchParams: SearchParams }) {
               <span className="rounded-md bg-surface px-2 py-1">강습 {r.lesson_count}회</span>
             </div>
             <p className="text-xs text-ink-muted">가능 스키장 · {r.resorts.join(" · ")}</p>
+            {!r.is_mine && canInvite && (
+              invited.has(r.instructor_id) ? (
+                <p className="text-xs text-ink-muted">전속 제안을 보냈습니다</p>
+              ) : (
+                <form action={proposeExclusive}>
+                  <input type="hidden" name="instructor_id" value={r.instructor_id} />
+                  <button className="min-h-11 text-xs font-medium text-brand underline">전속 제안하기</button>
+                </form>
+              )
+            )}
             <div className="mt-auto flex items-center justify-between border-t border-[#EEF1F6] pt-3">
               <div>
                 <p className="text-[11px] text-ink-muted">2시간 기본 단가</p>

@@ -123,9 +123,9 @@
   "id": "P3-4",
   "phase": "3 강사 프로필",
   "title": "전속 강사 등록·프리랜서 등록 불가 규칙",
-  "status": "todo",
+  "status": "done",
   "due": "2026-11-10",
-  "note": ""
+  "note": "샵 직접 전속 등록 차단 → exclusive_invites 제안(승인된 샵만) + 강사 수락(accept_exclusive_invite: 입찰 철회·다른 제안 거절). /shop/team, 강사 홈 제안·전속 끝내기, 검색 카드 전속 제안 (11/2)"
  },
  {
   "id": "P4-1",
