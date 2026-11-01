@@ -259,9 +259,9 @@
   "id": "P9-1",
   "phase": "9 배포",
   "title": "Vercel 배포와 도메인",
-  "status": "todo",
+  "status": "blocked",
   "due": "2026-11-26",
-  "note": ""
+  "note": "Vercel 계정·프로젝트 연결과 도메인은 외부 계정 결정이라 확인 필요. 배포 때 환경변수: NEXT_PUBLIC_SUPABASE_URL·ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, CRON_SECRET. Supabase Auth URL 설정(사이트 주소·/auth/confirm)도 함께"
  },
  {
   "id": "P9-2",
