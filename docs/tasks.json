@@ -115,9 +115,9 @@
   "id": "P3-3",
   "phase": "3 강사 프로필",
   "title": "샵용 강사 찾기 화면 (스키장·종목 필터)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-11-10",
-  "note": "프로토타입 Main 화면"
+  "note": "/shop/instructors: 영업 스키장·종목·날짜·시간대(오전·오후·야간) 필터, 우리 전속 먼저, 다른 샵 전속 제외, 연락처 없음. search_instructors(security definer, 멤버·영업 스키장 확인). 샵 사이드바 메뉴. 직접 의뢰 버튼은 P4-2 (11/2)"
  },
  {
   "id": "P3-4",
