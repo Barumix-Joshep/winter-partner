@@ -331,9 +331,9 @@
   "id": "P12-1",
   "phase": "12 운영 준비",
   "title": "첫 플랫폼 관리자 지정 방법 (DB 관리자만 실행, 실행 전 확인)",
-  "status": "blocked",
+  "status": "done",
   "due": "2026-12-06",
-  "note": "준비 완료, 실행 전 사장님 확인 대기: 마이그레이션 20261101235900_platform_admin_grant.sql(private.grant_platform_admin(email): 인증된 가입 계정만, 강사·샵 연결 계정 거부, anon·authenticated·service_role 실행 권한 회수, 이메일은 저장소에 없음), pgTAP 8개 통과. 원격에는 아직 적용하지 않음. 확인 후: db push → SQL Editor에서 select private.grant_platform_admin('<이메일>') (11/2)"
+  "note": "원격 적용 완료(20261101235900_platform_admin_grant.sql): private.grant_platform_admin(email) — 인증된 가입 계정만, 강사·샵 연결 계정 거부, anon·authenticated·service_role 실행 불가. 사장님이 할 일: ① https://winter-partner.vercel.app/login 에서 joshep.koh@barumix.com으로 가입(샵 관리자 선택, 샵 등록은 하지 않음)하고 메일 인증 ② Supabase 대시보드 → SQL Editor에서 정확히 다음 문장 실행: select private.grant_platform_admin('joshep.koh@barumix.com'); (11/2)"
  },
  {
   "id": "P12-2",
@@ -366,5 +366,77 @@
   "status": "done",
   "due": "2026-12-10",
   "note": "마이그레이션 customer_contacts(원격 적용): customers.next_contact_note, customer_contacts 테이블(샵 멤버만 조회·삭제, 강사 비공개), log_customer_contact(기록 + 다음 연락일·목적 갱신, 비우면 오늘 연락할 손님에서 빠짐). 손님 카드: 다음 연락 상자에 요일·목적·담당, 연락 기록 양식(전화·문자·방문·기타)과 최근 20건. pgTAP 10개(전체 263)·E2E 1개(전체 8) 통과 (11/2)"
+ },
+ {
+  "id": "P13-1",
+  "phase": "13 개인정보·손님 데이터",
+  "title": "손님 정보 수집 근거 재구성 (계약 이행 안내, 선택 동의 기록 테이블, 2년 재확인, 기존 동의 '직원 기록' 이관)",
+  "status": "todo",
+  "due": "2026-12-11",
+  "note": ""
+ },
+ {
+  "id": "P13-2",
+  "phase": "13 개인정보·손님 데이터",
+  "title": "14세 미만: 출생 연도, 보호자 필수, 보호자 링크 직접 동의만 유효",
+  "status": "todo",
+  "due": "2026-12-12",
+  "note": ""
+ },
+ {
+  "id": "P13-2b",
+  "phase": "13 개인정보·손님 데이터",
+  "title": "보호자 휴대폰 문자 인증 연동",
+  "status": "blocked",
+  "due": "2026-12-12",
+  "note": "문자 인증 서비스 가입이 필요해 승인 범위 밖. 지금은 보호자가 링크에서 직접 동의하는 방식(P13-2)으로 확인"
+ },
+ {
+  "id": "P13-3",
+  "phase": "13 개인정보·손님 데이터",
+  "title": "손님 셀프 등록 (샵별 QR·링크 토큰, 공개 페이지, 요청 제한, 병합 확인, QR 인쇄)",
+  "status": "todo",
+  "due": "2026-12-13",
+  "note": ""
+ },
+ {
+  "id": "P13-4",
+  "phase": "13 개인정보·손님 데이터",
+  "title": "건강정보 방지 (안내 문구, 건강 단어 경고 기록)",
+  "status": "todo",
+  "due": "2026-12-14",
+  "note": ""
+ },
+ {
+  "id": "P13-5",
+  "phase": "13 개인정보·손님 데이터",
+  "title": "접속 기록 (연락처 열람·엑셀·PDF, 수정·삭제 불가, 2년 보관, 관리자 조회)",
+  "status": "todo",
+  "due": "2026-12-15",
+  "note": ""
+ },
+ {
+  "id": "P13-6",
+  "phase": "13 개인정보·손님 데이터",
+  "title": "보관·파기 (3시즌 경과 익명화 함수·크론, 손님 삭제 요청 즉시 익명화, 샵 탈퇴 절차 문서)",
+  "status": "todo",
+  "due": "2026-12-16",
+  "note": ""
+ },
+ {
+  "id": "P13-7",
+  "phase": "13 개인정보·손님 데이터",
+  "title": "약관·처리방침 초안 (처리위탁 조항, 위탁 고지 템플릿, 손님 안내·동의 문구, 처리방침)",
+  "status": "todo",
+  "due": "2026-12-17",
+  "note": ""
+ },
+ {
+  "id": "P13-8",
+  "phase": "13 개인정보·손님 데이터",
+  "title": "검증 (pgTAP·E2E 추가, 전체 통과)",
+  "status": "todo",
+  "due": "2026-12-18",
+  "note": ""
  }
 ]
