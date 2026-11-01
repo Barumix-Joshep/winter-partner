@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepare": "git config core.hooksPath .githooks",
+    "security": "node scripts/security-check.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

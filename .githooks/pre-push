@@ -1,0 +1,10 @@
+#!/bin/sh
+# 푸시 전에 보안 점검, 린트, 타입 검사를 돌린다. 하나라도 실패하면 푸시를 막는다.
+set -e
+echo "▶ 보안 점검"
+node scripts/security-check.mjs
+echo "▶ 린트"
+npm run lint --silent
+echo "▶ 타입 검사"
+npx tsc --noEmit
+echo "✓ 푸시 전 점검 통과"

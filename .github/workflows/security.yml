@@ -1,0 +1,31 @@
+name: security
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 보안 점검 (비밀값·RLS·service role·npm audit)
+        run: node scripts/security-check.mjs
+      - name: 린트
+        run: npm run lint
+      - name: 타입 검사
+        run: npx tsc --noEmit
+      - name: 커밋 이력 전체 비밀값 검사 (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

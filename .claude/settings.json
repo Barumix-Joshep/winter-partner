@@ -1,10 +1,19 @@
 {
   "extraKnownMarketplaces": {
     "superpowers-marketplace": {
-      "source": { "source": "github", "repo": "obra/superpowers-marketplace" }
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers-marketplace"
+      }
     }
   },
   "enabledPlugins": {
     "superpowers@superpowers-marketplace": true
+  },
+  "permissions": {
+    "deny": [
+      "Bash(git push --no-verify:*)",
+      "Bash(git commit --no-verify:*)"
+    ]
   }
 }
