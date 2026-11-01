@@ -66,10 +66,18 @@
  {
   "id": "P2-1",
   "phase": "2 인증·테넌트",
-  "title": "Supabase Auth 로그인 (이메일·카카오)",
-  "status": "todo",
+  "title": "Supabase Auth 로그인 (이메일)",
+  "status": "done",
   "due": "2026-11-06",
-  "note": ""
+  "note": "이메일 로그인·가입·로그아웃, 가입 시 프로필 트리거(플랫폼 관리자 차단), proxy 세션 갱신. 로컬 Auth로 검증 (11/1)"
+ },
+ {
+  "id": "P2-1K",
+  "phase": "2 인증·테넌트",
+  "title": "카카오 로그인",
+  "status": "blocked",
+  "due": "2026-11-06",
+  "note": "카카오 개발자 앱 키(REST API 키·Client Secret)가 없음. 키 발급 후 Supabase Auth에 Kakao 공급자 등록 필요. /auth/confirm 콜백은 준비됨"
  },
  {
   "id": "P2-2",
