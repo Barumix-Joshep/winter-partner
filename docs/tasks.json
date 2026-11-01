@@ -211,9 +211,9 @@
   "id": "P6-2",
   "phase": "6 정산",
   "title": "정산서 PDF·Excel 내보내기",
-  "status": "todo",
+  "status": "done",
   "due": "2026-11-21",
-  "note": ""
+  "note": "정산서 PDF(/settlements/[id]/pdf, pdf-lib+나눔고딕 OFL, RLS로 샵·받는 사람만, 약 1.6MB: subset이 한글을 깨서 글꼴 전체 포함), 월 Excel(/shop/settlements/export, 요약·강습 내역). 정산서 발행 버튼(draft→issued 금액 확정) (11/2)"
  },
  {
   "id": "P6-3",

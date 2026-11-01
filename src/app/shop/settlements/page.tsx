@@ -8,7 +8,7 @@ import { todayKst } from "@/lib/instructor/schedule";
 import { formatLessonTime } from "@/lib/shop/job-status";
 import { LESSON_TYPES, type LessonType } from "@/lib/shop/job";
 import { requestTime } from "@/lib/time";
-import { generate } from "./actions";
+import { generate, issue } from "./actions";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -18,7 +18,8 @@ export default function SettlementsPage({ searchParams }: { searchParams: Search
       <div>
         <h1 className="text-2xl font-bold">정산</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          그 달에 승인한 강습의 확정 금액으로 강사·팀별 정산을 냅니다. 개인 강사는 3.3%를 원천징수하고, 송금은 직접 하신 뒤 지급 완료로 표시합니다.
+          그 달에 승인한 강습의 확정 금액으로 강사·팀별 정산을 냅니다. 개인 강사는 3.3%를 원천징수합니다. 발행하면 금액이 확정되고, 송금은 직접 하신 뒤
+          지급 완료로 표시합니다.
         </p>
       </div>
       <Suspense fallback={<p className="text-sm text-ink-muted">불러오는 중…</p>}>
@@ -78,10 +79,23 @@ async function Settlements({ searchParams }: { searchParams: SearchParams }) {
           <span className="text-base font-bold">{Number(month.slice(0, 4))}년 {Number(month.slice(5))}월</span>
           <Link href={`/shop/settlements?month=${shiftMonth(month, 1)}`} className="flex min-h-11 items-center px-2 text-ink-muted">›</Link>
         </div>
-        <form action={generate}>
-          <input type="hidden" name="month" value={month} />
-          <button className="min-h-11 rounded-[10px] bg-brand px-5 text-sm font-medium text-white">{rows.length ? "다시 집계" : "이 달 정산 집계"}</button>
-        </form>
+        <div className="flex flex-wrap gap-2">
+          {rows.length > 0 && (
+            <a href={`/shop/settlements/export?month=${month}`} className="flex min-h-11 items-center rounded-[10px] border border-line bg-white px-4 text-sm font-medium">
+              Excel 내려받기
+            </a>
+          )}
+          {rows.some((r) => r.status === "draft") && (
+            <form action={issue}>
+              <input type="hidden" name="month" value={month} />
+              <button className="min-h-11 rounded-[10px] border border-brand bg-white px-4 text-sm font-medium text-brand">정산서 발행</button>
+            </form>
+          )}
+          <form action={generate}>
+            <input type="hidden" name="month" value={month} />
+            <button className="min-h-11 rounded-[10px] bg-brand px-5 text-sm font-medium text-white">{rows.length ? "다시 집계" : "이 달 정산 집계"}</button>
+          </form>
+        </div>
       </div>
 
       {rows.length === 0 ? (
@@ -111,7 +125,12 @@ async function Settlements({ searchParams }: { searchParams: SearchParams }) {
                       <span className="text-sm text-ink-muted">원천세 {won(r.withholding)}</span>
                       <span className="text-sm font-bold">실지급 {won(r.net)}</span>
                     </summary>
-                    <ul className="border-t border-[#EEF1F6] px-4 py-2 text-sm">
+                    <div className="flex justify-end border-t border-[#EEF1F6] px-4 pt-2">
+                      <a href={`/settlements/${r.id}/pdf`} className="flex min-h-11 items-center text-sm font-medium text-brand">
+                        정산서 PDF
+                      </a>
+                    </div>
+                    <ul className="px-4 pb-2 text-sm">
                       {r.settlement_items
                         .map((i) => ({ ...i, job: i.assignments?.jobs }))
                         .sort((a, b) => (a.job?.starts_at ?? "").localeCompare(b.job?.starts_at ?? ""))
