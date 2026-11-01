@@ -203,9 +203,9 @@
   "id": "P6-1",
   "phase": "6 정산",
   "title": "월 정산 집계 (샵별·강사별, 3.3% 원천세)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-11-20",
-  "note": ""
+  "note": "generate_settlements: 그 달(KST, 강습 시작) 승인 강습을 샵×지급 대상(강사·팀)별로 집계, draft만 재계산. 개인 강사 3.3%(10원 절사, 소득세 1,000원 미만 소액부징수, 전속 포함·가정), 팀 0%. /shop/settlements 월 이동·합계·항목. unique nulls not distinct로 중복 방지 (11/2)"
  },
  {
   "id": "P6-2",
