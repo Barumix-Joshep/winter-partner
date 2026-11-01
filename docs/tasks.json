@@ -99,9 +99,9 @@
   "id": "P3-1",
   "phase": "3 강사 프로필",
   "title": "강사 프로필 등록 (종목·레벨·스키장·소개)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-11-08",
-  "note": ""
+  "note": "/instructor/profile: 종목·레벨·기본 강습료(2시간 1:1 기준으로 가정)·활동 스키장·소개. save_instructor_profile RPC. 사진은 Storage 붙일 때 (11/2)"
  },
  {
   "id": "P3-2",
