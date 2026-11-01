@@ -12,6 +12,7 @@ const NAV: Partial<Record<Area, { href: string; label: string }[]>> = {
     { href: "/shop", label: "오늘 일정" },
     { href: "/shop/instructors", label: "강사 찾기" },
     { href: "/shop/jobs", label: "강습 등록·입찰" },
+    { href: "/shop/customers", label: "손님" },
     { href: "/shop/team", label: "전속 강사" },
     { href: "/shop/settlements", label: "정산" },
   ],

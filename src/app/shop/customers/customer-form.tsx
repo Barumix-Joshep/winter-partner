@@ -1,0 +1,83 @@
+"use client";
+
+import { useActionState } from "react";
+import { saveCustomer, type CustomerFormState } from "./actions";
+
+export type CustomerValues = {
+  id?: string;
+  name?: string;
+  phone?: string | null;
+  guardian_name?: string | null;
+  guardian_phone?: string | null;
+  level?: string | null;
+  equipment_size?: string | null;
+  tags?: string[];
+  memo?: string | null;
+  next_contact_on?: string | null;
+  marketing_consent?: boolean;
+};
+
+const field = "flex flex-col gap-1.5 text-xs text-ink-muted";
+const input = "min-h-11 rounded-lg border border-[#CBD3E1] bg-white px-3 text-sm text-ink";
+
+export function CustomerForm({ values }: { values: CustomerValues }) {
+  const [state, action, pending] = useActionState<CustomerFormState | undefined, FormData>(saveCustomer, undefined);
+  const e = state?.errors ?? {};
+  const err = (m?: string) => (m ? <span className="text-danger">{m}</span> : null);
+  return (
+    <form action={action} className="flex flex-col gap-3">
+      {values.id && <input type="hidden" name="id" value={values.id} />}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className={field}>
+          이름
+          <input name="name" required defaultValue={values.name} className={input} />
+          {err(e.name)}
+        </label>
+        <label className={field}>
+          연락처
+          <input name="phone" type="tel" defaultValue={values.phone ?? ""} placeholder="010-0000-0000" className={input} />
+          {err(e.phone)}
+        </label>
+        <label className={field}>
+          보호자
+          <input name="guardian_name" defaultValue={values.guardian_name ?? ""} placeholder="어린이 손님일 때" className={input} />
+        </label>
+        <label className={field}>
+          보호자 연락처
+          <input name="guardian_phone" type="tel" defaultValue={values.guardian_phone ?? ""} className={input} />
+          {err(e.guardian_phone)}
+        </label>
+        <label className={field}>
+          레벨
+          <input name="level" defaultValue={values.level ?? ""} placeholder="초급 → 초중급" className={input} />
+        </label>
+        <label className={field}>
+          장비 사이즈
+          <input name="equipment_size" defaultValue={values.equipment_size ?? ""} placeholder="스키 120 · 부츠 220 · 헬멧 S" className={input} />
+        </label>
+        <label className={field}>
+          태그
+          <input name="tags" defaultValue={(values.tags ?? []).map((t) => `#${t}`).join(" ")} placeholder="#가족 #재방문" className={input} />
+        </label>
+        <label className={field}>
+          다음 연락
+          <input name="next_contact_on" type="date" defaultValue={values.next_contact_on ?? ""} className={input} />
+          {err(e.next_contact_on)}
+        </label>
+      </div>
+      <label className={field}>
+        샵 메모 <span>(샵만 봅니다)</span>
+        <textarea name="memo" rows={3} maxLength={2000} defaultValue={values.memo ?? ""} className={`${input} py-2`} />
+        {err(e.memo)}
+      </label>
+      <label className="flex min-h-11 items-center gap-2 text-sm">
+        <input type="checkbox" name="marketing_consent" defaultChecked={values.marketing_consent} className="size-4" />
+        마케팅 수신 동의 (시즌 안내 문자 등)
+      </label>
+      {state?.message && <p className={`text-sm ${state.ok ? "text-brand" : "text-danger"}`}>{state.message}</p>}
+      <button disabled={pending} className="min-h-11 self-end rounded-[10px] bg-brand px-5 text-sm font-medium text-white disabled:opacity-60">
+        {pending ? "저장 중…" : values.id ? "저장" : "손님 등록"}
+      </button>
+    </form>
+  );
+}

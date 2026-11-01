@@ -5,7 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyShop } from "@/lib/shop/my-shop";
 import { JobForm } from "./job-form";
 
-export default function NewJobPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default function NewJobPage({ searchParams }: { searchParams: SearchParams }) {
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -15,13 +17,14 @@ export default function NewJobPage() {
         </p>
       </div>
       <Suspense fallback={<p className="text-sm text-ink-muted">불러오는 중…</p>}>
-        <NewJob />
+        <NewJob searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function NewJob() {
+async function NewJob({ searchParams }: { searchParams: SearchParams }) {
+  const pre = (await searchParams).customer;
   const user = await requireArea("shop");
   const shop = await getMyShop(user.id);
   if (!shop) redirect("/shop/new");
@@ -30,5 +33,7 @@ async function NewJob() {
     supabase.from("sports").select("id, name").order("id"),
     supabase.from("customers").select("id, name, level").eq("shop_id", shop.id).order("name").limit(500),
   ]);
-  return <JobForm resorts={shop.resorts} sports={sports ?? []} customers={customers ?? []} />;
+  const list = customers ?? [];
+  const defaultCustomerId = typeof pre === "string" && list.some((c) => c.id === pre) ? pre : "";
+  return <JobForm resorts={shop.resorts} sports={sports ?? []} customers={list} defaultCustomerId={defaultCustomerId} />;
 }

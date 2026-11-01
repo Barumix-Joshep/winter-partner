@@ -15,12 +15,13 @@ type Props = {
   resorts: { id: number; name: string }[];
   sports: { id: number; name: string }[];
   customers: { id: string; name: string; level: string | null }[];
+  defaultCustomerId?: string;
 };
 
-export function JobForm({ resorts, sports, customers }: Props) {
+export function JobForm({ resorts, sports, customers, defaultCustomerId = "" }: Props) {
   const [state, action, pending] = useActionState<JobFormState | undefined, FormData>(createJob, undefined);
   const [lessonType, setLessonType] = useState<LessonType>("private");
-  const [customerId, setCustomerId] = useState("");
+  const [customerId, setCustomerId] = useState(defaultCustomerId);
   const range = LESSON_TYPES[lessonType];
   const e = state?.errors ?? {};
 
