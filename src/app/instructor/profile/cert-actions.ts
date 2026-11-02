@@ -1,6 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { isAiEnabled } from "@/lib/ai/flags";
+import { readCertificate } from "@/lib/ai/cert-read";
 import { createClient } from "@/lib/supabase/server";
 import { requireArea } from "@/lib/auth/session";
 import { certPath, parseCert } from "@/lib/instructor/cert";
@@ -28,12 +31,20 @@ export async function uploadCert(_prev: CertFormState | undefined, formData: For
     .upload(path, parsed.data.file, { contentType: parsed.data.file.type });
   if (upErr) return { message: "파일을 올리지 못했습니다. 잠시 후 다시 시도해 주세요." };
 
-  const { error } = await supabase
+  const { data: row, error } = await supabase
     .from("instructor_certs")
-    .insert({ instructor_id: instructorId, issuer: parsed.data.issuer, grade: parsed.data.grade, file_url: path });
-  if (error) {
+    .insert({ instructor_id: instructorId, issuer: parsed.data.issuer, grade: parsed.data.grade, file_url: path })
+    .select("id")
+    .single();
+  if (error || !row) {
     await supabase.storage.from("certs").remove([path]);
     return { message: "저장하지 못했습니다. 잠시 후 다시 시도해 주세요." };
+  }
+  // AI 판독(켜져 있을 때): 응답 뒤에 읽어 본사 검증 화면에 참고값으로 보여 준다
+  if (await isAiEnabled(null, "cert")) {
+    const bytes = await parsed.data.file.arrayBuffer();
+    const mime = parsed.data.file.type;
+    after(() => readCertificate(row.id, user.id, bytes, mime).catch((e) => console.error("cert read failed", e instanceof Error ? e.name : e)));
   }
   revalidatePath("/instructor/profile");
   return { ok: true, message: "올렸습니다. 본사 확인 뒤 프로필에 표시됩니다." };

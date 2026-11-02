@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { deleteCert } from "./cert-actions";
 import { CertUploadForm } from "./cert-upload-form";
+import { isAiEnabled } from "@/lib/ai/flags";
 
 const STATUS = {
   pending: { label: "확인 중", cls: "bg-[#FFF1E0] text-[#B4560A]" },
@@ -41,7 +42,7 @@ export async function Certs({ userId }: { userId: string }) {
           );
         })}
       </ul>
-      <CertUploadForm />
+      <CertUploadForm aiNotice={await isAiEnabled(null, "cert")} />
     </section>
   );
 }

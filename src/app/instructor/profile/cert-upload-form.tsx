@@ -6,7 +6,7 @@ import { uploadCert, type CertFormState } from "./cert-actions";
 const input =
   "mt-1 block min-h-11 w-full rounded-[10px] border border-line bg-white px-3 text-base outline-none focus:border-brand";
 
-export function CertUploadForm() {
+export function CertUploadForm({ aiNotice = false }: { aiNotice?: boolean }) {
   const [state, action, pending] = useActionState<CertFormState | undefined, FormData>(uploadCert, undefined);
   return (
     <form action={action} className="mt-3 flex flex-col gap-4 rounded-[14px] border border-dashed border-line bg-white p-5">
@@ -32,6 +32,11 @@ export function CertUploadForm() {
         />
         {state?.errors?.file && <p className="mt-1 text-xs text-danger">{state.errors.file}</p>}
       </label>
+      {aiNotice && (
+        <p className="text-xs text-ink-muted">
+          검증을 위해 자격증 이미지가 AI 판독 서비스(Anthropic)로 전송됩니다. 판독 결과는 본사 확인용 참고값이고, 승인은 본사 담당자가 합니다.
+        </p>
+      )}
       {state?.message && (
         <p role="status" className={`text-sm ${state.ok ? "text-brand" : "text-danger"}`}>
           {state.message}
