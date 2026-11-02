@@ -8,6 +8,7 @@ import { monthWindowKst } from "@/lib/shop/today";
 import { formatLessonTime } from "@/lib/shop/job-status";
 import { LESSON_TYPES, type LessonType } from "@/lib/shop/job";
 import { instructorMonth } from "@/lib/settlement/instructor-month";
+import { payTypeOf } from "@/lib/settlement/pay-type";
 import { requestTime } from "@/lib/time";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -54,7 +55,7 @@ async function Pay({ searchParams }: { searchParams: SearchParams }) {
   const win = monthWindowKst(`${month}-01`);
 
   const supabase = await createClient();
-  const [{ data: lessons }, { data: sts }] = await Promise.all([
+  const [{ data: lessons }, { data: sts }, { data: mine }] = await Promise.all([
     supabase
       .from("instructor_assignments")
       .select("final_rate, via_shop_id, jobs!inner(id, starts_at, ends_at, status, lesson_type, canceled_by, sports(name), shops(id, name))")
@@ -62,11 +63,13 @@ async function Pay({ searchParams }: { searchParams: SearchParams }) {
       .gte("jobs.starts_at", win.from)
       .lt("jobs.starts_at", win.to),
     supabase.from("settlements").select("id, shop_id, gross, withholding, net, status").eq("instructor_id", me ?? "").eq("month", `${month}-01`),
+    supabase.from("shop_instructors").select("shop_id, pay_type").eq("instructor_id", me ?? ""),
   ]);
   const rows = ((lessons ?? []) as unknown as A[]).sort((a, b) => b.jobs.starts_at.localeCompare(a.jobs.starts_at));
   const m = instructorMonth(
     rows.filter((r) => !r.via_shop_id).map((r) => ({ amount: r.final_rate, status: r.jobs.status, shop: r.jobs.shops ?? { id: "", name: "" } })),
     (sts ?? []).map((s) => ({ id: s.id, shopId: s.shop_id, gross: s.gross, withholding: s.withholding, net: s.net, status: s.status })),
+    new Set((mine ?? []).filter((x) => payTypeOf(x.pay_type, false).byShop).map((x) => x.shop_id as string)),
   );
   const mo = Number(month.slice(5));
 

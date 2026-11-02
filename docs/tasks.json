@@ -712,6 +712,54 @@
   "note": "docs/simulation-report.md 작성. P0 3·P1 7 수정(로컬 커밋), 승인 후 원격 마이그레이션 2개(settlement_integrity·access_hardening) 적용·배포 완료, check:prod 17/17, 운영 스모크 21화면 통과(AI 0회) (11/3)"
  },
  {
+  "id": "P19-1",
+  "phase": "19 시범 샵 전 필수 보완",
+  "title": "강사별 지급 방식 설정 (전속 원천징수 대비)",
+  "status": "done",
+  "due": "2026-12-20",
+  "note": "지급 방식 참조 표 pay_types(business_3_3 기본·none_by_shop), shop_instructors.pay_type, 변경은 set_instructor_pay_type RPC(샵 관리자·전속만)+이력, 정산서에 집계 시점 값 보존. 화면·PDF·Excel 지급 방식 표시, 합계 일치 E2E. 기존 금액 불변(pgTAP 540). 원격 마이그레이션 20261103090000_pay_types 승인 대기 (11/3)"
+ },
+ {
+  "id": "P19-2",
+  "phase": "19 시범 샵 전 필수 보완",
+  "title": "정산 무결성 후속 (직접 수정 차단·금액 검증·입찰 선정 잠금·샵 정보 변경 승인)",
+  "status": "todo",
+  "due": "2026-12-20",
+  "note": ""
+ },
+ {
+  "id": "P19-3",
+  "phase": "19 시범 샵 전 필수 보완",
+  "title": "사용자 경험과 보안 보완 (오류 화면·보안 헤더·강습 시간 검증·목록 쪽 나누기·푸시 로그·390px)",
+  "status": "todo",
+  "due": "2026-12-20",
+  "note": ""
+ },
+ {
+  "id": "P19-4",
+  "phase": "19 시범 샵 전 필수 보완",
+  "title": "테스트 안정화 (리허설 4단계 시간 초과 근본 정리, 전체 E2E 3회 연속 통과)",
+  "status": "todo",
+  "due": "2026-12-20",
+  "note": ""
+ },
+ {
+  "id": "P19-5",
+  "phase": "19 시범 샵 전 필수 보완",
+  "title": "시범 샵 시작 준비 문서 (메일·백업·실기기·대표님 인터뷰)",
+  "status": "todo",
+  "due": "2026-12-20",
+  "note": ""
+ },
+ {
+  "id": "P19-6",
+  "phase": "19 시범 샵 전 필수 보완",
+  "title": "정리와 보고",
+  "status": "todo",
+  "due": "2026-12-20",
+  "note": ""
+ },
+ {
   "id": "P20-1",
   "phase": "20 CI와 풀 리퀘스트 파이프라인",
   "title": "CI에 테스트 추가 (unit·db·e2e, 시간·비용 측정)",

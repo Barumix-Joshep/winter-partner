@@ -29,4 +29,11 @@ describe("instructorMonth", () => {
     ]);
     expect(m.shops[0].state).toBe("지급 대기");
   });
+
+  it("정산서 전 예상치: 원천징수를 샵에서 별도 처리하는 전속 샵은 원천세 0 (P19-1)", () => {
+    const lessons = [{ amount: 100000, status: "approved", shop: shopA }, { amount: 100000, status: "approved", shop: shopB }];
+    const m = instructorMonth(lessons, [], new Set(["A"]));
+    expect(m.total).toEqual({ approvedCount: 2, gross: 200000, withholding: 3300, net: 196700 });
+    expect(instructorMonth(lessons, []).total.withholding).toBe(6600);
+  });
 });

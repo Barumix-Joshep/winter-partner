@@ -11,6 +11,7 @@ export async function renderMonthXlsx(month: string, shopName: string, statement
   sum.columns = [
     { header: "받는 분", width: 18 },
     { header: "구분", width: 10 },
+    { header: "지급 방식", width: 20 },
     { header: "건수", width: 8 },
     { header: "강습료 합계", width: 14 },
     { header: "소득세", width: 12 },
@@ -20,7 +21,13 @@ export async function renderMonthXlsx(month: string, shopName: string, statement
     { header: "상태", width: 12 },
   ];
   for (const s of statements) {
-    sum.addRow([s.payee.name, s.payee.kind, s.items.length, s.gross, s.tax.incomeTax, s.tax.localTax, s.tax.total, s.net, s.status]);
+    sum.addRow([s.payee.name, s.payee.kind, s.payType.label, s.items.length, s.gross, s.tax.incomeTax, s.tax.localTax, s.tax.total, s.net, s.status]);
+  }
+  // 한 줄 띄우고 합계 (화면 요약 카드와 같은 값: 저장된 금액의 합)
+  if (statements.length) {
+    const t = (f: (s: Statement) => number) => statements.reduce((a, s) => a + f(s), 0);
+    sum.addRow([]);
+    sum.addRow(["합계", null, null, t((s) => s.items.length), t((s) => s.gross), t((s) => s.tax.incomeTax), t((s) => s.tax.localTax), t((s) => s.tax.total), t((s) => s.net)]).font = { bold: true };
   }
   const items = wb.addWorksheet("강습 내역");
   items.columns = [
@@ -35,7 +42,7 @@ export async function renderMonthXlsx(month: string, shopName: string, statement
     ws.getRow(1).font = { bold: true };
     ws.views = [{ state: "frozen", ySplit: 1 }];
   }
-  for (const c of [4, 5, 6, 7, 8]) sum.getColumn(c).numFmt = "#,##0";
+  for (const c of [5, 6, 7, 8, 9]) sum.getColumn(c).numFmt = "#,##0";
   items.getColumn(4).numFmt = "#,##0";
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
