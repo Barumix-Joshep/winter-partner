@@ -18,7 +18,7 @@ export function SelectBidForm({ jobId, bidId, amount }: { jobId: string; bidId: 
           aria-label="확정 금액"
           className="min-h-10 w-28 rounded-lg border border-[#CBD3E1] px-2 text-right text-sm"
         />
-        <button disabled={pending} className="min-h-10 rounded-lg border-[1.5px] border-brand bg-white px-3.5 text-[13px] font-medium text-brand disabled:opacity-60">
+        <button id={`select-bid-${bidId}`} disabled={pending} className="min-h-10 rounded-lg border-[1.5px] border-brand bg-white px-3.5 text-[13px] font-medium text-brand focus:ring-4 focus:ring-[#BFD0F7] disabled:opacity-60">
           {pending ? "확정 중…" : "선정"}
         </button>
       </div>

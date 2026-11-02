@@ -12,6 +12,8 @@ import { PublishForm } from "./publish-form";
 import { ApproveForm } from "./approve-form";
 import { CancelForm } from "./cancel-form";
 import { defaultBidClose, kstLocalInput } from "@/lib/shop/bid";
+import { AssistCard } from "./assist-card";
+import { isAiEnabled } from "@/lib/ai/flags";
 
 export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
   return (
@@ -155,7 +157,9 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
         </section>
       )}
 
-      {j.assign_mode === "bid" && j.status !== "draft" && <Bids job={j} jobId={j.id} selectable={j.status === "open"} />}
+      {j.assign_mode === "bid" && j.status !== "draft" && (
+        <Bids job={j} jobId={j.id} selectable={j.status === "open"} assist={j.status === "open" && (await isAiEnabled(shop.id, "bid_assist"))} />
+      )}
 
       {j.status === "draft" && (
         <section>
@@ -239,8 +243,9 @@ type BidJob = {
 };
 
 // 받은 입찰. 선정할 때 금액을 조정할 수 있고, 확정 금액이 정산 기준이다.
-function Bids({ job, jobId, selectable }: { job: BidJob; jobId: string; selectable: boolean }) {
+function Bids({ job, jobId, selectable, assist }: { job: BidJob; jobId: string; selectable: boolean; assist: boolean }) {
   const open = job.bids.filter((b) => b.status === "open").sort((a, b) => a.amount - b.amount);
+  const nameOf = (b: BidJob["bids"][number]) => (b.bidder_type === "shop" ? `${b.shops?.name ?? "강습팀"} (팀)` : (b.instructors?.profiles?.name ?? "강사"));
   return (
     <section className="rounded-[14px] border border-line bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -252,6 +257,7 @@ function Bids({ job, jobId, selectable }: { job: BidJob; jobId: string; selectab
         {job.bid_closes_at ? ` · 마감 ${kstLocalInput(job.bid_closes_at).replace("T", " ")}` : ""}
         {job.allow_team_bids ? " · 강습팀 입찰 허용" : ""}
       </p>
+      {assist && open.length > 0 && <AssistCard jobId={jobId} names={Object.fromEntries(open.map((b) => [b.id, nameOf(b)]))} />}
       {open.length === 0 ? (
         <p className="mt-3 text-sm text-ink-muted">아직 입찰이 없습니다.</p>
       ) : (
