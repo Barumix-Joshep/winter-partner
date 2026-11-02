@@ -78,3 +78,26 @@ describe("종목 3개 (P17)", () => {
     expect(cells).toEqual(expect.arrayContaining(["스노우스케이트 1:1", "스노우보드 1:2"]));
   });
 });
+
+describe("특수문자·이모지·긴 이름 (P18-4)", () => {
+  const weird: SettlementRow = {
+    ...row,
+    shops: { name: "<b>하이원</b> & \"렌탈\" ⛷️🏂", business_no: "000-00-00001" },
+    instructors: { profiles: { name: `김스키😀${"가".repeat(80)}` } },
+  };
+  it("PDF·엑셀이 깨지지 않고 만들어진다", async () => {
+    const s = buildStatement(weird);
+    const pdf = await renderStatementPdf(s);
+    expect(Buffer.from(pdf.slice(0, 5)).toString()).toBe("%PDF-");
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load((await renderMonthXlsx("2026-11", weird.shops!.name, [s])) as unknown as ExcelJS.Buffer);
+    expect(wb.getWorksheet("정산 요약")!.getRow(2).getCell(1).value).toBe(s.payee.name);
+  });
+  it("수식처럼 보이는 이름이 엑셀에서 수식으로 실행되지 않는다", async () => {
+    const s = buildStatement({ ...row, instructors: { profiles: { name: "=HYPERLINK(\"http://x\")" } } });
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load((await renderMonthXlsx("2026-11", "샵", [s])) as unknown as ExcelJS.Buffer);
+    const v = wb.getWorksheet("정산 요약")!.getRow(2).getCell(1).value;
+    expect(typeof v).toBe("string"); // 문자열 칸(t="s")으로 저장된다. 수식 칸({ formula })이 아니라 열어도 실행되지 않는다
+  });
+});

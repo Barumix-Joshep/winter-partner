@@ -25,7 +25,7 @@ end $$;
 
 select pg_temp.login('00000000-0000-0000-0000-0000000eef01');
 select throws_ok($$select set_settlement_paid('70000000-0000-0000-0000-0000000ee001', true)$$, '22023', null, '발행 전에는 지급 완료로 표시할 수 없다');
-update settlements set status = 'issued' where id = '70000000-0000-0000-0000-0000000ee001';
+select issue_settlements(shop_id, month) from settlements where id = '70000000-0000-0000-0000-0000000ee001'; -- 발행은 RPC로만 (P18-1)
 select lives_ok($$select set_settlement_paid('70000000-0000-0000-0000-0000000ee001', true)$$, '지급 완료로 표시');
 select is((select status::text || '/' || (paid_at is not null)::text from settlements where id = '70000000-0000-0000-0000-0000000ee001'), 'paid/true', '지급 완료와 시각');
 select lives_ok($$select set_settlement_paid('70000000-0000-0000-0000-0000000ee001', false)$$, '잘못 눌렀으면 되돌린다');

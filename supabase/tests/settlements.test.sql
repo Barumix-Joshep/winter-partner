@@ -60,8 +60,8 @@ select is((select month from settlements limit 1), '2027-01-01'::date, '월은 1
 -- 다시 집계해도 중복되지 않고, 발행된 정산서는 그대로
 select is((select generate_settlements('10000000-0000-0000-0000-0000000fff01', '2027-01-01')), 3, '다시 집계');
 select is((select count(*) from settlements), 3::bigint, '중복 없음');
+select set_config('role', 'postgres', true); -- 발행은 샵 화면에서 issue_settlements로. 여기서는 A 한 장만 발행한 상태를 만든다
 update settlements set status = 'issued' where instructor_id = pg_temp.iid('00000000-0000-0000-0000-0000000ffa01');
-select set_config('role', 'postgres', true);
 update assignments set final_rate = 150000 where job_id = '40000000-0000-0000-0000-0000000ff001';
 select pg_temp.login('00000000-0000-0000-0000-0000000fff01');
 select generate_settlements('10000000-0000-0000-0000-0000000fff01', '2027-01-01');

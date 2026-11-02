@@ -24,7 +24,7 @@ export async function issue(formData: FormData) {
   const month = String(formData.get("month") ?? "");
   if (!shop || !/^\d{4}-\d{2}$/.test(month)) return;
   const supabase = await createClient();
-  await supabase.from("settlements").update({ status: "issued" }).eq("shop_id", shop.id).eq("month", `${month}-01`).eq("status", "draft");
+  await supabase.rpc("issue_settlements", { p_shop_id: shop.id, p_month: `${month}-01` });
   revalidatePath("/shop/settlements");
 }
 
