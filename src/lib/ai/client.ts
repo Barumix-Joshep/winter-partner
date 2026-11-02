@@ -97,7 +97,9 @@ export async function callStructured<T>(call: StructuredCall<T>, deps: AiDeps = 
       if (parsed !== null) return parsed;
     } catch (e) {
       await deps.record({ ...ids(call), model: gate.model, input: 0, output: 0, ok: false });
-      console.error("ai call failed", call.feature, attempt, e instanceof Error ? e.name : "error");
+      // 상태 코드·오류 종류·메시지 앞부분만 (요청 본문·키는 남기지 않는다)
+      const err = e as { status?: number; name?: string; message?: string; error?: { error?: { type?: string } } };
+      console.error("ai call failed", call.feature, attempt, err?.status ?? "-", err?.error?.error?.type ?? err?.name ?? "error", String(err?.message ?? "").slice(0, 200));
     } finally {
       clearTimeout(timer);
     }

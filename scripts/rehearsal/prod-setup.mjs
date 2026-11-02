@@ -121,4 +121,14 @@ if (!bids?.length) {
   ]), "bids");
 }
 
+// 완료 보고 대기 강습 (B1·D2): 강사다, 하루 전, 손님삼
+const pastStart = new Date(Date.now() - 30 * 3600_000);
+const reportJob = await one("jobs", { shop_id: rental, note: "[테스트] 보고 대기 강습" }, {
+  shop_id: rental, resort_id: resort, sport_id: ski, starts_at: pastStart.toISOString(), ends_at: new Date(pastStart.getTime() + 2 * 3600_000).toISOString(),
+  lesson_type: "private", student_count: 1, instructor_rate: 80000, assign_mode: "direct", status: "assigned", note: "[테스트] 보고 대기 강습",
+});
+await db.from("job_customers").upsert({ job_id: reportJob, customer_id: cust.c3 });
+const { data: ra } = await db.from("assignments").select("id").eq("job_id", reportJob).maybeSingle();
+if (!ra) must(await db.from("assignments").insert({ job_id: reportJob, instructor_id: inst["test-inst3"], final_rate: 80000 }), "report assignment");
+
 console.log(JSON.stringify({ ok: true, shops: 2, accounts: ACCOUNTS.length, customers: 3, bidJob }));
