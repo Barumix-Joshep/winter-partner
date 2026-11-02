@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authErrorMessage, parseLogin, parseOnboarding, parseSignup, safeNext } from "./validate";
+import { authErrorMessage, parseLogin, parseOnboarding, parseSignup, safeNext, parseResetRequest } from "./validate";
 
 function form(fields: Record<string, string>) {
   const fd = new FormData();
@@ -90,5 +90,18 @@ describe("parseOnboarding", () => {
 
   it("플랫폼 관리자는 고를 수 없다", () => {
     expect(parseOnboarding(form({ name: "해커", role: "platform_admin", agree: "on" })).ok).toBe(false);
+  });
+});
+
+describe("parseResetRequest", () => {
+  it("이메일을 소문자로 다듬는다", () => {
+    const fd = new FormData();
+    fd.set("email", " Kim@Test.COM ");
+    expect(parseResetRequest(fd)).toEqual({ ok: true, data: { email: "kim@test.com" } });
+  });
+  it("형식이 틀리면 오류", () => {
+    const fd = new FormData();
+    fd.set("email", "kim");
+    expect(parseResetRequest(fd).ok).toBe(false);
   });
 });

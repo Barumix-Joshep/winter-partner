@@ -70,6 +70,9 @@ function SignInForm({ next }: { next: string }) {
       >
         {pending ? "로그인 중…" : "로그인"}
       </button>
+      <a href="/login/forgot" className="flex min-h-11 items-center self-center text-sm text-ink-muted underline">
+        비밀번호를 잊으셨나요?
+      </a>
     </form>
   );
 }

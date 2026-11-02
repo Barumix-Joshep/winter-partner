@@ -23,6 +23,11 @@ export function parseLogin(fd: FormData): Result<{ email: string; password: stri
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true, data: { email, password } };
 }
 
+export function parseResetRequest(fd: FormData): Result<{ email: string }> {
+  const email = text(fd, "email").trim().toLowerCase();
+  return EMAIL.test(email) ? { ok: true, data: { email } } : { ok: false, errors: { email: "이메일 형식을 확인해 주세요." } };
+}
+
 export function parseSignup(
   fd: FormData,
 ): Result<{ name: string; email: string; password: string; role: SignupRole }, "agree"> {

@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { AiContent, AiFeature, AiRequest, AiTransport } from "./types";
 import { mockTransport } from "./mock";
+import { LIMITS, limitKey } from "@/lib/ops/limits";
 
 // AI 호출은 이 함수 하나로 한다. 결과는 제안일 뿐이고(DB에 바로 쓰지 않는다), 실패·꺼짐·상한 초과는 null → 호출부가 수동 흐름.
 // - 도구 호출(tool use)로 JSON 스키마를 강제하고, parse로 한 번 더 검증한다.
@@ -15,6 +16,8 @@ export type AiDeps = {
   gate: (shopId: string | null, feature: AiFeature) => Promise<Gate | null>;
   record: (u: { shopId: string | null; userId: string | null; feature: AiFeature; model: string; input: number; output: number; ok: boolean }) => Promise<void>;
   transport: () => AiTransport | null;
+  // 사람(또는 샵)별 짧은 시간 호출 제한 (P16-3). 없으면 제한하지 않는다.
+  rateOk?: (subject: string) => Promise<boolean>;
 };
 
 export function aiKeyConfigured() {
@@ -80,6 +83,14 @@ export const defaultDeps: AiDeps = {
       p_ok: u.ok,
     });
   },
+  async rateOk(subject) {
+    const { data, error } = await createAdminClient().rpc("public_rate_limit", {
+      p_key: limitKey("ai_user", subject),
+      p_max: LIMITS.ai_user.max,
+      p_window_seconds: LIMITS.ai_user.windowSeconds,
+    });
+    return !!error || data !== false;
+  },
   transport() {
     if (process.env.AI_MOCK === "1") return mockTransport;
     return process.env.ANTHROPIC_API_KEY ? sdkTransport : null;
@@ -101,6 +112,8 @@ export type StructuredCall<T> = {
 export async function callStructured<T>(call: StructuredCall<T>, deps: AiDeps = defaultDeps): Promise<T | null> {
   const transport = deps.transport();
   if (!transport) return null;
+  const subject = call.userId ?? call.shopId;
+  if (subject && deps.rateOk && !(await deps.rateOk(subject))) return null; // 수동 흐름
   const gate = await deps.gate(call.shopId, call.feature);
   if (!gate?.allowed) return null;
 

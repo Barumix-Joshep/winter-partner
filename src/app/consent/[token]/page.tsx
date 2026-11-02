@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { clientIp, overLimit } from "@/lib/ops/rate-limit";
+import { RateLimited } from "@/components/rate-limited";
 import { CollectionNotice } from "@/components/collection-notice";
 import { DRAFT_LABEL } from "@/lib/privacy/texts";
 import { ConsentForm } from "./consent-form";
@@ -21,6 +23,8 @@ export default function ConsentPage({ params }: { params: Promise<{ token: strin
 
 async function Consent({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+  // 링크 주소 맞히기(토큰 대입)를 막는다: 같은 IP 10분에 60번
+  if (await overLimit([["link_view_ip", await clientIp()]])) return <RateLimited name="link_view_ip" />;
   const { data } = await createAdminClient().rpc("public_consent_context", { p_token: token });
   const ctx = (data ?? [])[0] as { shop_name: string; customer_initial: string; is_minor: boolean } | undefined;
   if (!ctx) {

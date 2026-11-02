@@ -26,6 +26,16 @@ const base = {
 };
 
 describe("callStructured", () => {
+  it("사람별 짧은 시간 호출 제한에 걸리면 부르지 않고 수동 흐름(null)", async () => {
+    const transport = vi.fn(async () => ({ input: { ok: true }, usage: { input_tokens: 1, output_tokens: 1 } }));
+    const { d, record } = deps(transport);
+    const rateOk = vi.fn(async () => false);
+    expect(await callStructured(base, { ...d, rateOk })).toBeNull();
+    expect(rateOk).toHaveBeenCalledWith("u1");
+    expect(transport).not.toHaveBeenCalled();
+    expect(record).not.toHaveBeenCalled();
+  });
+
   it("스키마를 통과한 결과를 돌려주고 사용량을 남긴다", async () => {
     const { d, record } = deps(async () => ({ input: { ok: true }, usage: { input_tokens: 10, output_tokens: 5 } }));
     expect(await callStructured(base, d)).toEqual({ ok: true });
