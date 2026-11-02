@@ -74,7 +74,7 @@ for (const cron of ["/api/notify/dispatch", "/api/maintenance/daily"]) {
 }
 
 // 로그인 없이 보호된 화면: 로그인으로 보내고 데이터는 없다 (스트리밍이라 상태는 200, 본문 안에서 이동)
-for (const path of ["/shop", "/shop/customers", "/instructor", "/admin"]) {
+for (const path of ["/shop", "/shop/customers", "/shop/jobs/new", "/instructor", "/admin"]) {
   await check(`${path} 로그인 필요`, async () => {
     const r = await get(path);
     const toLogin = (r.status >= 300 && r.status < 400) || /NEXT_REDIRECT;[a-z]+;\/login/.test(r.body);

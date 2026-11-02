@@ -1,0 +1,226 @@
+{
+ "today": "2026-12-01",
+ "note": "가상 샘플 — 실제 접수 문자로 교체 필요 (P14-2)",
+ "samples": [
+  {
+   "text": "안녕하세요 12월 6일 일요일 오전 10시 스키 1:1 강습 예약하고 싶어요. 초등 3학년 처음이에요",
+   "expected": {
+    "date": "2026-12-06",
+    "start": "10:00",
+    "end": "12:00",
+    "sport": "스키",
+    "lessonType": "private",
+    "studentCount": 1
+   }
+  },
+  {
+   "text": "이번 주 토요일 오후 1시 보드 2명 강습 가능할까요? 둘 다 초급입니다",
+   "expected": {
+    "date": "2026-12-05",
+    "start": "13:00",
+    "end": "15:00",
+    "sport": "스노보드",
+    "lessonType": "semi",
+    "studentCount": 2
+   }
+  },
+  {
+   "text": "내일 아침 9시부터 11시까지 스키 개인강습 부탁드려요",
+   "expected": {
+    "date": "2026-12-02",
+    "start": "09:00",
+    "end": "11:00",
+    "sport": "스키",
+    "lessonType": "private",
+    "studentCount": 1
+   }
+  },
+  {
+   "text": "12/20 10시 스키 1:2 형제 둘 다 처음, 패치는 샵에서 사주세요",
+   "expected": {
+    "date": "2026-12-20",
+    "start": "10:00",
+    "end": "12:00",
+    "sport": "스키",
+    "lessonType": "semi",
+    "studentCount": 2
+   }
+  },
+  {
+   "text": "다음 주 일요일 오후 2시 스노보드 그룹 강습 4명 중급",
+   "expected": {
+    "date": "2026-12-13",
+    "start": "14:00",
+    "end": "16:00",
+    "sport": "스노보드",
+    "lessonType": "group",
+    "studentCount": 4
+   }
+  },
+  {
+   "text": "12월 24일 저녁 7시 야간 스키 강습 1명 상급자 카빙 위주",
+   "expected": {
+    "date": "2026-12-24",
+    "start": "19:00",
+    "end": "21:00",
+    "sport": "스키",
+    "lessonType": "private",
+    "studentCount": 1
+   }
+  },
+  {
+   "text": "모레 오전 11시 보드 1:1 입문 성인 여성입니다 010-1234-5678",
+   "expected": {
+    "date": "2026-12-03",
+    "start": "11:00",
+    "end": "13:00",
+    "sport": "스노보드",
+    "lessonType": "private",
+    "studentCount": 1
+   }
+  },
+  {
+   "text": "1월 3일 13:00~15:00 스키 강습 3명 가족 (아빠 엄마 아이)",
+   "expected": {
+    "date": "2027-01-03",
+    "start": "13:00",
+    "end": "15:00",
+    "sport": "스키",
+    "lessonType": "group",
+    "studentCount": 3
+   }
+  },
+  {
+   "text": "12월 13일 오전 9시 반 스키 1:1 유치원생이에요",
+   "expected": {
+    "date": "2026-12-13",
+    "start": "09:30",
+    "end": "11:30",
+    "sport": "스키",
+    "lessonType": "private",
+    "studentCount": 1
+   }
+  },
+  {
+   "text": "이번 주 금요일 3시 보드 강습 친구 둘이요",
+   "expected": {
+    "date": "2026-12-04",
+    "start": "15:00",
+    "end": "17:00",
+    "sport": "스노보드",
+    "lessonType": "semi",
+    "studentCount": 2
+   }
+  },
+  {
+   "text": "12/27(일) 10~12시 스키 그룹 5명 회사 동료들 다 처음",
+   "expected": {
+    "date": "2026-12-27",
+    "start": "10:00",
+    "end": "12:00",
+    "sport": "스키",
+    "lessonType": "group",
+    "studentCount": 5
+   }
+  },
+  {
+   "text": "크리스마스 오후 1시에 스키 1:1 가능해요? 중급이에요",
+   "expected": {
+    "date": "2026-12-25",
+    "start": "13:00",
+    "end": "15:00",
+    "sport": "스키",
+    "lessonType": "private",
+    "studentCount": 1
+   }
+  },
+  {
+   "text": "다음 주 토요일 오전 10시 스노보드 개인 강습, 본인 장비 있어요",
+   "expected": {
+    "date": "2026-12-12",
+    "start": "10:00",
+    "end": "12:00",
+    "sport": "스노보드",
+    "lessonType": "private",
+    "studentCount": 1
+   }
+  },
+  {
+   "text": "12월 19일 오후 4시부터 2시간 스키 2명 초급",
+   "expected": {
+    "date": "2026-12-19",
+    "start": "16:00",
+    "end": "18:00",
+    "sport": "스키",
+    "lessonType": "semi",
+    "studentCount": 2
+   }
+  },
+  {
+   "text": "1/10 오전 9시 보드 1:1 초등학생 키 140 발 220",
+   "expected": {
+    "date": "2027-01-10",
+    "start": "09:00",
+    "end": "11:00",
+    "sport": "스노보드",
+    "lessonType": "private",
+    "studentCount": 1
+   }
+  },
+  {
+   "text": "이번 주 일요일 10시 스키 강습 아이 둘 (7살, 9살) 처음",
+   "expected": {
+    "date": "2026-12-06",
+    "start": "10:00",
+    "end": "12:00",
+    "sport": "스키",
+    "lessonType": "semi",
+    "studentCount": 2
+   }
+  },
+  {
+   "text": "12월 30일 오후 2시 스키 그룹 6명 중급 이상",
+   "expected": {
+    "date": "2026-12-30",
+    "start": "14:00",
+    "end": "16:00",
+    "sport": "스키",
+    "lessonType": "group",
+    "studentCount": 6
+   }
+  },
+  {
+   "text": "내일 오후 5시 보드 1:1 상급 트릭 배우고 싶어요",
+   "expected": {
+    "date": "2026-12-02",
+    "start": "17:00",
+    "end": "19:00",
+    "sport": "스노보드",
+    "lessonType": "private",
+    "studentCount": 1
+   }
+  },
+  {
+   "text": "1월 1일 신정 오전 11시 스키 1:2 커플 초급 패치는 저희가 살게요",
+   "expected": {
+    "date": "2027-01-01",
+    "start": "11:00",
+    "end": "13:00",
+    "sport": "스키",
+    "lessonType": "semi",
+    "studentCount": 2
+   }
+  },
+  {
+   "text": "12월 21일 월요일 오후 1시 반 스키 1:1 시니어 입문",
+   "expected": {
+    "date": "2026-12-21",
+    "start": "13:30",
+    "end": "15:30",
+    "sport": "스키",
+    "lessonType": "private",
+    "studentCount": 1
+   }
+  }
+ ]
+}

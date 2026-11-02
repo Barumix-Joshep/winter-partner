@@ -31,6 +31,9 @@ export default defineConfig({
       NEXT_PUBLIC_SUPABASE_URL: sb.url,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: sb.anonKey,
       SUPABASE_SERVICE_ROLE_KEY: sb.serviceKey,
+      // AI는 가짜 모델로. 기능 기본값은 global-setup에서 모두 끄고, AI 테스트만 켰다 끈다.
+      AI_MOCK: "1",
+      ANTHROPIC_API_KEY: "",
     },
   },
 });

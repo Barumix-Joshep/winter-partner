@@ -451,9 +451,9 @@
   "id": "P14-2",
   "phase": "14 AI 기능",
   "title": "A1 강습 접수 자동 입력 + 평가 세트 20개",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-20",
-  "note": ""
+  "note": "실호출 검증 대기(ANTHROPIC_API_KEY 없음 → 목으로 검증). 실제 샘플로 교체 필요: src/lib/ai/__fixtures__/intake-samples.json은 가상 접수 문자 20개(기준일 2026-12-01). /shop/jobs/new 상단 \"문자·카톡 붙여넣기\"(intake 켜졌을 때만) → 서버 액션 extractIntake: 연락처·이메일 제거, 글에 나온 우리 손님 이름만 손님A로 치환(처음 보는 이름은 남을 수 있어 재위탁 고지 대상), KST 오늘 날짜·요일·종목·스키장을 시스템 프롬프트에, 도구 호출로 날짜·시간·종목·유형·인원·레벨·요청·패치·손님 이름 추출 → 폼 칸 미리 채움(확신 없거나 빈 칸은 노란 테두리), 저장 검증은 parseJob 그대로. 기존 손님 이름이 맞으면 손님 선택. 실제 API 정확도 평가: AI_EVAL=1 ANTHROPIC_API_KEY=… npx vitest run src/lib/ai/intake.eval.test.ts (기준 4칸 90%). E2E: AI 켠 1개(가짜 모델)+끈 상태 확인, 기존 E2E는 global-setup에서 AI 끔. check:prod에 /shop/jobs/new 추가. 단위 151·E2E 15 통과 (11/2)"
  },
  {
   "id": "P14-3",

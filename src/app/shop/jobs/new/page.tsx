@@ -4,6 +4,7 @@ import { requireArea } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getMyShop } from "@/lib/shop/my-shop";
 import { JobForm } from "./job-form";
+import { isAiEnabled } from "@/lib/ai/flags";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -35,5 +36,6 @@ async function NewJob({ searchParams }: { searchParams: SearchParams }) {
   ]);
   const list = customers ?? [];
   const defaultCustomerId = typeof pre === "string" && list.some((c) => c.id === pre) ? pre : "";
-  return <JobForm resorts={shop.resorts} sports={sports ?? []} customers={list} defaultCustomerId={defaultCustomerId} />;
+  const aiIntake = await isAiEnabled(shop.id, "intake");
+  return <JobForm resorts={shop.resorts} sports={sports ?? []} customers={list} defaultCustomerId={defaultCustomerId} aiIntake={aiIntake} />;
 }
