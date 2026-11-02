@@ -21,22 +21,47 @@ export function aiKeyConfigured() {
   return !!process.env.ANTHROPIC_API_KEY || process.env.AI_MOCK === "1";
 }
 
-const sdkTransport: AiTransport = async (req, signal) => {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 0 });
-  const msg = await client.messages.create(
-    {
-      model: req.model,
-      max_tokens: req.maxTokens,
-      system: req.system,
-      messages: [{ role: "user", content: req.content as Anthropic.MessageParam["content"] }],
-      tools: [{ name: req.toolName, description: "결과를 이 형식으로 돌려준다", input_schema: req.schema as Anthropic.Tool.InputSchema }],
-      tool_choice: { type: "tool", name: req.toolName },
-    },
-    { signal },
-  );
-  const tool = msg.content.find((b) => b.type === "tool_use");
-  return { input: tool && tool.type === "tool_use" ? tool.input : null, usage: { input_tokens: msg.usage.input_tokens, output_tokens: msg.usage.output_tokens } };
-};
+// 강제 도구 지정(tool_choice: tool)을 지원하지 않는 모델(예: Sonnet 5.5)은 auto + 지시로 부른다. 한 번 거절되면 기억한다.
+const noForcedTool = new Set<string>();
+
+type MessagesClient = { messages: { create: (body: Anthropic.MessageCreateParamsNonStreaming, opts: { signal: AbortSignal }) => Promise<Anthropic.Message> } };
+
+export function makeSdkTransport(client: () => MessagesClient): AiTransport {
+  return async (req, signal) => {
+    const send = (forced: boolean) =>
+      client().messages.create(
+        {
+          model: req.model,
+          max_tokens: req.maxTokens,
+          system: forced ? req.system : `${req.system}\n반드시 ${req.toolName} 도구를 한 번 호출해 결과를 돌려준다. 도구 밖에 글을 쓰지 않는다.`,
+          messages: [{ role: "user", content: req.content as Anthropic.MessageParam["content"] }],
+          tools: [{ name: req.toolName, description: "결과를 이 형식으로 돌려준다", input_schema: req.schema as Anthropic.Tool.InputSchema }],
+          tool_choice: forced ? { type: "tool", name: req.toolName } : { type: "auto" },
+        },
+        { signal },
+      );
+    let msg: Anthropic.Message;
+    if (noForcedTool.has(req.model)) {
+      msg = await send(false);
+    } else {
+      try {
+        msg = await send(true);
+      } catch (e) {
+        const err = e as { status?: number; message?: string };
+        if (err?.status === 400 && /tool_choice/.test(String(err?.message ?? ""))) {
+          noForcedTool.add(req.model);
+          msg = await send(false);
+        } else {
+          throw e;
+        }
+      }
+    }
+    const tool = msg.content.find((b) => b.type === "tool_use" && b.name === req.toolName);
+    return { input: tool && tool.type === "tool_use" ? tool.input : null, usage: { input_tokens: msg.usage.input_tokens, output_tokens: msg.usage.output_tokens } };
+  };
+}
+
+const sdkTransport = makeSdkTransport(() => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 0 }));
 
 export const defaultDeps: AiDeps = {
   async gate(shopId, feature) {
