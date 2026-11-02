@@ -10,6 +10,7 @@ export const LIMITS = {
   reset_account: { max: 3, windowSeconds: 3600, count: "all" },
   link_view_ip: { max: 60, windowSeconds: 600, count: "all" },
   ai_user: { max: 30, windowSeconds: 600, count: "all" },
+  feedback_ip: { max: 10, windowSeconds: 3600, count: "all" },
 } as const satisfies Record<string, { max: number; windowSeconds: number; count: "all" | "fail" }>;
 
 export type LimitName = keyof typeof LIMITS;

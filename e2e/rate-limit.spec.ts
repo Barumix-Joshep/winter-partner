@@ -6,8 +6,11 @@ import { LIMITS, limitKey, type LimitName } from "../src/lib/ops/limits";
 const MAILPIT = "http://127.0.0.1:54324";
 
 // 화면으로 수십 번 시도하는 대신, 같은 키로 한도 직전까지 미리 센다
+// 고정 창이라 창 경계를 넘으면 카운터가 0이 된다: 경계 30초 안이면 넘긴 뒤에 센다
 async function fill(name: LimitName, subject: string, times: number) {
   const l = LIMITS[name];
+  const left = l.windowSeconds - ((Date.now() / 1000) % l.windowSeconds);
+  if (left < 30) await new Promise((r) => setTimeout(r, (left + 1) * 1000));
   for (let i = 0; i < times; i++) {
     await admin().rpc("public_rate_limit", { p_key: limitKey(name, subject), p_max: l.max, p_window_seconds: l.windowSeconds });
   }

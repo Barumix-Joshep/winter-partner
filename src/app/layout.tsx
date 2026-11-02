@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import { RegisterSW } from "@/components/register-sw";
+import { FeedbackButton } from "@/components/feedback-button";
 
 const notoSansKr = Noto_Sans_KR({
   variable: "--font-noto-sans-kr",
@@ -27,6 +28,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="ko" className={`${notoSansKr.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
+        <Suspense fallback={null}>
+          <FeedbackButton />
+        </Suspense>
         <RegisterSW />
       </body>
     </html>
