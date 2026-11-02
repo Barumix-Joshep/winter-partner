@@ -182,6 +182,7 @@ test("3. 샵 간 일정 충돌, 강사 일방 취소와 패널티, 손님 취소
 });
 
 test("4. 완료 보고 → 승인 → 월 정산(3.3%·팀 0%) → PDF·Excel → 지급 완료", async ({ browser }) => {
+  test.setTimeout(180_000); // 단독 21초, 전체 실행 중에는 개발 서버가 PDF·엑셀 경로를 처음 컴파일하느라 90초를 넘긴 적이 있다 (P18)
   // 강사가 모두 달라 겹치지 않는다. 3시간 전으로 옮겨 이번 달 정산에 들어가게 한다(월초에 며칠 전으로 옮기면 지난달로 넘어간다)
   const reports: [string, Who, number][] = [[S.jobs.r1, "ex1", 3], [S.jobs.r2, "ex3", 3], [S.jobs.r3, "fr1", 3]];
   const shop = await login(browser, "rental");
