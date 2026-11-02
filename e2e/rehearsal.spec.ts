@@ -318,3 +318,40 @@ test("8. 모바일(390px) 주요 화면 — 가로 넘침 없음, 캡처", async
   }
   expect(wide).toEqual([]);
 });
+
+// 사용 안내(/help) 화면 캡처: HELP_CAPTURE=1 npx playwright test e2e/rehearsal.spec.ts
+// [테스트] 리허설 데이터로만 찍는다 (실제 개인정보 없음). 결과는 public/help/*.png
+test("9. 사용 안내 캡처 ([테스트] 데이터)", async ({ browser }) => {
+  test.skip(process.env.HELP_CAPTURE !== "1", "HELP_CAPTURE=1일 때만");
+  const shots: [Who, string, string][] = [
+    ["rental", "/shop", "shop-today"],
+    ["rental", "/shop/jobs/new", "shop-new-job"],
+    ["rental", `/shop/jobs/${S.jobs.r2}`, "shop-job-bids"],
+    ["rental", "/shop/settlements", "shop-settlements"],
+    ["rental", "/shop/customers", "shop-customers"],
+    ["ex1", "/instructor", "inst-home"],
+    ["fr3", "/instructor/bids", "inst-bids"],
+    ["ex1", "/instructor/schedule", "inst-schedule"],
+    ["ex1", "/instructor/pay", "inst-pay"],
+    ["ex1", "/notifications", "notifications"],
+  ];
+  const ctxs = new Map<Who, Awaited<ReturnType<typeof browser.newContext>>>();
+  for (const [who, path, name] of shots) {
+    if (!ctxs.has(who)) {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      const p = await ctx.newPage();
+      await p.goto("/login");
+      await p.getByLabel("이메일").fill(ACC[who].email);
+      await p.getByLabel("비밀번호").fill(PW);
+      await p.getByRole("button", { name: "로그인" }).click();
+      await p.waitForURL((u) => !u.pathname.startsWith("/login"));
+      ctxs.set(who, ctx);
+    }
+    const p = ctxs.get(who)!.pages()[0];
+    await p.goto(path);
+    await p.waitForLoadState("networkidle");
+    await p.addStyleTag({ content: "nextjs-portal{display:none!important}" }); // 개발 도구 버튼 숨김
+    await p.screenshot({ path: `public/help/${name}.png` });
+  }
+  for (const c of ctxs.values()) await c.close();
+});

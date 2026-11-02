@@ -131,6 +131,11 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
         <main className="mx-auto w-full max-w-5xl flex-1 px-5 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
           {agreement}
           {children}
+          <div className="mt-10 flex flex-wrap gap-4 print:hidden">
+            <Link href="/help?for=instructor" className="flex min-h-11 items-center text-sm text-ink-muted underline">
+              사용 안내
+            </Link>
+          </div>
         </main>
         <TabBar items={NAV.instructor!} root="/instructor" />
       </div>
@@ -174,10 +179,18 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
             </p>
           )}
           {shop && (
+            <Link href="/shop/settings" className="flex min-h-11 items-center rounded-lg px-3 text-sm text-[#C9D4EA] hover:bg-navy-2 hover:text-white">
+              샵 정보
+            </Link>
+          )}
+          {shop && (
             <Link href="/shop/ai" className="flex min-h-11 items-center rounded-lg px-3 text-sm text-[#C9D4EA] hover:bg-navy-2 hover:text-white">
               AI 도우미 설정
             </Link>
           )}
+          <Link href="/help?for=shop" className="flex min-h-11 items-center rounded-lg px-3 text-sm text-[#C9D4EA] hover:bg-navy-2 hover:text-white">
+            사용 안내
+          </Link>
           <form action={signOut}>
             <button className="min-h-11 w-full rounded-[10px] bg-navy-2 px-4 text-sm">로그아웃</button>
           </form>
@@ -187,6 +200,14 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
         {agreement}
         {children}
         <div className="mt-10 flex flex-wrap gap-4 md:hidden print:hidden">
+          {shop && (
+            <Link href="/shop/settings" className="flex min-h-11 items-center text-sm text-ink-muted underline">
+              샵 정보
+            </Link>
+          )}
+          <Link href="/help?for=shop" className="flex min-h-11 items-center text-sm text-ink-muted underline">
+            사용 안내
+          </Link>
           {shop && (
             <Link href="/shop/ai" className="flex min-h-11 items-center text-sm text-ink-muted underline">
               AI 도우미 설정
