@@ -26,6 +26,16 @@ test("DB 직접 조회도 RLS로 막힌다", async () => {
     expect(error, table).toBeNull();
     expect(data, table).toEqual([]);
   }
+  // P13에서 생긴 손님 관련 테이블도 다른 샵 행은 보이지 않는다
+  const admin_ = (await import("./helpers")).admin();
+  await admin_.from("customer_contacts").insert({ shop_id: SHOP1, customer_id: "d0000000-0000-0000-0000-000000000001", channel: "phone", memo: "격리 확인" });
+  for (const table of ["customer_consents", "customer_contacts", "consent_links", "registration_links", "health_warnings", "access_logs", "customer_erasures"] as const) {
+    const { data } = await shop2.from(table).select("shop_id").eq("shop_id", SHOP1);
+    expect(data ?? [], table).toEqual([]);
+  }
+  const { data: own } = await (await userClient("shop1@winter.test")).from("customer_contacts").select("id").eq("shop_id", SHOP1);
+  expect((own ?? []).length).toBeGreaterThan(0);
+
   const { error } = await shop2.from("customers").insert({ shop_id: SHOP1, name: "침입" });
   expect(error).not.toBeNull();
 
