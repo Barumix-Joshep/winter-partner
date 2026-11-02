@@ -65,14 +65,13 @@ await check("서비스 워커", async () => {
   return "ok";
 });
 
-await check("크론은 비밀값 없이 401", async () => {
-  const [none, wrong] = await Promise.all([
-    get("/api/notify/dispatch"),
-    get("/api/notify/dispatch", { headers: { authorization: "Bearer wrong" } }),
-  ]);
-  expect(none.status === 401 && wrong.status === 401, `상태 ${none.status}/${wrong.status}`);
-  return "ok";
-});
+for (const cron of ["/api/notify/dispatch", "/api/maintenance/daily"]) {
+  await check(`크론 ${cron} 비밀값 없이 401`, async () => {
+    const [none, wrong] = await Promise.all([get(cron), get(cron, { headers: { authorization: "Bearer wrong" } })]);
+    expect(none.status === 401 && wrong.status === 401, `상태 ${none.status}/${wrong.status}`);
+    return "ok";
+  });
+}
 
 // 로그인 없이 보호된 화면: 로그인으로 보내고 데이터는 없다 (스트리밍이라 상태는 200, 본문 안에서 이동)
 for (const path of ["/shop", "/shop/customers", "/instructor", "/admin"]) {

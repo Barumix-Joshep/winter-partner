@@ -13,6 +13,7 @@ import { deleteContact, dismissMerge, linkCustomer, mergeCustomer, recordStaffCo
 import { CONSENT_METHOD_LABEL, CONSENT_SUBJECT_LABEL, OPTIONAL_CONSENTS, type OptionalConsentKind } from "@/lib/privacy/texts";
 import { ContactForm } from "./contact-form";
 import { ConsentLink } from "./consent-link";
+import { EraseForm } from "./erase-form";
 import { isMinor, kstYear } from "@/lib/customer/minor";
 import { logAccess } from "@/lib/audit";
 import { CONTACT_CHANNELS, formatDay, type ContactChannel } from "@/lib/customer/contact";
@@ -42,6 +43,7 @@ type Customer = {
   birth_year: number | null;
   source: "staff" | "self";
   merge_candidate_id: string | null;
+  anonymized_at: string | null;
   owner: { name: string } | null;
 };
 
@@ -79,6 +81,7 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
     .from("customers")
     .select("id, name, phone, level, tags, next_contact_on, merge_candidate_id")
     .eq("shop_id", shop.id)
+    .is("anonymized_at", null)
     .order("name")
     .limit(200);
   if (q) {
@@ -88,8 +91,8 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
   }
   const [{ data: rows }, { data: dueRows }, { count: total }, { data: recipients }] = await Promise.all([
     list,
-    supabase.from("customers").select("id, name").eq("shop_id", shop.id).lte("next_contact_on", today).order("next_contact_on"),
-    supabase.from("customers").select("id", { count: "exact", head: true }).eq("shop_id", shop.id),
+    supabase.from("customers").select("id, name").eq("shop_id", shop.id).is("anonymized_at", null).lte("next_contact_on", today).order("next_contact_on"),
+    supabase.from("customers").select("id", { count: "exact", head: true }).eq("shop_id", shop.id).is("anonymized_at", null),
     supabase.rpc("marketing_recipients", { p_shop_id: shop.id }),
   ]);
   const customers = (rows ?? []) as (Pick<Customer, "id" | "name" | "phone" | "level" | "tags" | "next_contact_on"> & { merge_candidate_id: string | null })[];
@@ -190,7 +193,7 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
     supabase
       .from("customers")
       .select(
-        "id, name, phone, guardian_name, guardian_phone, level, equipment_size, tags, memo, next_contact_on, next_contact_note, birth_year, source, merge_candidate_id, owner:profiles!customers_owner_user_id_fkey(name)",
+        "id, name, phone, guardian_name, guardian_phone, level, equipment_size, tags, memo, next_contact_on, next_contact_note, birth_year, source, merge_candidate_id, anonymized_at, owner:profiles!customers_owner_user_id_fkey(name)",
       )
       .eq("id", id)
       .eq("shop_id", shopId)
@@ -209,6 +212,13 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
   const contacts = (contactRows ?? []) as unknown as Contact[];
   if (!c) return <p className="rounded-[14px] border border-line bg-white p-5 text-sm text-ink-muted">손님을 찾을 수 없습니다.</p>;
   const cust = c as unknown as Customer;
+  if (cust.anonymized_at) {
+    return (
+      <p className="rounded-[14px] border border-line bg-white p-5 text-sm text-ink-muted">
+        {new Date(Date.parse(cust.anonymized_at) + 9 * 3600_000).toISOString().slice(0, 10)}에 익명화된 손님입니다. 이름·연락처·메모는 지워졌고 통계용 강습 이력만 남아 있습니다.
+      </p>
+    );
+  }
   // 연락처가 보이는 손님 카드 열람을 기록한다
   await logAccess("customer_view", shopId, cust.id);
   const minor = isMinor(cust.birth_year, kstYear(await requestTime()));
@@ -371,6 +381,8 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
           </ul>
         )}
       </div>
+
+      <EraseForm id={cust.id} name={cust.name} />
 
       <details className="rounded-[14px] border border-line bg-white p-5">
         <summary className="cursor-pointer text-base font-bold">정보 고치기 · 일행</summary>

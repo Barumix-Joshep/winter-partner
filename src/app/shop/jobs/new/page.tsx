@@ -31,7 +31,7 @@ async function NewJob({ searchParams }: { searchParams: SearchParams }) {
   const supabase = await createClient();
   const [{ data: sports }, { data: customers }] = await Promise.all([
     supabase.from("sports").select("id, name").order("id"),
-    supabase.from("customers").select("id, name, level").eq("shop_id", shop.id).order("name").limit(500),
+    supabase.from("customers").select("id, name, level").eq("shop_id", shop.id).is("anonymized_at", null).order("name").limit(500),
   ]);
   const list = customers ?? [];
   const defaultCustomerId = typeof pre === "string" && list.some((c) => c.id === pre) ? pre : "";

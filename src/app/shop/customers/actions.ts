@@ -139,3 +139,14 @@ export async function dismissMerge(formData: FormData) {
   await supabase.rpc("dismiss_merge", { p_id: String(formData.get("id") ?? "") });
   revalidatePath("/shop/customers");
 }
+
+// 손님 삭제 요청: 즉시 익명화 (되돌릴 수 없음). 확인 문구 '익명화'를 직접 입력해야 한다.
+export async function eraseCustomer(_prev: { message?: string } | undefined, formData: FormData) {
+  await requireArea("shop");
+  const id = String(formData.get("id") ?? "");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("erase_customer", { p_customer_id: id, p_confirm: String(formData.get("confirm") ?? "") });
+  if (error) return { message: error.message.includes("확인 문구") ? "확인 문구 '익명화'를 정확히 입력해 주세요." : "처리하지 못했습니다." };
+  revalidatePath("/shop/customers");
+  redirect(`/shop/customers?id=${id}`);
+}

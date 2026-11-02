@@ -419,9 +419,9 @@
   "id": "P13-6",
   "phase": "13 개인정보·손님 데이터",
   "title": "보관·파기 (3시즌 경과 익명화 함수·크론, 손님 삭제 요청 즉시 익명화, 샵 탈퇴 절차 문서)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-16",
-  "note": ""
+  "note": "마이그레이션 customer_retention(원격 적용): customers.anonymized_at, customer_erasures(처리 기록: 요청/보관 기간), private.season_of(11~4월 시즌), private.anonymize_customer(이름·연락처·보호자·출생 연도·장비·태그·메모·다음 연락·연락 기록·동의 링크·일행, 강습 요청 사항·수업 메모 제거, 강습 이력·레벨·동의 기록은 유지). erase_customer(샵 멤버, 확인 문구 \"익명화\" 필수), purge_expired_customers(마지막 강습 시즌+3시즌 지나고 다음 시즌 시작 시, service_role만). 익명화 손님은 목록·강습 등록·광고 발송 대상에서 제외. 크론 /api/maintenance/daily(CRON_SECRET, 매일 03:00 KST): 손님 익명화+접속 기록 2년 정리, vercel.json 추가, check:prod에 401 확인 추가. 손님 카드 \"삭제 요청 처리\" 2단계 확인. 샵 탈퇴 절차는 docs/shop-offboarding.md(초안, 기간·서식은 사장님·법률 검토 필요). pgTAP 358·E2E 통과 (11/2)"
  },
  {
   "id": "P13-7",
