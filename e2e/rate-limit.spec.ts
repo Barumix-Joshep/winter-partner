@@ -55,7 +55,8 @@ test("비밀번호 재설정 메일 → 새 비밀번호로 로그인, 같은 �
   await page.getByRole("button", { name: "재설정 메일 받기" }).click();
   await expect(page.getByText("비밀번호 재설정 메일을 보냈습니다")).toBeVisible();
 
-  await page.goto(await resetLink(email));
+  const link = await resetLink(email);
+  await page.goto(link);
   await expect(page).toHaveURL(/\/login\/reset/);
   await page.getByLabel("새 비밀번호").fill("newpass-1234");
   await page.getByLabel("한 번 더").fill("newpass-1234");
@@ -68,6 +69,11 @@ test("비밀번호 재설정 메일 → 새 비밀번호로 로그인, 같은 �
   await fresh.getByLabel("비밀번호").fill("newpass-1234");
   await fresh.getByRole("button", { name: "로그인" }).click();
   await fresh.waitForURL((u) => !u.pathname.startsWith("/login"));
+
+  // P18-4: 같은 재설정 링크를 다시 열면 비밀번호를 바꿀 수 없고 로그인 화면으로 간다
+  const again = await (await page.context().browser()!.newContext()).newPage();
+  await again.goto(link);
+  await expect(again).toHaveURL(/\/login\?error=confirm/);
 
   await fill("reset_account", email, LIMITS.reset_account.max - 1); // 이미 1번 + 2번 = 3번
   await fresh.context().clearCookies();

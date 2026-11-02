@@ -86,9 +86,14 @@ export async function updatePassword(_prev: FormState | undefined, formData: For
 }
 
 export async function signOut() {
+  await signOutSession();
+  redirect("/login");
+}
+
+// 화면 쪽에서 새로 불러오며 이동할 때 (components/logout-button.tsx)
+export async function signOutSession() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/login");
 }
 
 // 약관·개인정보 처리방침 동의 (가입 때 동의하지 않은 기존 회원)

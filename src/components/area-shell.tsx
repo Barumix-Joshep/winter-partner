@@ -2,7 +2,8 @@ import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { requireArea } from "@/lib/auth/session";
 import type { Area } from "@/lib/auth/routing";
-import { recordAgreement, signOut } from "@/app/login/actions";
+import { recordAgreement } from "@/app/login/actions";
+import { LogoutButton } from "./logout-button";
 import { createClient } from "@/lib/supabase/server";
 import { getMyShop } from "@/lib/shop/my-shop";
 import { SideNav, TabBar, type NavItem } from "./nav-links";
@@ -191,9 +192,7 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
           <Link href="/help?for=shop" className="flex min-h-11 items-center rounded-lg px-3 text-sm text-[#C9D4EA] hover:bg-navy-2 hover:text-white">
             사용 안내
           </Link>
-          <form action={signOut}>
-            <button className="min-h-11 w-full rounded-[10px] bg-navy-2 px-4 text-sm">로그아웃</button>
-          </form>
+          <LogoutButton className="min-h-11 w-full rounded-[10px] bg-navy-2 px-4 text-sm" />
         </div>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-6 md:px-8">
@@ -213,9 +212,7 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
               AI 도우미 설정
             </Link>
           )}
-          <form action={signOut}>
-            <button className="min-h-11 text-sm text-ink-muted underline">로그아웃</button>
-          </form>
+          <LogoutButton className="min-h-11 text-sm text-ink-muted underline" />
         </div>
       </main>
     </div>
