@@ -747,9 +747,9 @@
   "id": "P19-5",
   "phase": "19 시범 샵 전 필수 보완",
   "title": "시범 샵 시작 준비 문서 (메일·백업·실기기·대표님 인터뷰)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-20",
-  "note": ""
+  "note": "문서만 작성(가입·설정 변경 없음): docs/mail-setup.md(Resend 추천·SES 대안, SPF·DKIM·DMARC, Supabase SMTP 위치·값 자리 표시자, 한국어 인증·재설정 템플릿, 확인 방법), docs/backup-plan.md(Pro 전환 비교, 손 백업 주기·보관·로컬 복구 연습, 실데이터 전 체크리스트), docs/pilot-device-check.md(아이폰·안드로이드 웹푸시·PWA·QR·PDF·음성, 결과 표), docs/owner-interview-guide.md(질문 8개와 지급 방식 설정 옮기는 법) (11/3)"
  },
  {
   "id": "P19-6",
