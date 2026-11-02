@@ -19,6 +19,10 @@
 - 손님 정보: 샵 관리자만 연락처를 본다. 강사는 레벨·메모만.
 - 자격증은 본사가 검증한 뒤에만 공개 프로필에 표시한다.
 - 1단계에서는 대금 중개(PG)를 하지 않는다.
+- AI 기능(P14): AI는 제안만 하고 확정은 사람이 한다(폼 미리 채우기·추천·초안). AI 출력을 DB에 바로 쓰지 않는다.
+- AI에 보내는 개인정보는 최소로: 손님 이름·연락처·보호자 정보는 보내지 않고 "손님A"처럼 치환한다(`src/lib/ai/redact.ts`). 자격증 이미지는 강사 동의 안내 후에만.
+- `ANTHROPIC_API_KEY`가 없거나 샵·플랫폼 설정에서 끄면 모든 화면이 기존 수동 흐름으로 그대로 동작해야 한다. E2E는 AI 끈 상태가 기본.
+- AI 비용 상한: 샵별 하루 호출 수(기본 200), 플랫폼 월 비용 상한. 넘으면 조용히 끄고(수동 흐름) 관리자에게 알린다.
 
 ## 작업 방식
 - Superpowers 플러그인을 쓴다(.claude/settings.json). 새 기능은 brainstorming → writing-plans → executing-plans(또는 subagent-driven-development) 순서, 구현은 test-driven-development, 버그는 systematic-debugging, 완료 선언 전에는 verification-before-completion을 따른다. 계획 문서는 `docs/plans/`에 둔다.
