@@ -37,11 +37,11 @@ select is((select allowed from ai_gate('10000000-0000-0000-0000-000000055502', '
 update private.app_settings set value = '200' where key = 'ai_daily_calls_per_shop';
 
 -- 월 비용 상한: 넘으면 끄고 관리자에게 한 번 알림
-update private.app_settings set value = '1' where key = 'ai_monthly_cap_krw';
+update private.app_settings set value = '0' where key = 'ai_monthly_cap_krw';  -- 이미 쓴 비용이 상한 이상
 select is((select (allowed, reason) from ai_gate('10000000-0000-0000-0000-000000055502', 'intake')), (false, 'monthly_cap'::text), '플랫폼 월 상한');
 select ai_gate('10000000-0000-0000-0000-000000055502', 'intake');
 select is((select count(*)::int from notifications where kind = 'ai_cap_reached' and user_id = '00000000-0000-0000-0000-000000055509'), 1, '관리자 알림은 한 번만');
-update private.app_settings set value = '50000' where key = 'ai_monthly_cap_krw';
+update private.app_settings set value = '80000' where key = 'ai_monthly_cap_krw';
 
 -- 샵이 끄기, 플랫폼 기본값 끄기
 select pg_temp.login('00000000-0000-0000-0000-000000055501');
