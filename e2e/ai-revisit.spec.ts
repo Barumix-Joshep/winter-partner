@@ -26,5 +26,5 @@ test("광고 동의한 손님만 후보로 보이고 문구 초안을 만든다"
   await expect(row).toBeVisible();
   await expect(shop.getByRole("listitem").filter({ hasText: "손님 하나" })).toHaveCount(0); // 직원 기록뿐이라 제외
   await shop.getByRole("button", { name: "안내 문구 초안 만들기" }).click();
-  await expect(row.getByRole("textbox")).toHaveValue(/^손님 둘님, 올 시즌도/);
+  await expect(row.getByRole("textbox")).toHaveValue(/^\(광고\) 손님 둘님, 올 시즌도/);
 });

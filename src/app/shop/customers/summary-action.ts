@@ -13,6 +13,8 @@ import { LESSON_TYPES, type LessonType } from "@/lib/shop/job";
 
 export type SummaryState = { summary?: CustomerSummary; at?: string; message?: string };
 
+// 강습 상태는 한국어로 보낸다 (모델이 open 같은 내부 값을 그대로 옮기지 않게)
+const STATUS_KO: Record<string, string> = { draft: "등록만 됨", open: "배정 전", assigned: "예정", done: "완료 보고", approved: "완료", canceled: "취소" };
 const kstDay = (iso: string) => new Date(Date.parse(iso) + 9 * 3600_000).toISOString().slice(0, 10);
 
 // 손님 카드 요약: 입력이 바뀌었을 때만 새로 만들고, 아니면 저장된 요약을 돌려준다
@@ -40,7 +42,7 @@ export async function summarizeCustomer(_prev: SummaryState | undefined, formDat
     .map((h) => h.jobs)
     .filter((j): j is NonNullable<H["jobs"]> => !!j)
     .sort((a, b) => b.starts_at.localeCompare(a.starts_at))
-    .map((j) => ({ date: kstDay(j.starts_at), sport: j.sports?.name ?? null, lesson: LESSON_TYPES[j.lesson_type].label, status: j.status, note: j.assignments?.lesson_note ?? null }));
+    .map((j) => ({ date: kstDay(j.starts_at), sport: j.sports?.name ?? null, lesson: LESSON_TYPES[j.lesson_type].label, status: STATUS_KO[j.status] ?? "기타", note: j.assignments?.lesson_note ?? null }));
   const marketingOk = !!consent?.valid;
   const input = {
     name: c.name as string,

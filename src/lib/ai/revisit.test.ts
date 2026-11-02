@@ -12,8 +12,12 @@ describe("revisit", () => {
     expect(text).not.toMatch(/박민준|이서아/);
     expect(text).toContain("손님1: 스키, 레벨 초급, 지난 시즌 강습 3회");
   });
+  it("이미 (광고)로 시작하면 그대로", () => {
+    const { labels } = revisitPrompt("샵", list);
+    expect(parseRevisit({ messages: [{ label: "손님1", message: "(광고) 손님1님 안녕하세요" }] }, labels)).toEqual({ c1: "(광고) 박민준님 안녕하세요" });
+  });
   it("문구 속 표시를 이름으로 되돌리고 모르는 표시는 버린다", () => {
     const { labels } = revisitPrompt("샵", list);
-    expect(parseRevisit({ messages: [{ label: "손님1", message: "손님1님, 올해는 패러렐 어떠세요?" }, { label: "손님9", message: "x" }] }, labels)).toEqual({ c1: "박민준님, 올해는 패러렐 어떠세요?" });
+    expect(parseRevisit({ messages: [{ label: "손님1", message: "손님1님, 올해는 패러렐 어떠세요?" }, { label: "손님9", message: "x" }] }, labels)).toEqual({ c1: "(광고) 박민준님, 올해는 패러렐 어떠세요?" });
   });
 });

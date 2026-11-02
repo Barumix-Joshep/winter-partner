@@ -4,7 +4,7 @@ export type RevisitCandidate = { customer_id: string; name: string; level: strin
 export const REVISIT_TOOL = "draft_revisit_messages";
 export const REVISIT_SYSTEM =
   "너는 스키·스노보드 렌탈샵이 지난 시즌 손님에게 보낼 시즌 안내 문자를 쓴다. 손님마다 2~3문장, 존댓말, 과장·할인 약속 금지. " +
-  "레벨의 다음 단계 강습을 한 가지 제안하고, 마지막에 '수신을 원치 않으시면 말씀해 주세요.'를 붙인다. 이름 자리는 손님 표시(손님1 등)를 그대로 쓴다.";
+  "광고 문자이므로 반드시 '(광고) '로 시작하고 샵 이름을 넣는다. 레벨의 다음 단계 강습을 한 가지 제안하고, 마지막에 '수신을 원치 않으시면 말씀해 주세요.'를 붙인다. 이름 자리는 손님 표시(손님1 등)를 그대로 쓴다.";
 export const REVISIT_SCHEMA = {
   type: "object",
   properties: { messages: { type: "array", items: { type: "object", properties: { label: { type: "string" }, message: { type: "string" } }, required: ["label", "message"] } } },
@@ -27,7 +27,11 @@ export function parseRevisit(input: unknown, labels: Map<string, RevisitCandidat
     if (!m || typeof m !== "object") continue;
     const { label, message } = m as { label?: unknown; message?: unknown };
     const c = typeof label === "string" ? labels.get(label.trim()) : undefined;
-    if (c && typeof message === "string") out[c.customer_id] = message.slice(0, 400).split(label as string).join(c.name);
+    if (c && typeof message === "string") {
+      const text = message.slice(0, 400).split(label as string).join(c.name).trim();
+      // 광고성 문자 표시 의무: 모델이 빠뜨리면 붙인다
+      out[c.customer_id] = text.startsWith("(광고)") ? text : `(광고) ${text}`;
+    }
   }
   return out;
 }
