@@ -60,12 +60,13 @@ export async function addAvailability(instructorId: string, date: string, from =
   if (error) throw error;
 }
 
-// 강습이 끝난 것처럼 시간을 앞당긴다 (완료 보고는 시작 뒤에만 된다)
-export async function moveJobToPast(jobId: string) {
+// 강습이 끝난 것처럼 시간을 앞당긴다 (완료 보고는 시작 뒤에만 된다).
+// 같은 강사의 강습끼리 겹치면 DB가 막으므로 테스트마다 다른 hoursAgo를 쓴다.
+export async function moveJobToPast(jobId: string, hoursAgo = 3) {
   const now = Date.now();
   const { error } = await admin()
     .from("jobs")
-    .update({ starts_at: new Date(now - 3 * 3600_000).toISOString(), ends_at: new Date(now - 3600_000).toISOString() })
+    .update({ starts_at: new Date(now - hoursAgo * 3600_000).toISOString(), ends_at: new Date(now - (hoursAgo - 2) * 3600_000).toISOString() })
     .eq("id", jobId);
   if (error) throw error;
 }

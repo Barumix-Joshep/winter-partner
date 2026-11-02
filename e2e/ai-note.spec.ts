@@ -15,7 +15,7 @@ test("정리하기로 메모를 다듬고, 단어 검사에 안 걸린 건강 �
   const park = await as(browser, "park@winter.test");
   await park.goto("/instructor");
   await park.locator("section").filter({ hasText: "E2E 메모 정리" }).getByRole("button", { name: "수락" }).click();
-  await moveJobToPast(jobId);
+  await moveJobToPast(jobId, 30); // 팀 입찰 테스트(같은 강사)와 겹치지 않게
 
   await park.goto("/instructor");
   const card = park.locator("article").filter({ has: park.getByRole("button", { name: "완료 보고하기" }) });
