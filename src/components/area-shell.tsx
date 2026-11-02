@@ -24,6 +24,7 @@ const NAV: Partial<Record<Area, NavItem[]>> = {
     { href: "/shop/customers", label: "손님" },
     { href: "/shop/team", label: "전속 강사" },
     { href: "/shop/settlements", label: "정산" },
+    { href: "/shop/access-logs", label: "접속 기록" },
   ],
   instructor: [
     { href: "/instructor", label: "홈", icon: icon(<path d="M3 11l9-8 9 8v10a1 1 0 01-1 1h-5v-7h-6v7H4a1 1 0 01-1-1z" />) },

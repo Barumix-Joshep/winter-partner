@@ -14,6 +14,7 @@ import { CONSENT_METHOD_LABEL, CONSENT_SUBJECT_LABEL, OPTIONAL_CONSENTS, type Op
 import { ContactForm } from "./contact-form";
 import { ConsentLink } from "./consent-link";
 import { isMinor, kstYear } from "@/lib/customer/minor";
+import { logAccess } from "@/lib/audit";
 import { CONTACT_CHANNELS, formatDay, type ContactChannel } from "@/lib/customer/contact";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -208,6 +209,8 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
   const contacts = (contactRows ?? []) as unknown as Contact[];
   if (!c) return <p className="rounded-[14px] border border-line bg-white p-5 text-sm text-ink-muted">손님을 찾을 수 없습니다.</p>;
   const cust = c as unknown as Customer;
+  // 연락처가 보이는 손님 카드 열람을 기록한다
+  await logAccess("customer_view", shopId, cust.id);
   const minor = isMinor(cust.birth_year, kstYear(await requestTime()));
   const { data: candidate } = cust.merge_candidate_id
     ? await supabase.from("customers").select("id, name, phone, level").eq("id", cust.merge_candidate_id).eq("shop_id", shopId).maybeSingle()

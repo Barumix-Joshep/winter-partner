@@ -4,6 +4,7 @@ import { getMyShop } from "@/lib/shop/my-shop";
 import { buildStatement, SETTLEMENT_SELECT, type SettlementRow } from "@/lib/settlement/statement";
 import { renderMonthXlsx } from "@/lib/settlement/xlsx";
 import { attachment } from "@/lib/settlement/download";
+import { logAccess } from "@/lib/audit";
 
 // 샵의 한 달 정산 Excel (요약 + 강습 내역)
 export async function GET(req: NextRequest) {
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest) {
   const { data } = await supabase.from("settlements").select(SETTLEMENT_SELECT).eq("shop_id", shop.id).eq("month", `${month}-01`);
   const statements = ((data ?? []) as unknown as SettlementRow[]).map(buildStatement).sort((a, b) => b.gross - a.gross);
   const xlsx = await renderMonthXlsx(month, shop.name, statements);
+  await logAccess("settlement_export", shop.id, null, { month, rows: statements.length });
   return new NextResponse(new Uint8Array(xlsx), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

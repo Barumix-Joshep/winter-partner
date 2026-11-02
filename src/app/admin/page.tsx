@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { requireArea } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { reviewCert } from "./actions";
@@ -6,6 +7,9 @@ import { reviewCert } from "./actions";
 export default function AdminHome() {
   return (
     <div className="flex flex-col gap-4">
+      <Link href="/admin/access-logs" className="flex min-h-11 items-center self-start text-sm text-brand underline">
+        전체 접속 기록 보기
+      </Link>
       <h1 className="text-lg font-bold">자격증 검증</h1>
       <Suspense fallback={<p className="text-sm text-ink-muted">불러오는 중…</p>}>
         <PendingCerts />
