@@ -43,6 +43,8 @@ export function notificationMessage(kind: string, payload: Payload, job: JobInfo
       return { title: "강사가 강습을 취소했습니다", body: `${when} · 다시 배정해 주세요`, url: shopJob };
     case "settlement_paid":
       return { title: "정산금이 지급됐습니다", body: `실지급 ${won(payload.net)}`, url: "/instructor/pay" };
+    case "ai_cap_reached":
+      return { title: "AI 월 비용 상한에 닿았습니다", body: "이번 달 남은 기간은 AI 도우미가 꺼지고 수동으로 동작합니다", url: "/admin/ai" };
     default:
       return { title: "겨울파트너 알림", body: "", url: "/" };
   }

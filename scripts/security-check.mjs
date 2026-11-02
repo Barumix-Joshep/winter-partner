@@ -24,6 +24,7 @@ const PATTERNS = [
   ['GitHub 토큰', /\b(ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9_]{20,}/],
   ['AWS 액세스 키', /\bAKIA[0-9A-Z]{16}\b/],
   ['개인 키', /-----BEGIN (RSA |EC |OPENSSH |)PRIVATE KEY-----/],
+  ['Anthropic API 키', /sk-ant-[A-Za-z0-9_-]{20,}/],
   ['Postgres 접속 문자열(비밀번호 포함)', /postgres(ql)?:\/\/[^:\s'"]+:[^@\s'"]{6,}@/],
 ];
 const SKIP = /(^|\/)(package-lock\.json|node_modules\/|\.next\/)|\.(png|jpg|jpeg|gif|ico|woff2?|pdf)$/;

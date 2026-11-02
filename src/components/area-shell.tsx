@@ -173,6 +173,11 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
               <span className="font-medium text-white">{shop.resorts.map((r) => r.name).join(" · ")}</span>
             </p>
           )}
+          {shop && (
+            <Link href="/shop/ai" className="flex min-h-11 items-center rounded-lg px-3 text-sm text-[#C9D4EA] hover:bg-navy-2 hover:text-white">
+              AI 도우미 설정
+            </Link>
+          )}
           <form action={signOut}>
             <button className="min-h-11 w-full rounded-[10px] bg-navy-2 px-4 text-sm">로그아웃</button>
           </form>
@@ -181,9 +186,16 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
       <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-6 md:px-8">
         {agreement}
         {children}
-        <form action={signOut} className="mt-10 md:hidden">
-          <button className="min-h-11 text-sm text-ink-muted underline">로그아웃</button>
-        </form>
+        <div className="mt-10 flex flex-wrap gap-4 md:hidden print:hidden">
+          {shop && (
+            <Link href="/shop/ai" className="flex min-h-11 items-center text-sm text-ink-muted underline">
+              AI 도우미 설정
+            </Link>
+          )}
+          <form action={signOut}>
+            <button className="min-h-11 text-sm text-ink-muted underline">로그아웃</button>
+          </form>
+        </div>
       </main>
     </div>
   );
