@@ -292,6 +292,7 @@ test("7. 샵 간 격리 (화면·직접 조회·권한 우회 시도)", async ({
 });
 
 test("8. 모바일(390px) 주요 화면 — 가로 넘침 없음, 캡처", async ({ browser }) => {
+  test.setTimeout(240_000); // 화면 14개를 networkidle까지 기다린다 (전체 실행 중 개발 서버가 느릴 때 90초를 넘었다)
   const shots: [Who, string[]][] = [
     ["rental", ["/shop", "/shop/jobs", `/shop/jobs/${S.jobs.r2}`, "/shop/customers", "/shop/settlements", "/shop/register-qr", "/shop/ai"]],
     ["ex1", ["/instructor", "/instructor/schedule", "/instructor/pay", "/instructor/profile", "/notifications"]],

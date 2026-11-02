@@ -10,6 +10,11 @@ export const METRICS = {
   instructor_cancels: "강사별 일방 취소 수",
   active_shops: "강습이 있었던 샵 수",
   ai_cost_by_feature: "AI 기능별 비용",
+  pilot_first_job_hours: "샵별 가입부터 첫 강습 등록까지 걸린 시간(시간)",
+  pilot_weekly_jobs: "최근 8주 주간 강습 등록 수",
+  bid_participation_by_shop: "샵별 입찰 공고 중 입찰이 들어온 비율(%)",
+  cancel_rate_by_shop: "샵별 강습 취소율(%)",
+  ai_calls_by_shop: "샵별 AI 호출 수",
 } as const;
 export type Metric = keyof typeof METRICS;
 
