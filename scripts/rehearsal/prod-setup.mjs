@@ -56,6 +56,9 @@ const ski = must(await db.from("sports").select("id").eq("name", "스키").singl
 const rental = await one("shops", { name: "[테스트] 하이원 렌탈" }, { name: "[테스트] 하이원 렌탈", type: "rental_shop", status: "approved", business_no: "000-00-90001", owner_name: "[테스트] 렌탈 사장", created_by: ids["test-rental"] });
 const team = await one("shops", { name: "[테스트] 하이원 강습팀" }, { name: "[테스트] 하이원 강습팀", type: "lesson_team", status: "approved", business_no: "000-00-90002", owner_name: "[테스트] 강습팀장", created_by: ids["test-team"] });
 for (const s of [rental, team]) await db.from("shop_resorts").upsert({ shop_id: s, resort_id: resort });
+// 서버 키로 만든 샵은 소유자 자동 등록 트리거(auth.uid 기준)가 돌지 않아 직접 넣는다
+await db.from("shop_members").upsert({ shop_id: rental, user_id: ids["test-rental"], is_owner: true });
+await db.from("shop_members").upsert({ shop_id: team, user_id: ids["test-team"], is_owner: true });
 
 // 강사: 하이원·스키, 강사가·나는 자격 검증됨, 강사다는 검증 전
 const inst = {};

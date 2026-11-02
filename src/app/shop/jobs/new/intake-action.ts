@@ -34,11 +34,12 @@ export async function extractIntake(_prev: IntakeState | undefined, formData: Fo
   const r = redact(raw, mentioned.map((c) => c.name));
   if (hasContact(r.text)) return { message: "연락처를 지우지 못해 자동 입력을 멈췄습니다. 직접 입력해 주세요." };
 
+  const today = todayKst(Date.now());
   const result = await callStructured({
     feature: "intake",
     shopId: shop.id,
     userId: user.id,
-    system: intakeSystem(todayKst(Date.now()), sportList.map((s) => s.name), shop.resorts.map((x) => x.name)),
+    system: intakeSystem(today, sportList.map((s) => s.name), shop.resorts.map((x) => x.name)),
     content: r.text,
     toolName: INTAKE_TOOL,
     schema: INTAKE_SCHEMA,
@@ -46,7 +47,7 @@ export async function extractIntake(_prev: IntakeState | undefined, formData: Fo
     maxTokens: 600,
   });
   if (!result) return { message: "내용을 읽지 못했습니다. 직접 입력해 주세요." };
-  const n = normalizeIntake(result);
+  const n = normalizeIntake(result, today);
   const name = n.customerName ? restore(n.customerName, r.aliases) : null;
   const match = name ? known.find((c) => c.name === name) : undefined;
   const resort = shop.resorts.find((x) => raw.includes(x.name));

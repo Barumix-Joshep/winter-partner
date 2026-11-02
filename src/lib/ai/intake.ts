@@ -37,11 +37,27 @@ export const INTAKE_SCHEMA = {
 
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
 
+// 오늘부터 3주치 날짜·요일 (모델이 달력 계산을 하지 않게)
+export function calendar(todayKst: string, days = 21) {
+  const d0 = new Date(`${todayKst}T00:00:00Z`);
+  const dow = d0.getUTCDay();
+  const monday = new Date(d0.getTime() - ((dow + 6) % 7) * 86400_000);
+  return Array.from({ length: days }, (_, i) => {
+    const d = new Date(d0.getTime() + i * 86400_000);
+    const week = Math.floor((d.getTime() - monday.getTime()) / (7 * 86400_000));
+    const tag = week === 0 ? "이번 주" : week === 1 ? "다음 주" : "다다음 주";
+    return `${d.toISOString().slice(0, 10)} ${WEEKDAY[d.getUTCDay()]} (${tag}${i === 0 ? ", 오늘" : i === 1 ? ", 내일" : i === 2 ? ", 모레" : ""})`;
+  }).join("\n");
+}
+
 export function intakeSystem(todayKst: string, sports: string[], resorts: string[]) {
   const d = new Date(`${todayKst}T00:00:00Z`);
   return [
     "너는 스키·스노보드 렌탈샵의 강습 접수를 돕는다. 손님이 보낸 문자·카톡 글에서 강습 조건만 뽑아 도구로 돌려준다.",
-    `오늘은 ${todayKst} (${WEEKDAY[d.getUTCDay()]}요일, 한국 시간)이다. "이번 주 토요일", "내일" 같은 말은 이 날짜 기준으로 계산한다.`,
+    `오늘은 ${todayKst} (${WEEKDAY[d.getUTCDay()]}요일, 한국 시간)이다. 한 주는 월요일~일요일이다. "이번 주"는 오늘이 속한 주, "다음 주"는 그다음 주다.`,
+    "상대 날짜는 계산하지 말고 아래 달력에서 골라라:",
+    calendar(todayKst),
+    "연도가 없는 날짜(12/20, 1월 3일 등)는 오늘 이후 가장 가까운 그 날짜다. 이미 지난 월·일이면 다음 해다.",
     `이 샵의 종목: ${sports.join(", ")}. 영업 스키장: ${resorts.join(", ")}.`,
     "글에 없는 것은 지어내지 말고 null로 둔다. 애매하면 값을 넣되 uncertain에 필드 이름을 적는다.",
     "시간만 있고 길이가 없으면 2시간 강습으로 본다. 오전/오후 표시가 없고 1~7시면 오후로 본다.",
@@ -80,8 +96,8 @@ export function parseIntake(input: unknown, sports: string[]): IntakeResult | nu
   };
 }
 
-// 추출값끼리 맞추기: 인원으로 유형 보정, 끝 시각 없으면 +2시간
-export function normalizeIntake(r: IntakeResult): IntakeResult {
+// 추출값끼리 맞추기: 인원으로 유형 보정, 끝 시각 없으면 +2시간, 지난 날짜는 다음 해로(강습은 앞으로 잡는다)
+export function normalizeIntake(r: IntakeResult, todayKst?: string): IntakeResult {
   let { lessonType, studentCount, end } = r;
   if (!lessonType && studentCount) lessonType = studentCount === 1 ? "private" : studentCount === 2 ? "semi" : "group";
   if (lessonType && !studentCount) studentCount = lessonType === "private" ? 1 : lessonType === "semi" ? 2 : null;
@@ -89,5 +105,10 @@ export function normalizeIntake(r: IntakeResult): IntakeResult {
     const [h, m] = r.start.split(":").map(Number);
     end = h + 2 <= 23 ? `${String(h + 2).padStart(2, "0")}:${String(m).padStart(2, "0")}` : null;
   }
-  return { ...r, lessonType, studentCount, end };
+  let date = r.date;
+  if (date && todayKst && date < todayKst) {
+    const next = `${Number(date.slice(0, 4)) + 1}${date.slice(4)}`;
+    if (next >= todayKst) date = next;
+  }
+  return { ...r, lessonType, studentCount, end, date };
 }

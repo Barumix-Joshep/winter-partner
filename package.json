@@ -12,7 +12,8 @@
     "security": "node scripts/security-check.mjs",
     "e2e": "playwright test",
     "check:prod": "node scripts/check-prod.mjs",
-    "ai:eval": "AI_EVAL=1 node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run src/lib/ai/intake.eval.test.ts"
+    "ai:eval": "AI_EVAL=1 node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run src/lib/ai/intake.eval.test.ts",
+    "e2e:prod": "node --env-file=.env.local --env-file=.env.rehearsal.local node_modules/@playwright/test/cli.js test -c playwright.prod.config.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.135.0",

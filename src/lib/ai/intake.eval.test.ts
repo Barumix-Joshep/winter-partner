@@ -25,7 +25,7 @@ describe.skipIf(!run)("A1 접수 추출 정확도 (실제 API)", () => {
         { feature: "intake", shopId: null, userId: null, system: intakeSystem(fixtures.today, SPORTS, ["하이원"]), content: redact(s.text).text, toolName: INTAKE_TOOL, schema: INTAKE_SCHEMA, parse: (x) => parseIntake(x, SPORTS) },
         deps,
       );
-      const n = r && normalizeIntake(r);
+      const n = r && normalizeIntake(r, fixtures.today);
       const e = s.expected;
       if (n && n.date === e.date && n.start === e.start && n.sport === e.sport && n.studentCount === e.studentCount) ok++;
       else console.log("틀림:", s.text, n);

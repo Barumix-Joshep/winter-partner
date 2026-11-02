@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { intakeSystem, normalizeIntake, parseIntake } from "./intake";
+import { calendar, intakeSystem, normalizeIntake, parseIntake } from "./intake";
 import { mockExtractIntake } from "./intake-mock";
 import fixtures from "./__fixtures__/intake-samples.json";
 
@@ -29,6 +29,21 @@ describe("normalizeIntake", () => {
   it("끝 시각이 없으면 2시간", () => expect(normalizeIntake({ ...empty, start: "13:30" }).end).toBe("15:30"));
   it("인원으로 유형", () => expect(normalizeIntake({ ...empty, studentCount: 4 }).lessonType).toBe("group"));
   it("유형으로 인원", () => expect(normalizeIntake({ ...empty, lessonType: "semi" }).studentCount).toBe(2));
+});
+
+describe("날짜 보정", () => {
+  const empty = { date: null, start: null, end: null, sport: null, lessonType: null, studentCount: null, level: null, note: null, patchPaidBy: null, customerName: null, uncertain: [] };
+  it("지난 날짜는 다음 해로", () => {
+    expect(normalizeIntake({ ...empty, date: "2026-01-10" }, "2026-11-02").date).toBe("2027-01-10");
+    expect(normalizeIntake({ ...empty, date: "2026-12-20" }, "2026-11-02").date).toBe("2026-12-20");
+  });
+  it("달력: 이번 주·다음 주(월~일)", () => {
+    const c = calendar("2026-11-02");
+    expect(c).toContain("2026-11-02 월 (이번 주, 오늘)");
+    expect(c).toContain("2026-11-08 일 (이번 주)");
+    expect(c).toContain("2026-11-09 월 (다음 주)");
+    expect(c).toContain("2026-11-15 일 (다음 주)");
+  });
 });
 
 describe("intakeSystem", () => {
