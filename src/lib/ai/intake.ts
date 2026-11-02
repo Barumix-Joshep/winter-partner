@@ -1,5 +1,6 @@
 // A1 강습 접수 자동 입력: 문자·카톡 접수 글 → 강습 등록 칸 제안 (확정은 사장님이 폼에서)
 import type { LessonType, PatchPaidBy } from "@/lib/shop/job";
+import { canonicalSport } from "@/lib/sports";
 
 export type IntakeResult = {
   date: string | null; // YYYY-MM-DD
@@ -53,12 +54,13 @@ export function calendar(todayKst: string, days = 21) {
 export function intakeSystem(todayKst: string, sports: string[], resorts: string[]) {
   const d = new Date(`${todayKst}T00:00:00Z`);
   return [
-    "너는 스키·스노보드 렌탈샵의 강습 접수를 돕는다. 손님이 보낸 문자·카톡 글에서 강습 조건만 뽑아 도구로 돌려준다.",
+    "너는 스키·스노우보드·스노우스케이트 렌탈샵의 강습 접수를 돕는다. 손님이 보낸 문자·카톡 글에서 강습 조건만 뽑아 도구로 돌려준다.",
     `오늘은 ${todayKst} (${WEEKDAY[d.getUTCDay()]}요일, 한국 시간)이다. 한 주는 월요일~일요일이다. "이번 주"는 오늘이 속한 주, "다음 주"는 그다음 주다.`,
     "상대 날짜는 계산하지 말고 아래 달력에서 골라라:",
     calendar(todayKst),
     "연도가 없는 날짜(12/20, 1월 3일 등)는 오늘 이후 가장 가까운 그 날짜다. 이미 지난 월·일이면 다음 해다.",
     `이 샵의 종목: ${sports.join(", ")}. 영업 스키장: ${resorts.join(", ")}.`,
+    "종목 표기가 달라도 같은 종목이다: 보드·스노 보드·스노보드·snowboard는 스노우보드, 스노스케이트·스노우 스케이트·snowskate는 스노우스케이트, ski는 스키. sport에는 위 목록의 이름 그대로 적는다. \"스키장\"은 장소이지 종목이 아니다.",
     "글에 없는 것은 지어내지 말고 null로 둔다. 애매하면 값을 넣되 uncertain에 필드 이름을 적는다.",
     "시간만 있고 길이가 없으면 2시간 강습으로 본다. 오전/오후 표시가 없고 1~7시면 오후로 본다.",
     "연락처·이메일·건강 정보(부상·질환)는 note에 넣지 않는다. [전화] 같은 표시는 무시한다.",
@@ -85,7 +87,7 @@ export function parseIntake(input: unknown, sports: string[]): IntakeResult | nu
     date: date && DATE.test(date) && !Number.isNaN(Date.parse(date)) ? date : null,
     start: start && TIME.test(start) ? start : null,
     end: end && TIME.test(end) ? end : null,
-    sport: sport && sports.includes(sport) ? sport : null,
+    sport: canonicalSport(sport, sports),
     lessonType: lt === "private" || lt === "semi" || lt === "group" ? lt : null,
     studentCount: count,
     level: str(o.level, 40),

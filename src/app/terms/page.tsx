@@ -8,7 +8,7 @@ export default function TermsPage() {
     <LegalPage title="이용약관" updated="미정 (초안)">
       <section>
         <h2>1. 서비스</h2>
-        <p>겨울파트너는 스키·스노보드 렌탈샵·강습팀과 강사를 연결하고, 강습 배정과 월 정산서 작성을 돕는 서비스입니다.</p>
+        <p>겨울파트너는 스키·스노우보드·스노우스케이트 렌탈샵·강습팀과 강사를 연결하고, 강습 배정과 월 정산서 작성을 돕는 서비스입니다.</p>
       </section>
       <section>
         <h2>2. 대금</h2>

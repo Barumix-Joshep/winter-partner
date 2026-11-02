@@ -13,7 +13,7 @@ const notoSansKr = Noto_Sans_KR({
 
 export const metadata: Metadata = {
   title: "겨울파트너",
-  description: "렌탈샵·강습팀과 스키·스노보드 강사를 잇는 파트너 플랫폼",
+  description: "렌탈샵·강습팀과 스키·스노우보드·스노우스케이트 강사를 잇는 파트너 플랫폼",
   // 아이폰 홈 화면 앱
   appleWebApp: { capable: true, title: "겨울파트너", statusBarStyle: "black-translucent" },
   icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },

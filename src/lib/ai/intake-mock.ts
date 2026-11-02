@@ -1,4 +1,6 @@
 // AI_MOCK=1용 접수 추출기 (규칙 기반). 실제 모델이 아니라 E2E·로컬에서 화면 흐름을 확인하는 용도.
+import { detectSport } from "@/lib/sports";
+
 export function mockExtractIntake(system: string, text: string) {
   const today = system.match(/오늘은 (\d{4})-(\d{2})-(\d{2})/);
   const year = today ? Number(today[1]) : new Date().getFullYear();
@@ -18,7 +20,7 @@ export function mockExtractIntake(system: string, text: string) {
   }
   const n = text.match(/(\d+)\s*명/);
   const lesson = /1\s*:\s*1|개인/.test(text) ? "private" : /1\s*:\s*2/.test(text) ? "semi" : n && Number(n[1]) >= 3 ? "group" : null;
-  const sport = /보드/.test(text) ? "스노보드" : /스키/.test(text) ? "스키" : null;
+  const sport = detectSport(text);
   const level = (text.match(/처음|입문|초급|중급|상급/) ?? [null])[0];
   return {
     date,

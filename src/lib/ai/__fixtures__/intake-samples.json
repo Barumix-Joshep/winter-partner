@@ -1,6 +1,6 @@
 {
  "today": "2026-12-01",
- "note": "가상 샘플 — 실제 접수 문자로 교체 필요 (P14-2)",
+ "note": "가상 샘플 — 실제 접수 문자로 교체 필요 (P14-2) · P17: 스노우보드 4개·스노우스케이트 3개 추가(표기 변형 포함)",
  "samples": [
   {
    "text": "안녕하세요 12월 6일 일요일 오전 10시 스키 1:1 강습 예약하고 싶어요. 초등 3학년 처음이에요",
@@ -19,7 +19,7 @@
     "date": "2026-12-05",
     "start": "13:00",
     "end": "15:00",
-    "sport": "스노보드",
+    "sport": "스노우보드",
     "lessonType": "semi",
     "studentCount": 2
    }
@@ -52,7 +52,7 @@
     "date": "2026-12-13",
     "start": "14:00",
     "end": "16:00",
-    "sport": "스노보드",
+    "sport": "스노우보드",
     "lessonType": "group",
     "studentCount": 4
    }
@@ -74,7 +74,7 @@
     "date": "2026-12-03",
     "start": "11:00",
     "end": "13:00",
-    "sport": "스노보드",
+    "sport": "스노우보드",
     "lessonType": "private",
     "studentCount": 1
    }
@@ -107,7 +107,7 @@
     "date": "2026-12-04",
     "start": "15:00",
     "end": "17:00",
-    "sport": "스노보드",
+    "sport": "스노우보드",
     "lessonType": "semi",
     "studentCount": 2
    }
@@ -140,7 +140,7 @@
     "date": "2026-12-12",
     "start": "10:00",
     "end": "12:00",
-    "sport": "스노보드",
+    "sport": "스노우보드",
     "lessonType": "private",
     "studentCount": 1
    }
@@ -162,7 +162,7 @@
     "date": "2027-01-10",
     "start": "09:00",
     "end": "11:00",
-    "sport": "스노보드",
+    "sport": "스노우보드",
     "lessonType": "private",
     "studentCount": 1
    }
@@ -195,7 +195,7 @@
     "date": "2026-12-02",
     "start": "17:00",
     "end": "19:00",
-    "sport": "스노보드",
+    "sport": "스노우보드",
     "lessonType": "private",
     "studentCount": 1
    }
@@ -220,6 +220,83 @@
     "sport": "스키",
     "lessonType": "private",
     "studentCount": 1
+   }
+  },
+  {
+   "text": "토요일 오후 1시 스노우보드 초급 2명 강습 가능할까요?",
+   "expected": {
+    "date": "2026-12-05",
+    "start": "13:00",
+    "end": "15:00",
+    "sport": "스노우보드",
+    "lessonType": "semi",
+    "studentCount": 2
+   }
+  },
+  {
+   "text": "12월 19일 오전 10시 스노 보드 1:1 강습 부탁드려요. 완전 처음입니다",
+   "expected": {
+    "date": "2026-12-19",
+    "start": "10:00",
+    "end": "12:00",
+    "sport": "스노우보드",
+    "lessonType": "private",
+    "studentCount": 1
+   }
+  },
+  {
+   "text": "Hi, snowboard lesson on 12/27 at 2pm for 3 people, all beginners",
+   "expected": {
+    "date": "2026-12-27",
+    "start": "14:00",
+    "end": "16:00",
+    "sport": "스노우보드",
+    "lessonType": "group",
+    "studentCount": 3
+   }
+  },
+  {
+   "text": "다음 주 일요일 오전 9시 보드 그룹 5명 중급이요",
+   "expected": {
+    "date": "2026-12-13",
+    "start": "09:00",
+    "end": "11:00",
+    "sport": "스노우보드",
+    "lessonType": "group",
+    "studentCount": 5
+   }
+  },
+  {
+   "text": "12월 12일 오후 3시 스노우스케이트 체험 강습 2명 가능한가요?",
+   "expected": {
+    "date": "2026-12-12",
+    "start": "15:00",
+    "end": "17:00",
+    "sport": "스노우스케이트",
+    "lessonType": "semi",
+    "studentCount": 2
+   }
+  },
+  {
+   "text": "이번 주 일요일 오전 11시 스노스케이트 1:1 강습 원해요. 보드는 타봤어요",
+   "expected": {
+    "date": "2026-12-06",
+    "start": "11:00",
+    "end": "13:00",
+    "sport": "스노우스케이트",
+    "lessonType": "private",
+    "studentCount": 1
+   }
+  },
+  {
+   "text": "1월 3일 오전 10시 스노우 스케이트 4명 처음이에요",
+   "expected": {
+    "date": "2027-01-03",
+    "start": "10:00",
+    "end": "12:00",
+    "sport": "스노우스케이트",
+    "lessonType": "group",
+    "studentCount": 4
    }
   }
  ]

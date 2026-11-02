@@ -12,7 +12,7 @@ export type CertExtract = {
 
 export const CERT_TOOL = "read_certificate";
 export const CERT_SYSTEM =
-  "너는 스키·스노보드 강사 자격증 이미지를 읽는다. 보이는 글자만 옮기고 추측하지 않는다. 읽을 수 없으면 readable=false. " +
+  "너는 스키·스노우보드·스노우스케이트 강사 자격증 이미지를 읽는다. 보이는 글자만 옮기고 추측하지 않는다. 읽을 수 없으면 readable=false. " +
   "자격번호는 마지막 4자리만 적는다. 날짜는 YYYY-MM-DD.";
 export const CERT_SCHEMA = {
   type: "object",

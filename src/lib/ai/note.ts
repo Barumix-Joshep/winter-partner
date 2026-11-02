@@ -4,7 +4,7 @@ import { redact } from "./redact";
 export type TidyNote = { progress: string; good: string; next: string; healthSentences: string[] };
 export const TIDY_TOOL = "tidy_lesson_note";
 export const TIDY_SYSTEM =
-  "너는 스키·스노보드 강사의 수업 메모를 다음 강사가 보기 좋게 정리한다. 진도(어디까지 했는지), 잘된 점, 다음 과제 세 항목으로 짧게. " +
+  "너는 스키·스노우보드·스노우스케이트 강사의 수업 메모를 다음 강사가 보기 좋게 정리한다. 진도(어디까지 했는지), 잘된 점, 다음 과제 세 항목으로 짧게. " +
   "메모에 없는 내용은 만들지 않는다. 부상·질환·약·임신 등 건강 정보로 보이는 문장은 정리에서 빼고 health_sentences에 원문 그대로 옮긴다.";
 export const TIDY_SCHEMA = {
   type: "object",

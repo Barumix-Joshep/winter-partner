@@ -16,7 +16,7 @@ export type CustomerSummary = { summary: string[]; nextLesson: string | null; co
 
 export const SUMMARY_TOOL = "summarize_customer";
 export const SUMMARY_SYSTEM =
-  "너는 스키·스노보드 렌탈샵 사장님을 돕는다. 손님 기록을 읽고 다음 강습 준비와 연락에 쓸 요약을 만든다. " +
+  "너는 스키·스노우보드·스노우스케이트 렌탈샵 사장님을 돕는다. 손님 기록을 읽고 다음 강습 준비와 연락에 쓸 요약을 만든다. " +
   "요약은 3줄 이내로 진도·특징·주의할 점(건강 정보 제외)을 적는다. 다음 강습 제안은 레벨 다음 단계를 한 문장으로. " +
   "연락 문구는 손님에게 보낼 짧은 문자(2~3문장, 존댓말, 과장 금지)이고, 요청이 없으면 null. 기록에 없는 사실은 만들지 않는다.";
 export const SUMMARY_SCHEMA = {

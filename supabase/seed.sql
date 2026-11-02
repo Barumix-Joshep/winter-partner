@@ -56,7 +56,7 @@ union all select 'b0000000-0000-0000-0000-000000000003', id from resorts where n
 -- 강사 ------------------------------------------------------------------
 insert into instructors (id, user_id, level, bio, base_rate, cert_status) values
   ('c0000000-0000-0000-0000-000000000021', 'a0000000-0000-0000-0000-000000000021', 'KSIA Level 2', '초보·어린이 강습 7년', 80000, 'approved'),
-  ('c0000000-0000-0000-0000-000000000022', 'a0000000-0000-0000-0000-000000000022', 'KSIA Level 1', '스노보드 카빙 전문', 70000, 'approved'),
+  ('c0000000-0000-0000-0000-000000000022', 'a0000000-0000-0000-0000-000000000022', 'KSIA Level 1', '스노우보드 카빙 전문', 70000, 'approved'),
   ('c0000000-0000-0000-0000-000000000023', 'a0000000-0000-0000-0000-000000000023', null, '첫 시즌 강사', 60000, 'pending'),
   ('c0000000-0000-0000-0000-000000000024', 'a0000000-0000-0000-0000-000000000024', 'KSIA Level 2', '하이원 전속', 90000, 'approved');
 
@@ -68,7 +68,7 @@ insert into instructor_certs (instructor_id, issuer, grade, status, verified_at)
 
 insert into instructor_sports (instructor_id, sport_id)
 select 'c0000000-0000-0000-0000-000000000021'::uuid, id from sports where name = '스키'
-union all select 'c0000000-0000-0000-0000-000000000022', id from sports where name = '스노보드'
+union all select 'c0000000-0000-0000-0000-000000000022', id from sports where name = '스노우보드'
 union all select 'c0000000-0000-0000-0000-000000000023', id from sports where name = '스키'
 union all select 'c0000000-0000-0000-0000-000000000024', id from sports;
 
@@ -106,7 +106,7 @@ insert into jobs (id, shop_id, resort_id, sport_id, starts_at, ends_at, lesson_t
    '2026-12-20 13:00+09', '2026-12-20 15:00+09', 'semi', 2, 120000, 'customer', 'direct', false, null, 'open', null),
   -- 공개 입찰 (팀 입찰 허용)
   ('e0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000002',
-   (select id from resorts where name = '용평'), (select id from sports where name = '스노보드'),
+   (select id from resorts where name = '용평'), (select id from sports where name = '스노우보드'),
    '2026-12-20 10:00+09', '2026-12-20 12:00+09', 'group', 4, 200000, 'shop', 'bid', true, '2026-12-18 18:00+09', 'open', '중급 그룹');
 
 insert into job_prices (job_id, customer_price) values

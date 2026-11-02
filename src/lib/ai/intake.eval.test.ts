@@ -9,7 +9,7 @@ import fixtures from "./__fixtures__/intake-samples.json";
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({}) }));
 
 const run = process.env.AI_EVAL === "1" && !!process.env.ANTHROPIC_API_KEY;
-const SPORTS = ["스키", "스노보드"];
+const SPORTS = ["스키", "스노우보드", "스노우스케이트"];
 
 describe.skipIf(!run)("A1 접수 추출 정확도 (실제 API)", () => {
   it("4칸 정답률 90% 이상", async () => {

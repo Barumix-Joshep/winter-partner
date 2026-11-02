@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "겨울파트너",
     short_name: "겨울파트너",
-    description: "렌탈샵·강습팀과 스키·스노보드 강사를 잇는 파트너 플랫폼",
+    description: "렌탈샵·강습팀과 스키·스노우보드·스노우스케이트 강사를 잇는 파트너 플랫폼",
     start_url: "/",
     scope: "/",
     display: "standalone",

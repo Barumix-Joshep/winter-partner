@@ -89,7 +89,7 @@ function SignUpForm() {
         <div className="mt-2 grid grid-cols-2 gap-2">
           {[
             { value: "shop_admin", title: "샵 관리자", desc: "렌탈샵·강습팀" },
-            { value: "instructor", title: "강사", desc: "스키·스노보드" },
+            { value: "instructor", title: "강사", desc: "스키·스노우보드·스노우스케이트" },
           ].map((r) => (
             <label
               key={r.value}

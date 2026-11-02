@@ -18,7 +18,7 @@ export type BidAssist = { recommended: string; reasons: string[]; notes: Record<
 
 export const BID_TOOL = "recommend_bid";
 export const BID_SYSTEM =
-  "너는 스키·스노보드 렌탈샵 사장님이 강습 입찰 중 하나를 고르도록 돕는다. 추천은 참고일 뿐 결정은 사장님이 한다. " +
+  "너는 스키·스노우보드·스노우스케이트 렌탈샵 사장님이 강습 입찰 중 하나를 고르도록 돕는다. 추천은 참고일 뿐 결정은 사장님이 한다. " +
   "금액만으로 고르지 말고 평점·강습 경험·검증 자격증·패널티·이 샵과 함께한 경험·한마디가 강습 조건(레벨·인원·어린이 여부)에 맞는지 함께 본다. " +
   "각 입찰의 장단점을 한 줄로, 추천 이유를 두 줄로 쓴다. 한마디가 조건과 맞지 않거나 수상하면 flags에 적는다. 존댓말로 짧게.";
 export const BID_SCHEMA = {

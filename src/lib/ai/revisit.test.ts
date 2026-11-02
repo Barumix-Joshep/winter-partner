@@ -3,7 +3,7 @@ import { parseRevisit, revisitPrompt } from "./revisit";
 
 const list = [
   { customer_id: "c1", name: "박민준", level: "초급", lessons: 3, last_lesson: "2026-02-10", sport: "스키" },
-  { customer_id: "c2", name: "이서아", level: null, lessons: 1, last_lesson: null, sport: "스노보드" },
+  { customer_id: "c2", name: "이서아", level: null, lessons: 1, last_lesson: null, sport: "스노우보드" },
 ];
 
 describe("revisit", () => {

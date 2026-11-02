@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(4);
 
--- 시드 공고 e..003(용평·스노보드·그룹)과 같은 조건의 낙찰 3건을 만든다
+-- 시드 공고 e..003(용평·스노우보드·그룹)과 같은 조건의 낙찰 3건을 만든다
 insert into jobs (id, shop_id, resort_id, sport_id, starts_at, ends_at, lesson_type, student_count, instructor_rate, assign_mode, status)
 select ('90000000-0000-0000-0000-00000000000' || g)::uuid, 'b0000000-0000-0000-0000-000000000002', j.resort_id, j.sport_id,
        now() + make_interval(days => 40 + g), now() + make_interval(days => 40 + g, hours => 2), 'group', 4, 200000, 'bid', 'assigned'

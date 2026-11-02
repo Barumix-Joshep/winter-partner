@@ -3,7 +3,7 @@ import { calendar, intakeSystem, normalizeIntake, parseIntake } from "./intake";
 import { mockExtractIntake } from "./intake-mock";
 import fixtures from "./__fixtures__/intake-samples.json";
 
-const SPORTS = ["스키", "스노보드"];
+const SPORTS = ["스키", "스노우보드", "스노우스케이트"];
 
 describe("parseIntake", () => {
   it("형식에 맞는 값만 받는다", () => {
@@ -50,13 +50,34 @@ describe("intakeSystem", () => {
   it("오늘 날짜·요일·종목을 넣는다", () => {
     const s = intakeSystem("2026-12-01", SPORTS, ["하이원"]);
     expect(s).toContain("2026-12-01 (화요일");
-    expect(s).toContain("스키, 스노보드");
+    expect(s).toContain("스키, 스노우보드, 스노우스케이트");
+    expect(s).toMatch(/보드.*스노우보드/);
+    expect(s).toMatch(/스노스케이트.*스노우스케이트/);
+  });
+});
+
+describe("종목 표기 변형 (P17)", () => {
+  const base = { date: null, start: null, end: null, lesson_type: null, student_count: null, level: null, note: null, patch_paid_by: null, customer_name: null, uncertain: [] };
+  it.each(["보드", "스노 보드", "snowboard", "스노보드"])("모델이 %s로 줘도 스노우보드", (v) => {
+    expect(parseIntake({ ...base, sport: v }, SPORTS)?.sport).toBe("스노우보드");
+  });
+  it.each(["스노스케이트", "스노우 스케이트"])("모델이 %s로 줘도 스노우스케이트", (v) => {
+    expect(parseIntake({ ...base, sport: v }, SPORTS)?.sport).toBe("스노우스케이트");
+  });
+  it("목 추출기: 토요일 스노우보드 초급 2명", () => {
+    const r = parseIntake(mockExtractIntake(intakeSystem(fixtures.today, SPORTS, []), "토요일 스노우보드 초급 2명"), SPORTS)!;
+    expect(r).toMatchObject({ sport: "스노우보드", studentCount: 2, level: "초급" });
+  });
+  it("목 추출기: 스노 스케이트", () => {
+    expect(parseIntake(mockExtractIntake("", "12/20 스노 스케이트 체험 3명"), SPORTS)?.sport).toBe("스노우스케이트");
   });
 });
 
 describe("평가 세트", () => {
-  it("가상 샘플 20개 (실제 접수 문자로 교체 필요)", () => {
-    expect(fixtures.samples).toHaveLength(20);
+  it("가상 샘플: 기존 20개 + P17 스노우보드·스노우스케이트 각 3개 이상", () => {
+    expect(fixtures.samples.length).toBeGreaterThanOrEqual(26);
+    expect(fixtures.samples.filter((x) => x.expected.sport === "스노우보드").length).toBeGreaterThanOrEqual(3);
+    expect(fixtures.samples.filter((x) => x.expected.sport === "스노우스케이트").length).toBeGreaterThanOrEqual(3);
   });
   it("목 추출기는 절대 날짜 샘플의 기본 칸을 채운다 (E2E용)", () => {
     const r = normalizeIntake(parseIntake(mockExtractIntake(intakeSystem(fixtures.today, SPORTS, []), "12/20 10시 스키 1:2 형제 둘 다 처음"), SPORTS)!);
