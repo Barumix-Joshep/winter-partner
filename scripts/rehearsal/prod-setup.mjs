@@ -51,7 +51,10 @@ const ids = {};
 for (const a of ACCOUNTS) ids[a.email.split("@")[0]] = await user(a);
 
 const resort = must(await db.from("resorts").select("id").eq("name", "하이원").single(), "resort").id;
-const ski = must(await db.from("sports").select("id").eq("name", "스키").single(), "sport").id;
+const sportId = async (name) => must(await db.from("sports").select("id").eq("name", name).single(), `sport ${name}`).id; // P17 마이그레이션(sports_three) 뒤에 돌린다
+const ski = await sportId("스키");
+const board = await sportId("스노우보드");
+const skate = await sportId("스노우스케이트");
 
 const rental = await one("shops", { name: "[테스트] 하이원 렌탈" }, { name: "[테스트] 하이원 렌탈", type: "rental_shop", status: "approved", business_no: "000-00-90001", owner_name: "[테스트] 렌탈 사장", created_by: ids["test-rental"] });
 const team = await one("shops", { name: "[테스트] 하이원 강습팀" }, { name: "[테스트] 하이원 강습팀", type: "lesson_team", status: "approved", business_no: "000-00-90002", owner_name: "[테스트] 강습팀장", created_by: ids["test-team"] });
@@ -60,12 +63,21 @@ for (const s of [rental, team]) await db.from("shop_resorts").upsert({ shop_id: 
 await db.from("shop_members").upsert({ shop_id: rental, user_id: ids["test-rental"], is_owner: true });
 await db.from("shop_members").upsert({ shop_id: team, user_id: ids["test-team"], is_owner: true });
 
-// 강사: 하이원·스키, 강사가·나는 자격 검증됨, 강사다는 검증 전
+// 강사: 하이원, 강사가·나는 자격 검증됨, 강사다는 검증 전
+// P17 종목: 강사가 스키 / 강사나 스노우보드 / 강사다 스키+스노우보드 / 강사라 스노우스케이트+스노우보드.
+// 종목은 더하기만 한다(지우지 않는다). P15에서 모두 스키로 만들었으므로 강사나·강사라에는 스키가 남아 있다.
+const SPORTS_OF = {
+  "test-inst1": [ski],
+  "test-inst2": [board],
+  "test-inst3": [ski, board],
+  "test-inst4": [skate, board],
+};
 const inst = {};
 for (const k of ["test-inst1", "test-inst2", "test-inst3", "test-inst4"]) {
   inst[k] = must(await db.from("instructors").select("id").eq("user_id", ids[k]).single(), "instructor").id;
   await db.from("instructors").update({ base_rate: 80000, bio: "[테스트] 가상 강사" }).eq("id", inst[k]);
-  await db.from("instructor_sports").upsert({ instructor_id: inst[k], sport_id: ski });
+  // P15 때 모든 강사에게 스키를 넣었다. 처음 만드는 강사도 같게 맞춰 기존 입찰·배정(스키 강습)과 어긋나지 않게 한다
+  for (const sport_id of new Set([ski, ...SPORTS_OF[k]])) must(await db.from("instructor_sports").upsert({ instructor_id: inst[k], sport_id }), "instructor_sports");
   await db.from("instructor_resorts").upsert({ instructor_id: inst[k], resort_id: resort });
 }
 for (const [k, grade] of [["test-inst1", "Level 2"], ["test-inst2", "Level 1"]]) {
@@ -131,4 +143,27 @@ await db.from("job_customers").upsert({ job_id: reportJob, customer_id: cust.c3 
 const { data: ra } = await db.from("assignments").select("id").eq("job_id", reportJob).maybeSingle();
 if (!ra) must(await db.from("assignments").insert({ job_id: reportJob, instructor_id: inst["test-inst3"], final_rate: 80000 }), "report assignment");
 
-console.log(JSON.stringify({ ok: true, shops: 2, accounts: ACCOUNTS.length, customers: 3, bidJob }));
+// P17 종목별 강습: 위의 입찰 공고·보고 대기 강습이 스키 2건. 여기에 스노우보드 2건(입찰·직접), 스노우스케이트 1건(입찰)을 더한다.
+// 입찰 공고는 강습팀 입찰을 받는다 → 강습팀이 보는 공고가 종목마다 1건씩. 배정은 없어 시간 겹침이 생기지 않는다.
+const at = (days, hour) => {
+  const d = new Date(Date.now() + days * 86400_000);
+  d.setUTCHours(hour - 9, 0, 0, 0); // 한국 시간
+  return d;
+};
+const sportJobs = [];
+for (const [note, sport_id, mode, lesson_type, student_count, rate, days, hour, customer] of [
+  ["[테스트] 스노우보드 입찰 공고 · 초급 3명", board, "bid", "group", 3, 200000, 26, 10, null],
+  ["[테스트] 스노우보드 1:1 · 중급 카빙", board, "direct", "private", 1, 90000, 27, 13, "c2"],
+  ["[테스트] 스노우스케이트 입찰 공고 · 체험 2명", skate, "bid", "semi", 2, 150000, 28, 10, null],
+]) {
+  const starts = at(days, hour);
+  const jid = await one("jobs", { shop_id: rental, note }, {
+    shop_id: rental, resort_id: resort, sport_id, starts_at: starts.toISOString(), ends_at: new Date(starts.getTime() + 2 * 3600_000).toISOString(),
+    lesson_type, student_count, instructor_rate: rate, assign_mode: mode, status: mode === "bid" ? "open" : "draft", note,
+    ...(mode === "bid" ? { allow_team_bids: true, bid_closes_at: closes } : {}),
+  });
+  if (customer) await db.from("job_customers").upsert({ job_id: jid, customer_id: cust[customer] });
+  sportJobs.push(jid);
+}
+
+console.log(JSON.stringify({ ok: true, shops: 2, accounts: ACCOUNTS.length, customers: 3, bidJob, sportJobs: sportJobs.length }));
