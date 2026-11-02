@@ -56,7 +56,7 @@ async function Team() {
         <h2 className="text-base font-bold">전속 {team.length}명</h2>
         {team.length === 0 ? (
           <p className="mt-2 text-sm text-ink-muted">
-            아직 없습니다. <Link href="/shop/instructors" className="text-brand underline">강사 찾기</Link>에서 전속을 제안해 보세요.
+            아직 없습니다. <Link href="/shop/instructors" className="text-brand underline">강사 찾기</Link>에서 전속을 제안하거나, <Link href="/shop/import?type=instructors" className="text-brand underline">강사 명단을 한꺼번에 올려</Link> 초대해 보세요.
           </p>
         ) : (
           <ul className="mt-2 grid gap-2 sm:grid-cols-2">

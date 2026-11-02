@@ -112,6 +112,9 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
           </Link>
         </div>
         <div className="flex flex-wrap gap-x-4">
+          <Link href="/shop/import?type=customers" className="flex min-h-11 items-center text-sm text-brand underline">
+            엑셀로 한꺼번에 등록
+          </Link>
           <Link href="/shop/register-qr" className="flex min-h-11 items-center text-sm text-brand underline">
             손님 셀프 등록 QR
           </Link>

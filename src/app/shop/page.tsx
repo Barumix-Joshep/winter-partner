@@ -9,6 +9,7 @@ import { formatLessonTime } from "@/lib/shop/job-status";
 import { LESSON_TYPES, PATCH_PAID_BY, type LessonType, type PatchPaidBy } from "@/lib/shop/job";
 import { PHASE_LABEL, dayWindowKst, lessonPhase, monthWindowKst, shiftDate, summarizeDay } from "@/lib/shop/today";
 import { requestTime } from "@/lib/time";
+import { OnboardingCard } from "./onboarding-card";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -92,6 +93,7 @@ async function Today({ searchParams }: { searchParams: SearchParams }) {
 
   return (
     <div className="flex flex-col gap-5">
+      <OnboardingCard shopId={shop.id} />
       {shop.status === "pending" && (
         <p className="rounded-[14px] border border-[#F3D4A8] bg-[#FFF1E0] p-4 text-sm text-[#7A3E06]">
           <strong>{shop.name}</strong> 등록을 본사에서 확인하고 있습니다. 승인되면 강사에게 샵이 보입니다.

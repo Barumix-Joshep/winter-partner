@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireArea } from "@/lib/auth/session";
 import { parseShop } from "@/lib/shop/validate";
 
-export type ShopFormState = { message?: string; errors?: Record<string, string | undefined> };
+export type ShopFormState = { ok?: boolean; message?: string; errors?: Record<string, string | undefined> };
 
 export async function registerShop(_prev: ShopFormState | undefined, formData: FormData): Promise<ShopFormState> {
   const user = await requireArea("shop");
