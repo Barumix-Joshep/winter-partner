@@ -66,7 +66,7 @@ test("C1 재방문 후보와 문구", async ({ browser }) => {
   const draft = shop.getByRole("listitem").filter({ hasText: "[테스트] 손님이" }).getByRole("textbox");
   await expect(draft).toBeVisible({ timeout: 60_000 });
   const text = await draft.inputValue();
-  expect(text).toContain("[테스트] 손님이");
+  expect(text.startsWith("(광고)")).toBe(true); // 광고 표시 (이름은 넣을 수도 안 넣을 수도 있다)
   expect(text).not.toMatch(/손님\d/);
   const u = await usageSince(since, "revisit");
   report("C1", { ms: Date.now() - t0, calls: u.length, ok: u.every((r) => r.ok), cost: cost(u), text });
