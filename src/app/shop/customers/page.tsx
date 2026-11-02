@@ -108,9 +108,14 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
             + 손님 등록
           </Link>
         </div>
-        <Link href="/shop/register-qr" className="flex min-h-11 items-center text-sm text-brand underline">
-          손님 셀프 등록 QR
-        </Link>
+        <div className="flex flex-wrap gap-x-4">
+          <Link href="/shop/register-qr" className="flex min-h-11 items-center text-sm text-brand underline">
+            손님 셀프 등록 QR
+          </Link>
+          <Link href="/shop/privacy-notice" className="flex min-h-11 items-center text-sm text-brand underline">
+            개인정보 고지 문구
+          </Link>
+        </div>
         {toConfirm > 0 && (
           <p className="rounded-lg bg-[#FFF1E0] p-3 text-xs text-[#7A3E06]">
             <strong>셀프 등록 확인 필요 {toConfirm}명</strong> · 같은 연락처 손님이 있습니다. 카드에서 합치거나 따로 두세요.
