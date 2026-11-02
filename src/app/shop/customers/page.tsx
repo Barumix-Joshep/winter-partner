@@ -118,6 +118,9 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
           <Link href="/shop/privacy-notice" className="flex min-h-11 items-center text-sm text-brand underline">
             개인정보 고지 문구
           </Link>
+          <Link href="/shop/revisit" className="flex min-h-11 items-center text-sm text-brand underline">
+            재방문 안내
+          </Link>
         </div>
         {toConfirm > 0 && (
           <p className="rounded-lg bg-[#FFF1E0] p-3 text-xs text-[#7A3E06]">

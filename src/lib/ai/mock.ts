@@ -32,6 +32,12 @@ export const MOCKS: Record<string, (text: string, system: string) => unknown> = 
     health_sentences: text.split(/[,.\n]/).map((x) => x.trim()).filter((x) => /아프|다쳤|다침/.test(x)),
   }),
   classify_health_info: (text) => (/아프|다쳤|다침|병원/.test(text) ? { has_health_info: true, categories: ["부상"] } : { has_health_info: false, categories: [] }),
+  draft_revisit_messages: (text) => ({
+    messages: [...text.matchAll(/- (손님\d+): ([^,]+), 레벨 ([^,]+)/g)].map((m) => ({
+      label: m[1],
+      message: `${m[1]}님, 올 시즌도 기다리고 있어요. ${m[3]} 다음 단계 ${m[2]} 강습을 준비해 두겠습니다. 수신을 원치 않으시면 말씀해 주세요.`,
+    })),
+  }),
   // 가짜 판독: 성명은 일부러 다른 이름 → 관리자 화면 "확인 필요" 흐름 확인용
   read_certificate: () => ({ issuer: "KSIA", grade: "Level 2", holder_name: "홍길동", issued_on: "2024-03-01", expires_on: "2030-02-28", number_last4: "1234", readable: true }),
 };

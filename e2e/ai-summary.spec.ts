@@ -6,10 +6,10 @@ import { setAiFeatures } from "./ai";
 test.beforeAll(async () => setAiFeatures(true, ["customer_summary"]));
 test.afterAll(async () => setAiFeatures(false, ["customer_summary"]));
 
-const CUSTOMER = "d0000000-0000-0000-0000-000000000002"; // 손님 둘 (강습 이력 있음, 광고 동의 없음)
+const CUSTOMER = "d0000000-0000-0000-0000-000000000003"; // 손님 셋 (shop2, 강습 이력 있음, 광고 동의 없음 — 다른 테스트가 동의를 넣지 않는 손님)
 
 test("손님 카드 요약과 캐시", async ({ browser }) => {
-  const shop = await as(browser, "shop1@winter.test");
+  const shop = await as(browser, "shop2@winter.test");
   await shop.goto(`/shop/customers?id=${CUSTOMER}`);
   const box = shop.getByRole("status").filter({ hasText: "다음 강습 제안" });
   await expect(box).toContainText("연속 턴");
