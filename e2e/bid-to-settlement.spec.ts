@@ -20,6 +20,7 @@ test("입찰부터 정산서 PDF까지", async ({ browser }) => {
   const card = kim.getByRole("listitem").filter({ hasText: "E2E 입찰 강습" });
   await expect(card).toBeVisible();
   await expect(card).not.toContainText("010-0000-2001");
+  await expect(card).toContainText("참고 · 비슷한 강습 낙찰이 아직 적어"); // P14-8: 3건 미만이면 금액을 숨긴다
   await card.getByLabel("제시 금액").fill("90000");
   await card.getByRole("button", { name: "금액 제시" }).click();
   await expect(card.getByText("입찰함")).toBeVisible();

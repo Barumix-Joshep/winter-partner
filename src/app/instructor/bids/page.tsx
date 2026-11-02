@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PriceReference } from "@/components/price-reference";
 import { requireArea } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getMyInstructorId } from "@/lib/instructor/profile";
@@ -87,6 +88,7 @@ async function OpenBids() {
               {j.bid_closes_at ? ` · 마감 ${kstLocalInput(j.bid_closes_at).replace("T", " ")}` : ""}
             </p>
             {j.note && <p className="mt-2 rounded-lg bg-surface px-3 py-2 text-xs">요청 사항 · {j.note}</p>}
+            <PriceReference jobId={j.id} />
             <BidForm jobId={j.id} ceiling={j.instructor_rate} current={current} />
             {current && (
               <form action={withdrawBid} className="mt-1 text-right">

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { PriceReference } from "@/components/price-reference";
 import { redirect } from "next/navigation";
 import { requireArea } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -150,6 +151,7 @@ async function TeamBids() {
                     {j.bid_closes_at ? ` · 마감 ${kstLocalInput(j.bid_closes_at).replace("T", " ")}` : ""}
                   </p>
                   {j.note && <p className="mt-2 rounded-lg bg-surface px-3 py-2 text-xs">요청 사항 · {j.note}</p>}
+                  <PriceReference jobId={j.id} />
                   <TeamBidForm jobId={j.id} ceiling={j.instructor_rate} current={current} />
                   {current && (
                     <form action={withdrawTeamBid} className="mt-1 text-right">
