@@ -44,3 +44,6 @@ next-env.d.ts
 # playwright
 /test-results/
 /playwright-report/
+
+# 운영 DB 백업 (scripts/ops/db-backup.sh)
+/backups/
