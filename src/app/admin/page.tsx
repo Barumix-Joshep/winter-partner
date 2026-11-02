@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { requireArea } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { reviewCert } from "./actions";
+import { decideShopChange, reviewCert } from "./actions";
 import { compareCert, parseCertExtract } from "@/lib/ai/cert";
 import { todayKst } from "@/lib/instructor/schedule";
 import { requestTime } from "@/lib/time";
@@ -31,11 +31,51 @@ export default function AdminHome() {
       <Link href="/admin/ask" className="flex min-h-11 items-center self-start text-sm text-brand underline">
         데이터 보기
       </Link>
+      <Suspense fallback={null}>
+        <ShopChanges />
+      </Suspense>
       <h1 className="text-lg font-bold">자격증 검증</h1>
       <Suspense fallback={<p className="text-sm text-ink-muted">불러오는 중…</p>}>
         <PendingCerts />
       </Suspense>
     </div>
+  );
+}
+
+const SHOP_TYPE: Record<string, string> = { rental_shop: "렌탈샵", lesson_team: "강습팀" };
+
+// 승인된 샵의 유형·사업자번호 변경 요청 (P19-2). 없으면 아무것도 보이지 않는다.
+async function ShopChanges() {
+  await requireArea("admin");
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("shop_change_requests")
+    .select("id, new_type, new_business_no, old_type, old_business_no, requested_at, shops(name)")
+    .eq("status", "pending")
+    .order("requested_at");
+  const rows = (data ?? []) as unknown as {
+    id: string; new_type: string | null; new_business_no: string | null; old_type: string; old_business_no: string | null; requested_at: string; shops: { name: string } | null;
+  }[];
+  if (rows.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-2">
+      <h1 className="text-lg font-bold">샵 정보 변경 요청 {rows.length}건</h1>
+      <p className="text-sm text-ink-muted">승인된 샵의 유형·사업자번호는 사업자등록증을 확인한 뒤 승인해 주세요. 정산서에 들어가는 값입니다.</p>
+      <ul className="grid gap-3 md:grid-cols-2">
+        {rows.map((r) => (
+          <li key={r.id} className="flex flex-col gap-2 rounded-[14px] border border-line bg-white p-4 text-sm">
+            <p className="font-bold">{r.shops?.name}</p>
+            {r.new_type && <p>유형: {SHOP_TYPE[r.old_type]} → {SHOP_TYPE[r.new_type]}</p>}
+            {r.new_business_no && <p>사업자번호: {r.old_business_no ?? "없음"} → {r.new_business_no}</p>}
+            <form action={decideShopChange} className="flex gap-2">
+              <input type="hidden" name="id" value={r.id} />
+              <button name="decision" value="approve" className="min-h-11 flex-1 rounded-[10px] bg-brand text-sm font-medium text-white">승인</button>
+              <button name="decision" value="reject" className="min-h-11 flex-1 rounded-[10px] border border-line text-sm">반려</button>
+            </form>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

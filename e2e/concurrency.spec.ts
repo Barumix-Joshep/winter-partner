@@ -86,3 +86,22 @@ test("정산서 발행·지급 완료를 동시에 여러 번 눌러도 한 번�
   expect(final!.status).toBe("paid");
   await db.from("settlements").delete().eq("id", st!.id);
 });
+
+test("입찰과 선정이 같은 순간에 겹쳐도 배정된 공고에 열린 입찰이 남지 않는다 (P19-2)", async () => {
+  const [s1, kim] = await Promise.all([userClient("shop1@winter.test"), userClient("kim@winter.test")]);
+  for (let round = 0; round < 6; round++) {
+    const j = await job(SHOP1, "하이원", new Date(Date.now() + (50 + round) * 86400_000), {
+      status: "open", assign_mode: "bid", bid_closes_at: new Date(Date.now() + 30 * 86400_000).toISOString(),
+    });
+    const { data: park } = await db.from("bids").insert({ job_id: j, bidder_type: "instructor", instructor_id: "c0000000-0000-0000-0000-000000000023", amount: 75000 }).select("id").single();
+    const [sel, bid] = await Promise.all([
+      s1.rpc("select_bid", { p_bid_id: park!.id, p_final_rate: 75000 }),
+      kim.rpc("place_bid", { p_job_id: j, p_amount: 70000, p_memo: null }),
+    ]);
+    expect(sel.error).toBeNull();
+    // 김스키 입찰은 선정 전에 들어갔으면 "거절", 뒤였으면 "입찰 중 아님"으로 거부 — 어느 쪽이든 열린 입찰은 없다
+    if (bid.error) expect(bid.error.message).toContain("입찰 중인 공고가 아닙니다");
+    const { count } = await db.from("bids").select("*", { count: "exact", head: true }).eq("job_id", j).eq("status", "open");
+    expect(count, `round ${round}`).toBe(0);
+  }
+});

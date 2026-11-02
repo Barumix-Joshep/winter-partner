@@ -35,6 +35,11 @@ type Result = { ok: true; data: JobInput } | { ok: false; errors: Partial<Record
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
+// 금액 상한 (DB private.check_won과 같다)
+export const MAX_WON = 10_000_000;
+export const wonRangeError = (n: number, label: string, min = 1) =>
+  n < min || n > MAX_WON ? `${label} ${min}원 이상 1,000만 원 이하로 입력해 주세요.` : null;
+
 function won(raw: string): number | null | undefined {
   const s = raw.replace(/,/g, "");
   if (!s) return null;
@@ -67,7 +72,15 @@ export function parseJob(fd: FormData, shopResortIds: number[]): Result {
     errors.studentCount = `${range.label} 강습은 ${range.min === range.max ? `${range.min}명` : `${range.min}~${range.max}명`}입니다.`;
   }
   if (customerPrice === undefined) errors.customerPrice = "손님 강습료는 숫자로 입력해 주세요.";
+  else if (customerPrice !== null) {
+    const e = wonRangeError(customerPrice, "손님 강습료는", 0);
+    if (e) errors.customerPrice = e;
+  }
   if (instructorRate === undefined) errors.instructorRate = "강사 지급액은 숫자로 입력해 주세요.";
+  else if (instructorRate !== null) {
+    const e = wonRangeError(instructorRate, "강사 지급액은");
+    if (e) errors.instructorRate = e;
+  }
   if (customerId && !UUID.test(customerId)) errors.customer = "손님을 다시 골라 주세요.";
 
   if (Object.keys(errors).length) return { ok: false, errors };

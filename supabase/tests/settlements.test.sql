@@ -62,7 +62,9 @@ select is((select generate_settlements('10000000-0000-0000-0000-0000000fff01', '
 select is((select count(*) from settlements), 3::bigint, '중복 없음');
 select set_config('role', 'postgres', true); -- 발행은 샵 화면에서 issue_settlements로. 여기서는 A 한 장만 발행한 상태를 만든다
 update settlements set status = 'issued' where instructor_id = pg_temp.iid('00000000-0000-0000-0000-0000000ffa01');
+select set_config('app.system_write', 'on', true); -- 승인 뒤 금액은 정정 절차로만 바뀐다(P19-2). 여기서는 바뀐 상황만 만든다
 update assignments set final_rate = 150000 where job_id = '40000000-0000-0000-0000-0000000ff001';
+select set_config('app.system_write', 'off', true);
 select pg_temp.login('00000000-0000-0000-0000-0000000fff01');
 select generate_settlements('10000000-0000-0000-0000-0000000fff01', '2027-01-01');
 select is((select gross from settlements where instructor_id = pg_temp.iid('00000000-0000-0000-0000-0000000ffa01')), 230000, '발행된 정산서는 다시 집계해도 바뀌지 않는다');

@@ -40,3 +40,9 @@ export function formatLessonTime(startsAt: string, endsAt: string) {
 export function recentJobsCutoff(now = new Date()) {
   return new Date(now.getTime() - 7 * 86400_000).toISOString();
 }
+
+// 폼 기본값용 한국 시간 날짜·시각 ("2026-12-20", "10:00")
+export function kstHm(iso: string) {
+  const s = new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString();
+  return { date: s.slice(0, 10), time: s.slice(11, 16) };
+}

@@ -44,6 +44,20 @@ describe("parseJob", () => {
     });
   });
 
+  it("금액 범위 (P19-2): 강사 지급액 1원~1,000만 원, 손님 강습료 0원~1,000만 원, 소수·음수는 숫자 아님", () => {
+    const err = (f: Record<string, string>) => {
+      const r = parseJob(form({ ...base, ...f }), [8]);
+      return r.ok ? null : r.errors;
+    };
+    expect(err({ instructor_rate: "0" })?.instructorRate).toBe("강사 지급액은 1원 이상 1,000만 원 이하로 입력해 주세요.");
+    expect(err({ instructor_rate: "99999999999" })?.instructorRate).toBe("강사 지급액은 1원 이상 1,000만 원 이하로 입력해 주세요.");
+    expect(err({ instructor_rate: "10,000,000" })).toBeNull();
+    expect(err({ instructor_rate: "1.5" })?.instructorRate).toBe("강사 지급액은 숫자로 입력해 주세요.");
+    expect(err({ instructor_rate: "-100" })?.instructorRate).toBe("강사 지급액은 숫자로 입력해 주세요.");
+    expect(err({ customer_price: "0" })).toBeNull();
+    expect(err({ customer_price: "10000001" })?.customerPrice).toBe("손님 강습료는 0원 이상 1,000만 원 이하로 입력해 주세요.");
+  });
+
   it("끝나는 시간이 시작보다 늦어야 한다", () => {
     const r = parseJob(form({ ...base, end: "09:00" }), [8]);
     expect(r.ok).toBe(false);

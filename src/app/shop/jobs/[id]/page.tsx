@@ -11,6 +11,8 @@ import { SelectBidForm } from "./select-bid-form";
 import { PublishForm } from "./publish-form";
 import { ApproveForm } from "./approve-form";
 import { CancelForm } from "./cancel-form";
+import { CorrectForm } from "./correct-form";
+import { kstHm } from "@/lib/shop/job-status";
 import { defaultBidClose, kstLocalInput } from "@/lib/shop/bid";
 import { AssistCard } from "./assist-card";
 import { isAiEnabled } from "@/lib/ai/flags";
@@ -139,6 +141,15 @@ async function Job({ params }: { params: Promise<{ id: string }> }) {
             <p className="mt-1 text-sm whitespace-pre-wrap">{j.assignments.lesson_note ?? "노트 없음"}</p>
             {j.status === "done" && <ApproveForm jobId={j.id} />}
             {j.assignments.approved_at && <p className="mt-2 text-xs text-[#1E7B34]">승인했습니다. 이 금액이 월 정산에 들어갑니다.</p>}
+            {j.status === "approved" && j.assignments.approved_at && (
+              <CorrectForm
+                jobId={j.id}
+                date={kstHm(j.starts_at).date}
+                start={kstHm(j.starts_at).time}
+                end={kstHm(j.ends_at).time}
+                rate={j.assignments.final_rate}
+              />
+            )}
           </div>
         )}
       </section>
