@@ -12,5 +12,6 @@ describe("detectHealthTerms", () => {
   });
   it("경고 문구", () => {
     expect(healthWarning(["골절"])).toContain("(골절)");
+    expect(healthWarning(["AI:부상"])).toContain("(부상 관련 내용(AI 감지))");
   });
 });

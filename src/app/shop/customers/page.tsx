@@ -18,6 +18,7 @@ import { SummaryBox } from "./summary-box";
 import { isAiEnabled } from "@/lib/ai/flags";
 import { isMinor, kstYear } from "@/lib/customer/minor";
 import { logAccess } from "@/lib/audit";
+import { termLabel } from "@/lib/privacy/health";
 import { CONTACT_CHANNELS, formatDay, type ContactChannel } from "@/lib/customer/contact";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -330,7 +331,7 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
       </div>
       {healthRows.length > 0 && (
         <p role="alert" className="rounded-[14px] border border-[#F3D4A8] bg-[#FFF1E0] p-4 text-sm text-[#7A3E06]">
-          메모에 건강 정보로 보이는 단어가 있었습니다 ({[...new Set(healthRows.flatMap((h) => h.terms))].join(", ")}). 건강 정보는 받지 않는 것이 원칙입니다. 꼭 필요한 내용이 아니면 샵 메모에서 지워 주세요.
+          메모에 건강 정보로 보이는 단어가 있었습니다 ({[...new Set(healthRows.flatMap((h) => h.terms))].map(termLabel).join(", ")}). 건강 정보는 받지 않는 것이 원칙입니다. 꼭 필요한 내용이 아니면 샵 메모에서 지워 주세요.
         </p>
       )}
       {cust.memo && <p className="rounded-[14px] border border-line bg-white p-4 text-sm whitespace-pre-wrap">샵 메모 · {cust.memo}</p>}

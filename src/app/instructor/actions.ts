@@ -7,6 +7,11 @@ import { notifyAfterResponse } from "@/lib/notify/dispatch";
 import { requireArea } from "@/lib/auth/session";
 import { withNotice } from "@/lib/instructor/notice";
 import { detectHealthTerms } from "@/lib/privacy/health";
+import { aiHealthCategories } from "@/lib/ai/health-check";
+import { callStructured } from "@/lib/ai/client";
+import { isAiEnabled } from "@/lib/ai/flags";
+import { formatTidy, parseTidy, TIDY_SCHEMA, TIDY_SYSTEM, TIDY_TOOL } from "@/lib/ai/note";
+import { redact } from "@/lib/ai/redact";
 
 // 전속 제안 수락은 함수로 (전속 등록·진행 중 입찰 철회·다른 제안 거절을 한 번에)
 export async function acceptInvite(formData: FormData) {
@@ -65,9 +70,16 @@ export async function completeLesson(_prev: { ok?: boolean; message?: string } |
   });
   revalidatePath("/instructor");
   if (error) return { message: "보고하지 못했습니다. 새로고침 후 다시 시도해 주세요." };
-  const health = detectHealthTerms(String(formData.get("note") ?? ""));
+  const note = String(formData.get("note") ?? "");
+  const jobId = String(formData.get("job_id") ?? "");
+  let health = detectHealthTerms(note);
+  if (!health.length) {
+    const { data: job } = await supabase.from("jobs").select("shop_id").eq("id", jobId).maybeSingle();
+    const user = await requireArea("instructor");
+    health = await aiHealthCategories(note, health, { shopId: (job?.shop_id as string) ?? null, userId: user.id });
+  }
   if (health.length) {
-    await supabase.rpc("record_health_warning", { p_field: "lesson_note", p_customer_id: null, p_job_id: String(formData.get("job_id") ?? ""), p_terms: health });
+    await supabase.rpc("record_health_warning", { p_field: "lesson_note", p_customer_id: null, p_job_id: jobId, p_terms: health });
     redirect(withNotice("/instructor", "reported-health"));
   }
   redirect(withNotice("/instructor", "reported"));
@@ -86,4 +98,30 @@ export async function cancelMyLesson(_prev: { ok?: boolean; message?: string } |
   revalidatePath("/instructor/schedule");
   if (error) return { message: "취소하지 못했습니다. 완료 보고한 강습은 취소할 수 없습니다." };
   redirect(withNotice(String(formData.get("back") ?? ""), data === 3 ? "canceled-3" : "canceled-1"));
+}
+
+export type TidyState = { text?: string; health?: string[]; message?: string };
+
+// B1 수업 메모 정리: 진도·잘된 점·다음 과제로 정리한 초안을 돌려준다(저장은 강사가 고친 뒤 완료 보고로)
+export async function tidyNote(jobId: string, raw: string): Promise<TidyState> {
+  const user = await requireArea("instructor");
+  const text = raw.slice(0, 1000).trim();
+  if (text.length < 5) return { message: "메모를 조금 더 적어 주세요." };
+  const supabase = await createClient();
+  const { data: job } = await supabase.from("jobs").select("shop_id").eq("id", jobId).maybeSingle();
+  const shopId = (job?.shop_id as string) ?? null;
+  if (!shopId || !(await isAiEnabled(shopId, "note_tidy"))) return { message: "지금은 정리 기능을 쓸 수 없습니다." };
+  const r = await callStructured({
+    feature: "note_tidy",
+    shopId,
+    userId: user.id,
+    system: TIDY_SYSTEM,
+    content: redact(text, [], { maskHealth: false }).text,
+    toolName: TIDY_TOOL,
+    schema: TIDY_SCHEMA,
+    parse: parseTidy,
+    maxTokens: 500,
+  });
+  if (!r) return { message: "정리하지 못했습니다. 그대로 보고해도 됩니다." };
+  return { text: formatTidy(r), health: r.healthSentences };
 }

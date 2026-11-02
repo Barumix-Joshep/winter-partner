@@ -15,6 +15,11 @@ export function detectHealthTerms(text: string | null | undefined): string[] {
   return [...new Set(TERMS.filter((w) => t.includes(w)))];
 }
 
+// "AI:부상"(AI 2차 감지 분류) → "부상 관련 내용(AI 감지)"
+export function termLabel(t: string) {
+  return t.startsWith("AI:") ? `${t.slice(3)} 관련 내용(AI 감지)` : t;
+}
+
 export function healthWarning(terms: string[]) {
-  return `건강 정보로 보이는 단어(${terms.join(", ")})가 있습니다. 저장은 했지만, 꼭 필요한 경우가 아니면 지워 주세요.`;
+  return `건강 정보로 보이는 단어(${terms.map(termLabel).join(", ")})가 있습니다. 저장은 했지만, 꼭 필요한 경우가 아니면 지워 주세요.`;
 }

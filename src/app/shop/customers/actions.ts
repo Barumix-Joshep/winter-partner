@@ -10,6 +10,7 @@ import { parseContact } from "@/lib/customer/contact";
 import { siteOrigin } from "@/lib/origin";
 import { kstYear } from "@/lib/customer/minor";
 import { detectHealthTerms, healthWarning } from "@/lib/privacy/health";
+import { aiHealthCategories } from "@/lib/ai/health-check";
 
 // values: 검증에 실패했을 때 입력값을 돌려준다 (React 19 폼은 제출 뒤 입력 칸을 비운다)
 export type CustomerFormState = { ok?: boolean; message?: string; errors?: Record<string, string | undefined>; values?: Record<string, string> };
@@ -29,7 +30,8 @@ export async function saveCustomer(_prev: CustomerFormState | undefined, formDat
   const supabase = await createClient();
   const id = String(formData.get("id") ?? "");
   const fields = parsed.data;
-  const health = detectHealthTerms(fields.memo);
+  let health = detectHealthTerms(fields.memo);
+  if (!health.length) health = await aiHealthCategories(fields.memo, health, { shopId: shop.id, userId: user.id, names: [fields.name] });
   if (id) {
     const { error } = await supabase.from("customers").update(fields).eq("id", id).eq("shop_id", shop.id);
     if (error) return { message: "저장하지 못했습니다." };
@@ -71,7 +73,8 @@ export async function unlinkCustomer(formData: FormData) {
 
 // 연락 기록 + 다음 연락일·목적 (log_customer_contact가 우리 샵 손님인지 다시 확인한다)
 export async function logContact(_prev: CustomerFormState | undefined, formData: FormData): Promise<CustomerFormState> {
-  await requireArea("shop");
+  const who = await requireArea("shop");
+  const shopOf = (await getMyShop(who.id))?.id;
   const parsed = parseContact(formData);
   if (!parsed.ok) return { message: parsed.message };
   const id = String(formData.get("id") ?? "");
@@ -85,7 +88,8 @@ export async function logContact(_prev: CustomerFormState | undefined, formData:
   });
   revalidatePath("/shop/customers");
   if (error) return { message: "기록하지 못했습니다. 새로고침 후 다시 시도해 주세요." };
-  const health = detectHealthTerms(parsed.data.memo);
+  let health = detectHealthTerms(parsed.data.memo);
+  if (!health.length) health = await aiHealthCategories(parsed.data.memo, health, { shopId: shopOf ?? null, userId: who.id });
   if (health.length) {
     await supabase.rpc("record_health_warning", { p_field: "contact_memo", p_customer_id: id, p_job_id: null, p_terms: health });
     return { ok: false, message: `연락을 기록했습니다. ${healthWarning(health)}` };
