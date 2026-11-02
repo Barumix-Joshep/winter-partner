@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyAfterResponse } from "@/lib/notify/dispatch";
 import { requireArea } from "@/lib/auth/session";
 import { withNotice } from "@/lib/instructor/notice";
@@ -100,6 +101,12 @@ export async function cancelMyLesson(_prev: { ok?: boolean; message?: string } |
   redirect(withNotice(String(formData.get("back") ?? ""), data === 3 ? "canceled-3" : "canceled-1"));
 }
 
+// 강사는 손님 이름을 볼 수 없지만 메모에 적을 수 있다. AI에 보내기 전에 이 강습 손님 이름을 손님A로 바꾼다 (P18-3)
+async function jobCustomerNames(jobId: string): Promise<string[]> {
+  const { data } = await createAdminClient().from("job_customers").select("customers(name)").eq("job_id", jobId);
+  return ((data ?? []) as unknown as { customers: { name: string } | null }[]).map((c) => c.customers?.name ?? "").filter(Boolean);
+}
+
 export type TidyState = { text?: string; health?: string[]; message?: string };
 
 // B1 수업 메모 정리: 진도·잘된 점·다음 과제로 정리한 초안을 돌려준다(저장은 강사가 고친 뒤 완료 보고로)
@@ -116,7 +123,7 @@ export async function tidyNote(jobId: string, raw: string): Promise<TidyState> {
     shopId,
     userId: user.id,
     system: TIDY_SYSTEM,
-    content: redact(text, [], { maskHealth: false }).text,
+    content: redact(text, await jobCustomerNames(jobId), { maskHealth: false }).text,
     toolName: TIDY_TOOL,
     schema: TIDY_SCHEMA,
     parse: parseTidy,

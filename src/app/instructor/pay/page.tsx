@@ -56,7 +56,7 @@ async function Pay({ searchParams }: { searchParams: SearchParams }) {
   const supabase = await createClient();
   const [{ data: lessons }, { data: sts }] = await Promise.all([
     supabase
-      .from("assignments")
+      .from("instructor_assignments")
       .select("final_rate, via_shop_id, jobs!inner(id, starts_at, ends_at, status, lesson_type, canceled_by, sports(name), shops(id, name))")
       .eq("instructor_id", me ?? "")
       .gte("jobs.starts_at", win.from)

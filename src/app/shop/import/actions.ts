@@ -52,7 +52,7 @@ async function checkInstructors(csv: string, shopId: string, supabase: Awaited<R
     p_emails: valid.map((r) => r.data!.email ?? ""),
     p_phones: valid.map((r) => r.data!.phone ?? ""),
   });
-  if (error) return { fileError: "강사를 찾지 못했습니다. 잠시 후 다시 시도해 주세요." };
+  if (error) return { fileError: error.message.includes("승인") ? "본사 승인 뒤에 강사를 등록할 수 있습니다." : "강사를 찾지 못했습니다. 잠시 후 다시 시도해 주세요." };
   const byLine = new Map(valid.map((r, i) => [r.line, (matches ?? [])[i] as { instructor_id: string | null; name: string | null; state: string | null }]));
   const rows: (PreviewRow & { instructorId?: string })[] = checked.rows.map((r) => {
     const base = { line: r.line, name: r.values.name ?? "", contact: [r.values.phone, r.values.email].filter(Boolean).join(" · ") };

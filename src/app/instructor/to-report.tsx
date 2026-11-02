@@ -12,7 +12,7 @@ type Row = {
 export async function ToReport({ instructorId, now }: { instructorId: string; now: number }) {
   const supabase = await createClient();
   const { data } = await supabase
-    .from("assignments")
+    .from("instructor_assignments")
     .select("jobs!inner(id, shop_id, starts_at, ends_at, status, lesson_type, sports(name), shops(name))")
     .eq("instructor_id", instructorId)
     .is("completed_at", null)

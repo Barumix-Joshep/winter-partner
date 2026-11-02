@@ -38,7 +38,7 @@ async function Schedule({ searchParams }: { searchParams: SearchParams }) {
   const [{ data: avail }, { data: lessons }] = await Promise.all([
     supabase.from("availability").select("starts_at, ends_at").eq("instructor_id", me ?? "").lt("starts_at", win.to).gt("ends_at", win.from),
     supabase
-      .from("assignments")
+      .from("instructor_assignments")
       .select("jobs!inner(id, starts_at, ends_at, status, sports(name), shops(name))")
       .eq("instructor_id", me ?? "")
       .neq("jobs.status", "canceled")

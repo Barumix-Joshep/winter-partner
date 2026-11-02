@@ -16,6 +16,11 @@ describe("bid assist", () => {
     expect(p.text).not.toContain("010-1234-5678");
     expect(p.labels.get("팀1")).toBe("b2");
   });
+  it("요청 사항·한마디 속 손님 이름은 손님A로 바꾼다 (P18-3)", () => {
+    const p = bidPrompt({ ...job, note: "김하늘 아이 둘 처음", customerNames: ["김하늘"] }, [{ ...bids[2], memo: "김하늘님 지난번에 가르쳤어요" }]);
+    expect(p.text).not.toContain("김하늘");
+    expect(p.text).toContain("손님A");
+  });
   it("규칙 경고", () => {
     expect(ruleFlags(bids, 200000)).toEqual({ b1: ["상한의 절반 미만 금액"], b3: ["패널티 3점", "검증된 자격증 없음"] });
   });

@@ -12,7 +12,7 @@ export type BidContext = {
   penalty: number;
   with_shop: number;
 };
-export type JobCondition = { lessonLabel: string; studentCount: number; levels: string[]; note: string | null; ceiling: number | null; sport: string | null };
+export type JobCondition = { lessonLabel: string; studentCount: number; levels: string[]; note: string | null; ceiling: number | null; sport: string | null; customerNames?: string[] };
 
 export type BidAssist = { recommended: string; reasons: string[]; notes: Record<string, string>; flags: Record<string, string[]> };
 
@@ -41,18 +41,19 @@ export function labelBids(bids: BidContext[]) {
 
 export function bidPrompt(job: JobCondition, bids: BidContext[]) {
   const labeled = labelBids(bids);
+  const names = job.customerNames ?? []; // 이 강습 손님 이름 → 손님A
   const lines = labeled.map((b) =>
     [
       `- ${b.label}: ${b.amount.toLocaleString("ko-KR")}원`,
       b.bidder_type === "shop" ? "강습팀" : `평점 ${b.rating ?? "없음"}, 자격 ${b.certs.join("·") || "검증 없음"}, 패널티 ${b.penalty}점`,
       `완료 강습 ${b.lessons}회, 이 샵과 ${b.with_shop}회`,
-      b.memo ? `한마디 "${redact(b.memo).text}"` : "한마디 없음",
+      b.memo ? `한마디 "${redact(b.memo, names).text}"` : "한마디 없음",
     ].join(" · "),
   );
   const cond = [
     `강습: ${job.sport ?? ""} ${job.lessonLabel}, ${job.studentCount}명`,
     `손님 레벨: ${job.levels.join(", ") || "모름"}`,
-    job.note ? `요청 사항: ${redact(job.note).text}` : null,
+    job.note ? `요청 사항: ${redact(job.note, names).text}` : null,
     job.ceiling ? `상한 ${job.ceiling.toLocaleString("ko-KR")}원` : null,
   ]
     .filter(Boolean)

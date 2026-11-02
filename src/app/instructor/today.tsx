@@ -19,14 +19,14 @@ export async function InstructorToday({ instructorId, now, children }: { instruc
   const month = monthWindowKst(today);
   const [{ data: lessons }, { data: monthRows }, { count: offers }] = await Promise.all([
     supabase
-      .from("assignments")
+      .from("instructor_assignments")
       .select("final_rate, via_shop_id, jobs!inner(id, starts_at, ends_at, status, lesson_type, note, sports(name), shops(name))")
       .eq("instructor_id", instructorId)
       .neq("jobs.status", "canceled")
       .gte("jobs.starts_at", span.from)
       .lt("jobs.starts_at", span.to),
     supabase
-      .from("assignments")
+      .from("instructor_assignments")
       .select("final_rate, via_shop_id, jobs!inner(status)")
       .eq("instructor_id", instructorId)
       .neq("jobs.status", "canceled")

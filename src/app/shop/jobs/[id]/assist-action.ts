@@ -25,12 +25,12 @@ export async function assistBids(_prev: AssistState | undefined, formData: FormD
   const supabase = await createClient();
   const [{ data: ctx, error }, { data: job }, { data: levels }] = await Promise.all([
     supabase.rpc("bid_assist_context", { p_job_id: jobId }),
-    supabase.from("jobs").select("lesson_type, student_count, note, instructor_rate, sports(name)").eq("id", jobId).eq("shop_id", shop.id).maybeSingle(),
+    supabase.from("jobs").select("lesson_type, student_count, note, instructor_rate, sports(name), job_customers(customers(name))").eq("id", jobId).eq("shop_id", shop.id).maybeSingle(),
     supabase.rpc("job_customer_levels", { p_job_id: jobId }),
   ]);
   const bids = (ctx ?? []) as BidContext[];
   if (error || !job || bids.length === 0) return { message: "추천할 입찰이 없습니다." };
-  const j = job as unknown as { lesson_type: LessonType; student_count: number; note: string | null; instructor_rate: number | null; sports: { name: string } | null };
+  const j = job as unknown as { lesson_type: LessonType; student_count: number; note: string | null; instructor_rate: number | null; sports: { name: string } | null; job_customers: { customers: { name: string } | null }[] };
   const rules = ruleFlags(bids, j.instructor_rate);
   const { text, labels } = bidPrompt(
     {
@@ -40,6 +40,7 @@ export async function assistBids(_prev: AssistState | undefined, formData: FormD
       note: j.note,
       ceiling: j.instructor_rate,
       sport: j.sports?.name ?? null,
+      customerNames: (j.job_customers ?? []).map((c) => c.customers?.name ?? "").filter(Boolean),
     },
     bids,
   );
