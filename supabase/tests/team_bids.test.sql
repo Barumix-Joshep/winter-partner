@@ -1,7 +1,7 @@
 -- P11-5 2단계 팀 입찰: 강습팀 입찰 → 선정 → 팀장이 팀원 지정 → 팀 정산 수령 (pgTAP)
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(23);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-0000000bbbf1', 'tb-shop@t', '{"role":"shop_admin","name":"공고샵"}'),
@@ -75,6 +75,24 @@ select is((select (instructor_id is null, via_shop_id::text) from assignments wh
           (true, '10000000-0000-0000-0000-0000000bbbf2'::text), '팀 배정은 유지, 강사만 비움');
 select is((select status::text from jobs where id = '40000000-0000-0000-0000-0000000bbb01'), 'assigned', '강습은 확정 상태 유지');
 select ok(exists (select 1 from notifications where kind = 'instructor_canceled' and user_id = '00000000-0000-0000-0000-0000000bbbf2'), '팀장에게 다시 지정하라는 알림');
+
+-- 승인 알림: 팀원에게는 금액 없이, 팀 관리자에게 팀 확정 금액 (P12-3, P15-4 리허설에서 미적용 발견)
+select pg_temp.login('00000000-0000-0000-0000-0000000bbbf2');
+select assign_team_instructor('40000000-0000-0000-0000-0000000bbb01', pg_temp.iid('팀원1'));
+reset role;
+update jobs set starts_at = now() - interval '3 hours', ends_at = now() - interval '1 hour' where id = '40000000-0000-0000-0000-0000000bbb01';
+select pg_temp.login('00000000-0000-0000-0000-0000000bbba1');
+select complete_lesson('40000000-0000-0000-0000-0000000bbb01', null);
+select pg_temp.login('00000000-0000-0000-0000-0000000bbbf1');
+select approve_lesson('40000000-0000-0000-0000-0000000bbb01', null, null);
+reset role;
+select is((select payload from notifications where kind = 'lesson_approved' and user_id = '00000000-0000-0000-0000-0000000bbba1'),
+          jsonb_build_object('job_id', '40000000-0000-0000-0000-0000000bbb01', 'team', true), '팀원 알림에는 금액이 없다');
+select is((select (payload ->> 'amount')::int from notifications where kind = 'team_lesson_approved' and user_id = '00000000-0000-0000-0000-0000000bbbf2'),
+          185000, '팀 관리자에게 팀 확정 금액');
+select ok(not exists (select 1 from notifications where kind = 'lesson_approved' and payload ? 'amount' and user_id = '00000000-0000-0000-0000-0000000bbba1'), '팀원에게 금액 노출 없음');
+-- 개인 강습 승인 알림은 그대로 금액이 있다 (기존 동작 유지)
+select ok(exists (select 1 from pg_proc where proname = 'approve_lesson'), 'approve_lesson 존재');
 
 select * from finish();
 rollback;

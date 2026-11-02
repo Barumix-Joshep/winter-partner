@@ -250,7 +250,7 @@ function Bids({ job, jobId, selectable, assist }: { job: BidJob; jobId: string; 
     <section className="rounded-[14px] border border-line bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-bold">입찰 현황</h2>
-        <span className="rounded-full bg-[#FFF1E0] px-2.5 py-1 text-xs font-medium text-[#B4560A]">입찰 {open.length}건</span>
+        <span className="rounded-full bg-[#FFF1E0] px-2.5 py-1 text-xs font-medium text-[#B4560A]">{selectable ? `입찰 ${open.length}건` : "마감"}</span>
       </div>
       <p className="mt-1 text-xs text-ink-muted">
         상한 {job.instructor_rate?.toLocaleString("ko-KR")}원
@@ -258,7 +258,21 @@ function Bids({ job, jobId, selectable, assist }: { job: BidJob; jobId: string; 
         {job.allow_team_bids ? " · 강습팀 입찰 허용" : ""}
       </p>
       {assist && open.length > 0 && <AssistCard jobId={jobId} names={Object.fromEntries(open.map((b) => [b.id, nameOf(b)]))} />}
-      {open.length === 0 ? (
+      {!selectable && job.bids.length > 0 ? (
+        // 선정이 끝난 공고: 진행 중 입찰이 0건이어도 "입찰 없음"으로 보이지 않게 결과를 보여 준다
+        <p className="mt-3 text-sm">
+          {(() => {
+            const won = job.bids.find((b) => b.status === "selected");
+            return won ? (
+              <>
+                선정: <strong>{nameOf(won)}</strong> · {won.amount.toLocaleString("ko-KR")}원 제시 · 입찰 {job.bids.length}건 마감
+              </>
+            ) : (
+              <>입찰 {job.bids.length}건 · 선정 없이 마감</>
+            );
+          })()}
+        </p>
+      ) : open.length === 0 ? (
         <p className="mt-3 text-sm text-ink-muted">아직 입찰이 없습니다.</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
