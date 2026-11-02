@@ -64,7 +64,7 @@ export function CustomerForm({ values }: { values: CustomerValues }) {
         </label>
         <label className={field}>
           장비 사이즈
-          <input name="equipment_size" defaultValue={v("equipment_size", values.equipment_size ?? "")} placeholder="스키 120 · 부츠 220 · 헬멧 S" className={input} />
+          <input name="equipment_size" defaultValue={v("equipment_size", values.equipment_size ?? "")} placeholder="스키 120 · 보드 140 · 부츠 220 · 헬멧 S" className={input} />
         </label>
         <label className={field}>
           태그

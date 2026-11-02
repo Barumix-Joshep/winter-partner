@@ -9,7 +9,7 @@ test("사용 안내", async ({ page, browser }) => {
   await expect(page.getByRole("heading", { name: "2. 강습 등록하기" })).toBeVisible();
   const img = page.getByRole("img", { name: /오늘 일정 화면/ });
   await expect(img).toBeVisible();
-  expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+  await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0); // 그림이 다 받아질 때까지 기다린다
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
 
   await page.getByRole("link", { name: "강사용" }).click();

@@ -34,6 +34,7 @@ type Job = {
   bid_closes_at: string | null;
   note: string | null;
   resort_id: number;
+  sport_id: number | null;
   sports: { name: string } | null;
   resorts: { name: string } | null;
   shops: { name: string } | null;
@@ -44,13 +45,14 @@ async function OpenBids() {
   const me = await getMyInstructorId(user.id);
   const supabase = await createClient();
   const now = new Date(await requestTime()).toISOString();
-  const [{ data: exclusive }, { data: myResorts }, { data: jobs }, { data: myBids }] = await Promise.all([
+  const [{ data: exclusive }, { data: myResorts }, { data: mySports }, { data: jobs }, { data: myBids }] = await Promise.all([
     supabase.from("shop_instructors").select("shop_id").eq("instructor_id", me ?? "").maybeSingle(),
     supabase.from("instructor_resorts").select("resort_id").eq("instructor_id", me ?? ""),
+    supabase.from("instructor_sports").select("sport_id").eq("instructor_id", me ?? ""),
     // RLS: 전속 강사에게는 공고가 보이지 않는다
     supabase
       .from("jobs")
-      .select("id, starts_at, ends_at, lesson_type, instructor_rate, patch_paid_by, bid_closes_at, note, resort_id, sports(name), resorts(name), shops(name)")
+      .select("id, starts_at, ends_at, lesson_type, instructor_rate, patch_paid_by, bid_closes_at, note, resort_id, sport_id, sports(name), resorts(name), shops(name)")
       .eq("status", "open")
       .eq("assign_mode", "bid")
       .gt("bid_closes_at", now)
@@ -62,7 +64,11 @@ async function OpenBids() {
     return <p className="rounded-[14px] border border-line bg-white p-5 text-sm text-ink-muted">전속 강사는 입찰 공고를 볼 수 없습니다.</p>;
   }
   const resortIds = new Set((myResorts ?? []).map((r) => r.resort_id as number));
-  const list = ((jobs ?? []) as unknown as Job[]).filter((j) => resortIds.size === 0 || resortIds.has(j.resort_id));
+  // 내 종목이 아닌 공고는 입찰할 수 없으니(place_bid가 막는다) 보여 주지 않는다
+  const sportIds = new Set((mySports ?? []).map((r) => r.sport_id as number));
+  const list = ((jobs ?? []) as unknown as Job[]).filter(
+    (j) => (resortIds.size === 0 || resortIds.has(j.resort_id)) && (j.sport_id == null || sportIds.size === 0 || sportIds.has(j.sport_id)),
+  );
   const mine = new Map((myBids ?? []).map((b) => [b.job_id as string, { amount: b.amount as number, memo: b.memo as string | null }]));
 
   if (list.length === 0) {

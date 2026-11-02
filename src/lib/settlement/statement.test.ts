@@ -59,3 +59,22 @@ describe("renderMonthXlsx", () => {
     expect(items.getRow(2).getCell(2).value).toBe("11/1(일) 10:00~12:00");
   });
 });
+
+describe("종목 3개 (P17)", () => {
+  const mixed: SettlementRow = {
+    ...row,
+    settlement_items: [
+      { amount: 120000, assignments: { jobs: { starts_at: "2026-11-01T04:00:00Z", ends_at: "2026-11-01T06:00:00Z", lesson_type: "semi", sports: { name: "스노우보드" } } } },
+      { amount: 80000, assignments: { jobs: { starts_at: "2026-11-01T01:00:00Z", ends_at: "2026-11-01T03:00:00Z", lesson_type: "private", sports: { name: "스노우스케이트" } } } },
+    ],
+  };
+  it("정산서·엑셀에 종목 이름이 그대로 나온다", async () => {
+    const s = buildStatement(mixed);
+    expect(s.items.map((i) => i.lesson)).toEqual(["스노우스케이트 1:1", "스노우보드 1:2"]);
+    expect(Buffer.from((await renderStatementPdf(s)).slice(0, 5)).toString()).toBe("%PDF-");
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load((await renderMonthXlsx("2026-11", "하이원 스노우렌탈", [s])) as unknown as ExcelJS.Buffer);
+    const cells = wb.getWorksheet("강습 내역")!.getSheetValues().flat().map(String);
+    expect(cells).toEqual(expect.arrayContaining(["스노우스케이트 1:1", "스노우보드 1:2"]));
+  });
+});

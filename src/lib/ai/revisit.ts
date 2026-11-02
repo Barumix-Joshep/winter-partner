@@ -15,7 +15,7 @@ export function revisitPrompt(shopName: string, list: RevisitCandidate[]) {
   const labeled = list.slice(0, 20).map((c, i) => ({ ...c, label: `손님${i + 1}` }));
   const text = [
     `샵: ${shopName}`,
-    ...labeled.map((c) => `- ${c.label}: ${c.sport ?? "스키"}, 레벨 ${c.level ?? "모름"}, 지난 시즌 강습 ${c.lessons}회, 마지막 강습 ${c.last_lesson ?? "모름"}`),
+    ...labeled.map((c) => `- ${c.label}: ${c.sport ?? "종목 모름"}, 레벨 ${c.level ?? "모름"}, 지난 시즌 강습 ${c.lessons}회, 마지막 강습 ${c.last_lesson ?? "모름"}`),
   ].join("\n");
   return { text, labels: new Map(labeled.map((c) => [c.label, c])) };
 }

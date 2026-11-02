@@ -11,6 +11,11 @@ describe("revisit", () => {
     const { text } = revisitPrompt("하이원 스노우렌탈", list);
     expect(text).not.toMatch(/박민준|이서아/);
     expect(text).toContain("손님1: 스키, 레벨 초급, 지난 시즌 강습 3회");
+    expect(text).toContain("손님2: 스노우보드,");
+  });
+  it("종목을 모르면 스키로 넘겨짚지 않는다 (P17)", () => {
+    const { text } = revisitPrompt("하이원 스노우렌탈", [{ customer_id: "c3", name: "최도윤", level: null, lessons: 1, last_lesson: null, sport: null }]);
+    expect(text).toContain("손님1: 종목 모름,");
   });
   it("이미 (광고)로 시작하면 그대로", () => {
     const { labels } = revisitPrompt("샵", list);

@@ -15,6 +15,12 @@ describe("사용 안내", () => {
       for (const t of g.tasks) for (const s of [t.title, ...t.steps]) expect(md, s).toContain(s);
     }
   });
+  it("P17: 종목 안내 (혼합 팀은 종목별로 따로 등록, 강사는 내 종목 공고만)", () => {
+    const shop = GUIDES[0].tasks.find((t) => t.title === "강습 등록하기")!;
+    expect(shop.steps.join(" ")).toMatch(/종목별로 따로 등록/);
+    const bid = GUIDES[1].tasks.find((t) => t.title === "공고에 입찰하기")!;
+    expect(bid.steps.join(" ")).toContain("스키·스노우보드·스노우스케이트");
+  });
   it("쉬운 말: 한 줄이 너무 길지 않다", () => {
     for (const s of GUIDES.flatMap((g) => g.tasks.flatMap((t) => t.steps))) expect(s.length, s).toBeLessThanOrEqual(80);
   });
