@@ -41,6 +41,10 @@ export const MOCKS: Record<string, (text: string, system: string) => unknown> = 
   summarize_activity: (text) => ({
     summary: /일방 취소: [2-9]/.test(text) ? "최근 30일 일방 취소가 여러 번 있습니다. 사유와 일정 관리 상황을 확인해 보시면 좋겠습니다." : "최근 활동에서 눈에 띄는 점은 없습니다.",
   }),
+  choose_metric: (text) => ({
+    metric: /샵별.*강습|강습.*샵별/.test(text) ? "jobs_by_shop" : /비용/.test(text) ? "ai_cost_by_feature" : null,
+    month: (text.match(/(\d{4}-\d{2})/) ?? [null, null])[1],
+  }),
   // 가짜 판독: 성명은 일부러 다른 이름 → 관리자 화면 "확인 필요" 흐름 확인용
   read_certificate: () => ({ issuer: "KSIA", grade: "Level 2", holder_name: "홍길동", issued_on: "2024-03-01", expires_on: "2030-02-28", number_last4: "1234", readable: true }),
 };

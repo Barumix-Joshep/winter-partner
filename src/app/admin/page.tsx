@@ -19,6 +19,9 @@ export default function AdminHome() {
       <Link href="/admin/alerts" className="flex min-h-11 items-center self-start text-sm text-brand underline">
         이상 패턴
       </Link>
+      <Link href="/admin/ask" className="flex min-h-11 items-center self-start text-sm text-brand underline">
+        데이터 보기
+      </Link>
       <h1 className="text-lg font-bold">자격증 검증</h1>
       <Suspense fallback={<p className="text-sm text-ink-muted">불러오는 중…</p>}>
         <PendingCerts />
