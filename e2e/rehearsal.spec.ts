@@ -163,6 +163,7 @@ test("3. 샵 간 일정 충돌, 강사 일방 취소와 패널티, 손님 취소
   const fr2 = await login(browser, "fr2");
   await fr2.goto("/instructor");
   await fr2.locator("section").filter({ hasText: "[테스트] R4 강사 취소" }).getByRole("button", { name: "수락" }).click();
+  await expect(fr2.getByRole("status")).toContainText("의뢰를 수락했습니다"); // 수락이 끝나기 전에 이동하면 일정에 없다 (P18 간헐 실패 원인)
   await fr2.goto(`/instructor/schedule?week=${kstDate(56)}`);
   const li = fr2.getByRole("listitem").filter({ hasText: "[테스트] 리허설 렌탈" });
   await li.getByRole("button", { name: "이 강습 취소" }).click();

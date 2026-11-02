@@ -205,7 +205,8 @@ anonymous_users = 30
 # Number of sessions that can be refreshed in a 5 minute interval per IP address.
 token_refresh = 150
 # Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).
-sign_in_sign_ups = 30
+# 로컬 E2E 전체 실행은 127.0.0.1 한 곳에서 60번 넘게 로그인한다(P17). 운영 값은 대시보드에서 따로 정한다(docs/rate-limits.md)
+sign_in_sign_ups = 300
 # Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.
 token_verifications = 30
 # Number of Web3 logins that can be made in a 5 minute interval per IP address.
