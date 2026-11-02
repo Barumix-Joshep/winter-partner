@@ -20,6 +20,11 @@ export const MOCKS: Record<string, (text: string, system: string) => unknown> = 
       ? { recommended: first[1], reasons: ["가장 낮은 금액입니다.", "조건과 맞지 않는 점은 보이지 않습니다."], bids: [{ label: first[1], note: "금액이 가장 낮음" }], flags: [] }
       : null;
   },
+  summarize_customer: (text) => ({
+    summary: ["손님A는 초급 단계로 기초 회전을 익히는 중입니다.", "최근 강습 기록이 짧아 다음 강습 전 진도를 확인하면 좋습니다."],
+    next_lesson: "다음 강습은 완만한 슬로프에서 연속 턴 연습을 권합니다.",
+    contact_draft: /만들어 주세요/.test(text) ? "손님A님, 올 시즌도 기다리고 있어요. 연속 턴 강습 예약을 도와드릴게요." : null,
+  }),
   // 가짜 판독: 성명은 일부러 다른 이름 → 관리자 화면 "확인 필요" 흐름 확인용
   read_certificate: () => ({ issuer: "KSIA", grade: "Level 2", holder_name: "홍길동", issued_on: "2024-03-01", expires_on: "2030-02-28", number_last4: "1234", readable: true }),
 };

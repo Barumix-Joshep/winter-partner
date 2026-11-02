@@ -14,6 +14,8 @@ import { CONSENT_METHOD_LABEL, CONSENT_SUBJECT_LABEL, OPTIONAL_CONSENTS, type Op
 import { ContactForm } from "./contact-form";
 import { ConsentLink } from "./consent-link";
 import { EraseForm } from "./erase-form";
+import { SummaryBox } from "./summary-box";
+import { isAiEnabled } from "@/lib/ai/flags";
 import { isMinor, kstYear } from "@/lib/customer/minor";
 import { logAccess } from "@/lib/audit";
 import { CONTACT_CHANNELS, formatDay, type ContactChannel } from "@/lib/customer/contact";
@@ -226,6 +228,7 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
   }
   // 연락처가 보이는 손님 카드 열람을 기록한다
   await logAccess("customer_view", shopId, cust.id);
+  const aiSummary = await isAiEnabled(shopId, "customer_summary");
   const minor = isMinor(cust.birth_year, kstYear(await requestTime()));
   const { data: candidate } = cust.merge_candidate_id
     ? await supabase.from("customers").select("id, name, phone, level").eq("id", cust.merge_candidate_id).eq("shop_id", shopId).maybeSingle()
@@ -288,6 +291,8 @@ async function Card({ shopId, id, others }: { shopId: string; id: string; others
           강습 등록
         </Link>
       </div>
+
+      {aiSummary && <SummaryBox key={cust.id} id={cust.id} />}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Box label="현재 레벨" value={cust.level ?? "—"} />
