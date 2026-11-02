@@ -49,4 +49,13 @@ describe("notificationMessage", () => {
   it("모르는 종류도 깨지지 않는다", () => {
     expect(notificationMessage("something_new", {}, null)).toEqual({ title: "겨울파트너 알림", body: "", url: "/" });
   });
+
+  it("운영 알림은 본사 운영 상태 화면으로", () => {
+    expect(notificationMessage("ops_errors", { count: 5 }, null)).toEqual({
+      title: "서버 오류가 늘었습니다",
+      body: "최근 한 시간 5건 · 운영 상태를 확인해 주세요",
+      url: "/admin/ops",
+    });
+    expect(notificationMessage("ai_fail_rate", { calls: 10, fails: 3 }, null).body).toContain("10회 중 3회 실패");
+  });
 });

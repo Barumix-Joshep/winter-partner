@@ -45,6 +45,10 @@ export function notificationMessage(kind: string, payload: Payload, job: JobInfo
       return { title: "정산금이 지급됐습니다", body: `실지급 ${won(payload.net)}`, url: "/instructor/pay" };
     case "ai_cap_reached":
       return { title: "AI 월 비용 상한에 닿았습니다", body: "이번 달 남은 기간은 AI 도우미가 꺼지고 수동으로 동작합니다", url: "/admin/ai" };
+    case "ops_errors":
+      return { title: "서버 오류가 늘었습니다", body: `최근 한 시간 ${payload.count ?? ""}건 · 운영 상태를 확인해 주세요`, url: "/admin/ops" };
+    case "ai_fail_rate":
+      return { title: "AI 호출 실패가 많습니다", body: `최근 한 시간 ${payload.calls ?? ""}회 중 ${payload.fails ?? ""}회 실패 · 화면은 수동으로 동작합니다`, url: "/admin/ops" };
     default:
       return { title: "겨울파트너 알림", body: "", url: "/" };
   }

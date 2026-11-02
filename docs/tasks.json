@@ -579,9 +579,9 @@
   "id": "P16-2",
   "phase": "16 시범 샵 준비 (운영 안전망·온보딩)",
   "title": "오류 알림 (서버 오류·AI 실패율 → 본사 관리자 알림)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-15",
-  "note": ""
+  "note": "새 서비스 없이: ops_events 테이블(본사만 조회) + record_ops_event(서버만). src/instrumentation.ts onRequestError가 서버 오류를 라우트 틀·오류 이름·짧은 메시지(연락처 제거)로 기록. 한 시간 오류 5건↑ 또는 AI 호출 10회↑ 중 30%↑ 실패면 본사 관리자에게 알림(ops_errors/ai_fail_rate, 한 시간 1회, 웹푸시). 크론 두 개가 성공·실패를 기록·로그. 본사 /admin/ops. 기준값은 app_settings. pgTAP 14·단위 6·E2E 1 추가, 전체 pgTAP 424·단위 189·E2E 31 통과. 원격 마이그레이션 적용은 권한 확인 대기 (11/2)"
  },
  {
   "id": "P16-3",

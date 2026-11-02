@@ -16,6 +16,9 @@ export default function AdminHome() {
       <Link href="/admin/ai" className="flex min-h-11 items-center self-start text-sm text-brand underline">
         AI 사용량·설정
       </Link>
+      <Link href="/admin/ops" className="flex min-h-11 items-center self-start text-sm text-brand underline">
+        운영 상태 (오류·크론)
+      </Link>
       <Link href="/admin/alerts" className="flex min-h-11 items-center self-start text-sm text-brand underline">
         이상 패턴
       </Link>
