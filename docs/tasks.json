@@ -515,9 +515,9 @@
   "id": "P14-10",
   "phase": "14 AI 기능",
   "title": "D3 규칙 기반 이상 탐지",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-28",
-  "note": ""
+  "note": "마이그레이션 anomalies(원격 적용): admin_anomalies() 본사만 — 강사 최근 7일 일방 취소 2회 이상, 누적 패널티 5점 이상, 샵이 입찰을 받고 선정 없이 내린 공고 30일 3건 이상(직거래 의심 신호). admin_instructor_activity(숫자만). /admin/alerts: 신호 목록(\"사실 확인 없이 제재하지 말 것\" 안내) + 강사별 \"최근 활동 요약 (AI)\"(admin_query, 이름 없이 숫자만 전송, 실호출 검증 대기). pgTAP 399·E2E 21 통과 (11/2)"
  },
  {
   "id": "P14-11",

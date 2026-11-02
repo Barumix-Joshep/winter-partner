@@ -38,6 +38,9 @@ export const MOCKS: Record<string, (text: string, system: string) => unknown> = 
       message: `${m[1]}님, 올 시즌도 기다리고 있어요. ${m[3]} 다음 단계 ${m[2]} 강습을 준비해 두겠습니다. 수신을 원치 않으시면 말씀해 주세요.`,
     })),
   }),
+  summarize_activity: (text) => ({
+    summary: /일방 취소: [2-9]/.test(text) ? "최근 30일 일방 취소가 여러 번 있습니다. 사유와 일정 관리 상황을 확인해 보시면 좋겠습니다." : "최근 활동에서 눈에 띄는 점은 없습니다.",
+  }),
   // 가짜 판독: 성명은 일부러 다른 이름 → 관리자 화면 "확인 필요" 흐름 확인용
   read_certificate: () => ({ issuer: "KSIA", grade: "Level 2", holder_name: "홍길동", issued_on: "2024-03-01", expires_on: "2030-02-28", number_last4: "1234", readable: true }),
 };
