@@ -715,17 +715,17 @@
   "id": "P20-1",
   "phase": "20 CI와 풀 리퀘스트 파이프라인",
   "title": "CI에 테스트 추가 (unit·db·e2e, 시간·비용 측정)",
-  "status": "doing",
+  "status": "done",
   "due": "2026-12-20",
-  "note": "ci.yml(unit·db·e2e-core)·e2e-full.yml, 운영 빌드 E2E(E2E_SERVER=start), 핵심 세트(E2E_SET=core). 로컬 운영 빌드: 핵심 46개 2.8분(원격 설정 없이), 전체 60개 4.1분. CI 실측은 첫 PR 뒤"
+  "note": "ci.yml(unit·db·e2e-core)·e2e-full.yml(main·매일 03:00). PR #1 첫 실행 모두 통과: security 1:03, unit 1:14, db 1:35(pgTAP 522), e2e-core 5:00(46). 병렬이라 PR 대기 약 5분, 비용 0(공개 저장소) (11/3)"
  },
  {
   "id": "P20-2",
   "phase": "20 CI와 풀 리퀘스트 파이프라인",
   "title": "풀 리퀘스트 흐름 (브랜치·템플릿·마이그레이션 라벨·대기 목록·브랜치 보호 안내)",
-  "status": "doing",
+  "status": "done",
   "due": "2026-12-20",
-  "note": "브랜치→PR→CI→squash 병합 규칙(CLAUDE.md·LOOP.md), PR 템플릿, migration-pr.yml(라벨·되돌리기 메모·대기 목록 확인), docs/pending-migrations.md. 브랜치 보호는 사장님(docs/ci.md)"
+  "note": "브랜치→PR→CI→squash 병합 규칙(CLAUDE.md·LOOP.md), PR 템플릿, migration-pr.yml(라벨·되돌리기 메모·대기 목록), docs/pending-migrations.md. gh 로그인·repo·workflow 권한 있음, admin 없음 → 브랜치 보호는 사장님(docs/ci.md 순서) (11/3)"
  },
  {
   "id": "P20-3",
@@ -739,9 +739,9 @@
   "id": "P20-4",
   "phase": "20 CI와 풀 리퀘스트 파이프라인",
   "title": "배포 후 자동 확인 (check:prod)과 적용 전 점검 스크립트",
-  "status": "doing",
+  "status": "done",
   "due": "2026-12-20",
-  "note": "post-deploy.yml: 운영 배포 완료 → check:prod(읽기 전용), 실패하면 이슈. scripts/ops/migration-preflight.mjs: 대기 마이그레이션·바뀌는 표·데이터 변경·제약·되돌리기 메모·사전 백업 표. e2e:prod는 수동(docs/ci.md)"
+  "note": "post-deploy.yml: Vercel 운영 배포 완료 → check:prod(읽기 전용), 실패하면 이슈. scripts/ops/migration-preflight.mjs(P19 대기 2개로 시험). e2e:prod는 수동 절차 유지 (11/3)"
  },
  {
   "id": "P20-5",

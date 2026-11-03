@@ -34,13 +34,22 @@ E2E_SERVER=start npx playwright test                    # e2e-full
 |---|---|---|
 | 로컬 Mac, 운영 빌드(빌드 포함) | 46개 2.8분 | 60개 4.1분 |
 | 로컬 Mac, 개발 서버 | — | 약 15분 |
-| GitHub CI (첫 실행) | 아래 "CI 실측" | 아래 "CI 실측" |
+| GitHub CI (PR #1 첫 실행) | e2e-core 5분 0초 | e2e-full: main 병합 뒤 측정 |
 
 - **비용**: 저장소가 공개(public)라 GitHub 표준 러너(ubuntu-latest) 사용은 무료·무제한이다([GitHub 문서](https://docs.github.com/en/actions/reference/runners/github-hosted-runners), [2026 요금 변경 안내](https://github.com/resources/insights/2026-pricing-changes-for-github-actions)). 저장소를 비공개로 바꾸면 무료 요금제 월 2,000분 안에서 쓰게 되니, 그때 이 표의 시간으로 다시 계산한다.
 - 15분 기준: 전체가 15분을 넘으면 e2e를 샤딩(`--shard=1/2`)하거나 핵심 세트에서 더 뺀다.
 
-### CI 실측
-(첫 풀 리퀘스트 실행 뒤 채움)
+### CI 실측 (PR #1, 2026-11-03, ubuntu-latest)
+
+| 작업 | 시간 | 결과 |
+|---|---|---|
+| security | 1분 3초 | 통과 |
+| unit | 1분 14초 | 통과 (256) |
+| db | 1분 35초 | 통과 (pgTAP 522, 빈 DB에 마이그레이션 전부) |
+| e2e-core | 5분 0초 | 통과 (46, npm ci·Supabase 시작·브라우저 설치·빌드 포함) |
+| migration-check | 6초 | 통과 (마이그레이션 없음) |
+
+작업이 병렬로 돌아 PR 한 번의 대기 시간은 **약 5분**이다(15분 기준 안). 비용 0원(공개 저장소 표준 러너).
 
 ## 풀 리퀘스트 흐름 (Claude Code 작업 방식)
 `CLAUDE.md`·`docs/LOOP.md`에 규칙이 있다. 요약:
