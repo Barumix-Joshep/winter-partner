@@ -723,9 +723,9 @@
   "id": "P20-2",
   "phase": "20 CI와 풀 리퀘스트 파이프라인",
   "title": "풀 리퀘스트 흐름 (브랜치·템플릿·마이그레이션 라벨·대기 목록·브랜치 보호 안내)",
-  "status": "todo",
+  "status": "doing",
   "due": "2026-12-20",
-  "note": ""
+  "note": "브랜치→PR→CI→squash 병합 규칙(CLAUDE.md·LOOP.md), PR 템플릿, migration-pr.yml(라벨·되돌리기 메모·대기 목록 확인), docs/pending-migrations.md. 브랜치 보호는 사장님(docs/ci.md)"
  },
  {
   "id": "P20-3",

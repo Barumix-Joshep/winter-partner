@@ -24,12 +24,32 @@ claude.ai 진척 대시보드는 이 파일을 반영해 보여 준다.
 
 ```text
 /loop docs/tasks.json에서 status가 todo인 첫 작업(due 순)을 골라 진행해. CLAUDE.md 규칙과 Superpowers 스킬(계획→TDD→검증)을 따르고,
-끝나면 lint·tsc 통과 확인 → 커밋 → tasks.json의 status를 done으로, 막히면 blocked와 이유를 note에 적고 다음 작업으로 가.
+작업마다 task/<번호> 브랜치를 만들어 커밋하고, 푸시 → 풀 리퀘스트 → CI 통과 확인 → squash 병합 → 로컬 main 갱신까지 해.
+tasks.json의 status를 done으로, 막히면 blocked와 이유를 note에 적고 다음 작업으로 가.
 되돌리기 어려운 결정이나 외부 계정이 필요한 일은 멈추고 나에게 물어.
 ```
 
 간격 없이 `/loop`만 주면 Claude가 작업 길이에 맞춰 스스로 다음 회차를 잡는다.
 하루 단위로 확인하려면 `/loop 1h …`처럼 간격을 준다.
+
+## 풀 리퀘스트 흐름 (P20)
+main에 바로 푸시하지 않는다. main 병합이 곧 Vercel 운영 배포다.
+
+```text
+git checkout main && git pull
+git checkout -b task/P21-1
+# … 작업, 로컬에서 npm test · npx supabase test db · npx playwright test …
+git push -u origin task/P21-1
+gh pr create --fill --body-file .github/pull_request_template.md   # 본문 칸을 채운다
+gh pr checks --watch                                              # security · unit · db · e2e-core
+gh pr merge --squash --delete-branch
+git checkout main && git pull
+```
+
+- 마이그레이션이 있으면 `docs/pending-migrations.md`에 추가(CI 확인), `migration-pending` 라벨이 자동으로 붙는다. 원격 적용은 병합 후 사장님 승인.
+- 느린 종합 시나리오(리허설·시즌)는 main 병합 뒤와 매일 밤 `e2e-full`에서 돈다. 실패하면 이슈가 생긴다.
+- 운영 배포가 끝나면 `post-deploy`가 check:prod를 돌리고 실패하면 이슈를 남긴다.
+- 자세한 것: `docs/ci.md`, 사고 때: `docs/rollback.md`.
 
 ## 대시보드 반영
 claude.ai의 이 프로젝트 대화에서 "대시보드 갱신해줘"라고 하면 `docs/tasks.json`을 읽어 대시보드를 업데이트한다.
