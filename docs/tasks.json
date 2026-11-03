@@ -739,9 +739,9 @@
   "id": "P19-4",
   "phase": "19 시범 샵 전 필수 보완",
   "title": "테스트 안정화 (리허설 4단계 시간 초과 근본 정리, 전체 E2E 3회 연속 통과)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-20",
-  "note": ""
+  "note": "원인: next dev가 경로를 처음 열 때 컴파일 → 뒤쪽 리허설 4단계 PDF·Excel이 시간 초과. e2e/warmup.ts: global-setup에서 src/app 45개 경로를 역할별로 미리 열어 컴파일(약 20초), 리허설 4단계 180초 제한 제거. 승인 클릭은 화면이 다 그려진 뒤(approveOnJobPage). 전체 E2E 69개 3회 연속 통과 (11/3)"
  },
  {
   "id": "P19-5",
