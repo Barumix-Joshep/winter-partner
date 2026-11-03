@@ -5,9 +5,12 @@ export type LocalEnv = { url: string; anonKey: string; serviceKey: string };
 
 let cached: LocalEnv | undefined;
 
+// CI는 supabase/setup-cli로 설치한 supabase를 쓴다(SUPABASE_BIN=supabase). 로컬은 npx.
+export const supabaseBin = () => process.env.SUPABASE_BIN ?? "npx supabase";
+
 export function localSupabase(): LocalEnv {
   if (cached) return cached;
-  const out = execSync("npx supabase status -o json", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+  const out = execSync(`${supabaseBin()} status -o json`, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
   const s = JSON.parse(out.slice(out.indexOf("{")));
   const url: string = s.API_URL;
   if (!/^http:\/\/(127\.0\.0\.1|localhost):/.test(url)) throw new Error(`로컬 Supabase가 아닙니다: ${url}`);

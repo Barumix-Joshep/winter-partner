@@ -1,0 +1,81 @@
+# 전체 E2E (리허설·시즌 종합 시나리오 포함). 풀 리퀘스트 필수 세트에서 빠진 느린 시나리오를 main 병합 뒤와 매일 밤에 돈다.
+# 실패하면 이슈를 남긴다(같은 제목의 열린 이슈가 있으면 댓글만).
+name: e2e-full
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 18 * * *" # 매일 03:00 KST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-full-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SUPABASE_CLI_VERSION: 3.0.0
+  SUPABASE_EXCLUDE: realtime,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+jobs:
+  e2e-full:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: "1"
+      E2E_SERVER: start
+      SUPABASE_BIN: supabase
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: 로컬 Supabase 시작
+        run: supabase start -x "$SUPABASE_EXCLUDE" > /dev/null
+      - name: Playwright 브라우저 캐시
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - name: E2E 전체 (Playwright)
+        run: npx playwright test
+      - name: 실패하면 리포트·스크린샷·trace 올리기
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-full-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  report-failure:
+    needs: e2e-full
+    if: failure() && github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: 실패 이슈 남기기
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="전체 E2E 실패 (main·야간)"
+          n=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number')
+          body="실행: $RUN_URL (커밋 ${GITHUB_SHA::7}, ${{ github.event_name }}). 리포트는 실행 화면의 e2e-full-report artifact."
+          if [ -n "$n" ]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$title" --body "$body"; fi

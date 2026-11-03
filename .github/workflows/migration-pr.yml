@@ -1,0 +1,50 @@
+# 마이그레이션이 든 풀 리퀘스트 (P20-2). 원격(운영 DB) 적용은 병합 후 사장님 승인으로만 한다.
+# - migration-pending 라벨을 붙이고 안내 댓글을 단다
+# - 새 마이그레이션마다 되돌리기 메모와 docs/pending-migrations.md 대기 목록 등록을 확인한다(없으면 실패)
+name: migration-pr
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  migration-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 되돌리기 메모·대기 목록 확인
+        id: check
+        run: |
+          node scripts/ops/migration-check.mjs "origin/${{ github.base_ref }}" | tee check.txt
+          echo "changed=$(head -1 check.txt | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+
+  label:
+    needs: migration-check
+    if: needs.migration-check.outputs.changed != '0' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - name: migration-pending 라벨과 안내
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh label create migration-pending --color D93F0B --description "원격 적용은 병합 후 사장님 승인으로" 2>/dev/null || true
+          if ! gh pr view "$PR" --json labels --jq '.labels[].name' | grep -qx migration-pending; then
+            gh pr edit "$PR" --add-label migration-pending
+            gh pr comment "$PR" --body "이 풀 리퀘스트에는 DB 마이그레이션이 있습니다. **원격(운영 DB) 적용은 병합 후 사장님 승인으로** 합니다. 적용 전 node scripts/ops/migration-preflight.mjs 결과와 영향 행 수를 보고하고, 적용 뒤 docs/pending-migrations.md에서 지웁니다. 새 화면이 새 표·열을 쓰면 병합(=배포) 전에 적용 순서를 정해야 합니다(docs/ci.md)."
+          fi

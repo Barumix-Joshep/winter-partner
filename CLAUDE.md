@@ -27,6 +27,10 @@
 ## 작업 방식
 - Superpowers 플러그인을 쓴다(.claude/settings.json). 새 기능은 brainstorming → writing-plans → executing-plans(또는 subagent-driven-development) 순서, 구현은 test-driven-development, 버그는 systematic-debugging, 완료 선언 전에는 verification-before-completion을 따른다. 계획 문서는 `docs/plans/`에 둔다.
 - 작업 단위는 진척 대시보드의 번호(P1-1 …)다. 한 작업을 끝내면: lint·typecheck 통과 → 커밋(`feat(P1-1): …`) → 대시보드 상태 갱신.
+- **main에 바로 푸시하지 않는다 (P20).** 작업마다 브랜치(`task/P20-1`처럼) → 커밋 → `git push -u origin <브랜치>` → `gh pr create`(본문은 `.github/pull_request_template.md`) → CI(security·unit·db·e2e-core) 통과 확인(`gh pr checks --watch`) → `gh pr merge --squash --delete-branch` → `git checkout main && git pull`. main 병합 = Vercel 운영 배포다.
+- CI가 실패하면 원인을 고친다. 실패하는 테스트를 건너뛰거나(skip·only·grep) 지우지 않는다.
+- 마이그레이션이 든 풀 리퀘스트는 `docs/pending-migrations.md`에 파일을 추가한다(CI가 확인, `migration-pending` 라벨이 자동으로 붙는다). 원격 적용은 병합 후 사장님 승인으로만 하고, 승인 요청 때 `node scripts/ops/migration-preflight.mjs` 결과와 영향 행 수를 보고한다. 새 화면이 새 표·열을 읽으면 병합 전에 적용 순서를 사장님과 정한다.
+- 브랜치 보호·GitHub Secrets·Vercel 환경변수·Supabase 설정은 바꾸지 않는다(사장님이 한다, `docs/ci.md`).
 - 막힌 작업(blocked)은 건너뛰고 다음 작업으로 간다. 막힌 이유는 대시보드 메모에 적는다.
 - 푸시 전에는 pre-push 훅(보안 점검·린트·타입 검사)이 반드시 통과해야 한다. --no-verify로 우회하지 않는다. 실패하면 원인을 고치고, 오탐일 때만 해당 줄에 security-check: allow 주석을 단다
 - 되돌리기 어려운 결정(결제, 외부 계정, 데이터 삭제)은 멈추고 묻는다.
@@ -37,4 +41,6 @@
 
 ## 명령
 - `npm run dev` · `npm run build` · `npm run lint` · `npx tsc --noEmit`
-- `npx supabase db push --linked` (원격 프로젝트 winter-partner에 마이그레이션 적용). 새 마이그레이션 파일명은 `npx supabase migration new <이름>`으로 만든다
+- `npx supabase db push --linked` (원격 프로젝트 winter-partner에 마이그레이션 적용, 사장님 승인 뒤에만). 새 마이그레이션 파일명은 `npx supabase migration new <이름>`으로 만든다
+- CI와 같은 E2E: `E2E_SERVER=start npx playwright test` (운영 빌드), 핵심 세트만 `E2E_SET=core`. 설명은 `docs/ci.md`
+- 적용 전 점검: `node scripts/ops/migration-preflight.mjs` · 롤백: `docs/rollback.md`

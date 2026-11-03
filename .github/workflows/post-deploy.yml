@@ -1,0 +1,41 @@
+# 운영 배포 뒤 자동 확인 (P20-4). Vercel 운영 배포가 끝나면 읽기 전용 check:prod(GET만, 로그인 없음)를 돌리고,
+# 실패하면 이슈를 남긴다. 로그인이 필요한 e2e:prod는 비밀번호가 필요해 자동화하지 않는다(docs/ci.md 수동 절차).
+name: post-deploy
+on:
+  deployment_status:
+
+permissions:
+  contents: read
+
+jobs:
+  check-prod:
+    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 운영 읽기 전용 점검 (check:prod)
+        # 배포별 주소는 Vercel 로그인 보호가 걸려 있어, 고정 운영 주소로 확인한다
+        run: node scripts/check-prod.mjs https://winter-partner.vercel.app
+
+  report-failure:
+    needs: check-prod
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: 실패 이슈 남기기
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="운영 배포 뒤 점검 실패"
+          n=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number')
+          body="배포 커밋 ${GITHUB_SHA::7}의 check:prod가 실패했습니다: $RUN_URL. docs/rollback.md의 코드 롤백(이전 배포로 되돌리기)을 먼저 보세요."
+          if [ -n "$n" ]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$title" --body "$body"; fi

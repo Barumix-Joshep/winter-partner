@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { admin, as, createJob, kstDate, moveJobToPast, userClient } from "./helpers";
+import { admin, as, createJob, kstDate, moveJobToPast, userClient, approveOnJobPage } from "./helpers";
 
 // 샵 강습 등록 → 입찰 공고 → 프리랜서 입찰 → 선정(금액 조정) → 완료 보고 → 승인 → 월 정산 → PDF
 // 전속 강사에게는 공고가 보이지 않는다.
@@ -55,9 +55,8 @@ test("입찰부터 정산서 PDF까지", async ({ browser }) => {
   await expect(kim.getByRole("status")).toContainText("완료 보고했습니다. 샵이 승인하면 정산에 들어갑니다.");
 
   // 샵 승인
-  await shop.goto(`/shop/jobs/${jobId}`);
+  await approveOnJobPage(shop, jobId);
   await expect(shop.getByText("턴 연습까지 진행")).toBeVisible();
-  await shop.getByRole("button", { name: "승인" }).click();
   await expect(shop.getByText("승인했습니다. 이 금액이 월 정산에 들어갑니다.")).toBeVisible();
 
   // 월 정산: 95,000원, 3.3% 원천세 3,130원(10원 미만 절사), 실지급 91,870원

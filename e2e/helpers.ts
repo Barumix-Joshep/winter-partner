@@ -94,3 +94,13 @@ export async function createJob(page: Page, j: NewJob) {
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   return jobId;
 }
+
+// 강습 상세에서 완료 보고를 승인한다. 화면이 다 그려진 뒤 누른다(스트리밍 중 배치가 바뀌면 다른 링크가 눌린 적이 있다, P19-4).
+export async function approveOnJobPage(shop: Page, jobId: string) {
+  await shop.goto(`/shop/jobs/${jobId}`);
+  await shop.waitForLoadState("networkidle").catch(() => {});
+  const button = shop.getByRole("button", { name: "승인", exact: true });
+  await expect(button).toBeVisible();
+  await button.click();
+  await expect(shop.getByText("승인했습니다.")).toBeVisible();
+}

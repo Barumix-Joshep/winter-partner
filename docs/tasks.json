@@ -710,5 +710,53 @@
   "status": "done",
   "due": "2026-12-15",
   "note": "docs/simulation-report.md 작성. P0 3·P1 7 수정(로컬 커밋), 승인 후 원격 마이그레이션 2개(settlement_integrity·access_hardening) 적용·배포 완료, check:prod 17/17, 운영 스모크 21화면 통과(AI 0회) (11/3)"
+ },
+ {
+  "id": "P20-1",
+  "phase": "20 CI와 풀 리퀘스트 파이프라인",
+  "title": "CI에 테스트 추가 (unit·db·e2e, 시간·비용 측정)",
+  "status": "done",
+  "due": "2026-12-20",
+  "note": "ci.yml(unit·db·e2e-core)·e2e-full.yml(main·매일 03:00). PR #1 첫 실행 모두 통과: security 1:03, unit 1:14, db 1:35(pgTAP 522), e2e-core 5:00(46). 병렬이라 PR 대기 약 5분, 비용 0(공개 저장소) (11/3)"
+ },
+ {
+  "id": "P20-2",
+  "phase": "20 CI와 풀 리퀘스트 파이프라인",
+  "title": "풀 리퀘스트 흐름 (브랜치·템플릿·마이그레이션 라벨·대기 목록·브랜치 보호 안내)",
+  "status": "done",
+  "due": "2026-12-20",
+  "note": "브랜치→PR→CI→squash 병합 규칙(CLAUDE.md·LOOP.md), PR 템플릿, migration-pr.yml(라벨·되돌리기 메모·대기 목록), docs/pending-migrations.md. gh 로그인·repo·workflow 권한 있음, admin 없음 → 브랜치 보호는 사장님(docs/ci.md 순서) (11/3)"
+ },
+ {
+  "id": "P20-3",
+  "phase": "20 CI와 풀 리퀘스트 파이프라인",
+  "title": "미리보기 배포와 스테이징 방안 (설정 없이 비교·추천)",
+  "status": "done",
+  "due": "2026-12-20",
+  "note": "docs/staging-plan.md: (a) 스테이징 프로젝트 (b) 브랜칭(Pro) (c) 미리보기 끄기+CI 비교, 추천 (c) Preview 변수 3개 삭제. 확인: Preview에 운영 Supabase URL·anon 키 있음(서비스 키 없음, 배포 주소는 Vercel 로그인 보호) — 보고함. 설정 변경 없음 (11/3)"
+ },
+ {
+  "id": "P20-4",
+  "phase": "20 CI와 풀 리퀘스트 파이프라인",
+  "title": "배포 후 자동 확인 (check:prod)과 적용 전 점검 스크립트",
+  "status": "done",
+  "due": "2026-12-20",
+  "note": "post-deploy.yml: Vercel 운영 배포 완료 → check:prod(읽기 전용), 실패하면 이슈. scripts/ops/migration-preflight.mjs(P19 대기 2개로 시험). e2e:prod는 수동 절차 유지 (11/3)"
+ },
+ {
+  "id": "P20-5",
+  "phase": "20 CI와 풀 리퀘스트 파이프라인",
+  "title": "롤백과 사고 대응 문서",
+  "status": "done",
+  "due": "2026-12-20",
+  "note": "docs/rollback.md: Vercel Instant Rollback·git revert PR, 마이그레이션 되돌리기 메모 규칙·데이터 변경 시 사전 백업 필수, 알림 오발송·AI 비용 급증·로그인 장애 첫 10분 (11/3)"
+ },
+ {
+  "id": "P20-6",
+  "phase": "20 CI와 풀 리퀘스트 파이프라인",
+  "title": "검증과 보고 (새 흐름으로 끝까지, 실패 PR로 차단 확인)",
+  "status": "todo",
+  "due": "2026-12-20",
+  "note": ""
  }
 ]
