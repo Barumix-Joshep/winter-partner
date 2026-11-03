@@ -12,7 +12,7 @@
 | | | **e2e-core** | 로컬 Supabase + `next build` → `next start` → Playwright 핵심 세트(리허설·시즌 제외). 실패하면 리포트·스크린샷·trace를 artifact `e2e-core-report`로 14일 보관 |
 | `e2e-full.yml` | main 푸시, 매일 03:00 KST, 수동 | e2e-full | Playwright 전체(리허설·시즌 포함). 실패하면 이슈 "전체 E2E 실패 (main·야간)" |
 | `migration-pr.yml` | PR | migration-check | 마이그레이션이 바뀐 PR이면 되돌리기 메모·`docs/pending-migrations.md` 등록 확인(없으면 실패), `migration-pending` 라벨·안내 댓글 |
-| `post-deploy.yml` | Vercel 운영 배포 완료(deployment_status) | check-prod | 읽기 전용 `check:prod`(GET만, 로그인 없음). 실패하면 이슈 "운영 배포 뒤 점검 실패" |
+| `post-deploy.yml` | Vercel 운영 배포 완료(main 커밋의 Vercel 상태 success, 또는 deployment_status) | check-prod | 읽기 전용 `check:prod`(GET만, 로그인 없음). 실패하면 이슈 "운영 배포 뒤 점검 실패" |
 
 공통: `permissions: contents: read`(이슈·라벨 쓰는 작업만 그 권한을 따로), 작업별 `timeout-minutes`, 같은 PR의 이전 실행은 새 푸시가 오면 취소(`concurrency`).
 
@@ -34,7 +34,7 @@ E2E_SERVER=start npx playwright test                    # e2e-full
 |---|---|---|
 | 로컬 Mac, 운영 빌드(빌드 포함) | 46개 2.8분 | 60개 4.1분 |
 | 로컬 Mac, 개발 서버 | — | 약 15분 |
-| GitHub CI (PR #1 첫 실행) | e2e-core 5분 0초 | e2e-full: main 병합 뒤 측정 |
+| GitHub CI (PR #1 첫 실행) | e2e-core 5분 0초 | e2e-full 6분 43초 (main 병합 직후, 60개 통과) |
 
 - **비용**: 저장소가 공개(public)라 GitHub 표준 러너(ubuntu-latest) 사용은 무료·무제한이다([GitHub 문서](https://docs.github.com/en/actions/reference/runners/github-hosted-runners), [2026 요금 변경 안내](https://github.com/resources/insights/2026-pricing-changes-for-github-actions)). 저장소를 비공개로 바꾸면 무료 요금제 월 2,000분 안에서 쓰게 되니, 그때 이 표의 시간으로 다시 계산한다.
 - 15분 기준: 전체가 15분을 넘으면 e2e를 샤딩(`--shard=1/2`)하거나 핵심 세트에서 더 뺀다.
@@ -82,7 +82,7 @@ GitHub 저장소 → **Settings → Rules → Rulesets → New ruleset → New b
 `docs/staging-plan.md` 결정 (추천: 미리보기 Preview 변수 삭제).
 
 ## 운영 확인 (자동·수동)
-- **자동**: 운영 배포가 끝나면 `post-deploy`가 `check:prod`(읽기 전용)를 돌리고 실패하면 이슈를 남긴다. Vercel GitHub 연동이 배포 상태(deployment_status)를 저장소에 보내야 한다(기본 켜짐).
+- **자동**: 운영 배포가 끝나면 `post-deploy`가 `check:prod`(읽기 전용)를 돌리고 실패하면 이슈를 남긴다. 이 저장소의 Vercel 연동은 GitHub Deployments를 만들지 않고 커밋 상태(context `Vercel`)만 남기므로, main 커밋의 그 상태가 success가 되는 것을 신호로 쓴다(`status` 이벤트). Vercel에서 GitHub Deployments를 켜면 `deployment_status`로도 돈다.
 - **수동 — 로그인이 필요한 운영 E2E** (비밀번호가 필요해 자동화하지 않음):
   ```bash
   npm run check:prod                 # 읽기 전용
@@ -96,3 +96,18 @@ GitHub 저장소 → **Settings → Rules → Rulesets → New ruleset → New b
 2. 승인 요청 전: `node scripts/ops/migration-preflight.mjs` → 대기 파일별 새 표·바뀌는 표·함수·지금 바뀌는 데이터·되돌리기 메모·사전 백업 필요 여부 표. 제약 추가가 있으면 운영 위반 행 수를 읽기 조회로 센다.
 3. 데이터가 바뀌는 마이그레이션은 `bash scripts/ops/db-backup.sh` 먼저(`docs/rollback.md`).
 4. 사장님 승인 → `npx supabase db push --linked` → check:prod·스모크 → 대기 목록에서 지우고 적용 기록에 남긴다.
+
+## P20-6 검증 기록 (2026-11-03)
+
+| 확인 | 결과 |
+|---|---|
+| 새 흐름으로 끝까지: 브랜치 `task/P20` → PR #1 → CI 통과 → squash 병합 → 로컬 main 갱신 | 통과. 워크플로 파일 푸시도 거절 없음(토큰에 workflow 권한) |
+| CI 첫 실행 | security·unit·db·e2e-core·migration-check 모두 한 번에 통과, PR 대기 약 5분 |
+| main 병합 뒤 | ci·security·e2e-full(6분 43초) 통과, Vercel 운영 배포 성공 |
+| 일부러 실패하는 테스트 PR #2 | **unit 실패**로 빨간 X 표시(기대대로). 다만 브랜치 보호가 없어 GitHub은 여전히 "병합 가능(UNSTABLE)"으로 둔다 → **병합을 실제로 막으려면 사장님이 브랜치 보호를 켜야 한다**(위 순서). PR #2는 병합하지 않고 닫음 |
+| PR #2에서 e2e-core도 실패 | 테스트 쪽 경쟁 조건: 로그아웃 뒤 뒤로 가기 → 서버가 로그인으로 보내는 도중 새로고침해 `ERR_ABORTED`. 로그인 도착을 기다린 뒤 새로고침하게 고침(운영 빌드로 20회 연속 통과). 앱 동작 문제 아님 |
+| 배포 뒤 점검(post-deploy) | 처음 안 돌았다: 이 저장소의 Vercel 연동은 GitHub Deployments를 만들지 않아 `deployment_status`가 오지 않음. main 커밋의 Vercel 상태(`status` 이벤트)로도 받게 고침 |
+
+막힌 점·남은 것
+- 브랜치 보호를 켤 권한(admin)이 이 계정에 없다 → 사장님이 켠다.
+- `task/P19`(P19 코드·마이그레이션 2개)는 원격 적용 승인 전이라 아직 PR로 올리지 않았다. 승인 뒤 PR → CI → 병합 전에 원격 적용 순서를 정한다(새 화면이 새 열을 읽는다).

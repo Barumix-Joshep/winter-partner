@@ -1,7 +1,10 @@
 # 운영 배포 뒤 자동 확인 (P20-4). Vercel 운영 배포가 끝나면 읽기 전용 check:prod(GET만, 로그인 없음)를 돌리고,
 # 실패하면 이슈를 남긴다. 로그인이 필요한 e2e:prod는 비밀번호가 필요해 자동화하지 않는다(docs/ci.md 수동 절차).
 name: post-deploy
+# 이 저장소의 Vercel 연동은 GitHub Deployments를 만들지 않고 커밋 상태(context "Vercel")만 남긴다(P20-6에서 확인).
+# 그래서 main 커밋의 Vercel 상태가 success가 되면(= 운영 배포 완료) 돈다. Deployments를 켜면 deployment_status도 받는다.
 on:
+  status:
   deployment_status:
 
 permissions:
@@ -9,7 +12,11 @@ permissions:
 
 jobs:
   check-prod:
-    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    if: >-
+      (github.event_name == 'status' && github.event.context == 'Vercel' && github.event.state == 'success' &&
+       contains(github.event.branches.*.name, 'main')) ||
+      (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success' &&
+       github.event.deployment.environment == 'Production')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
