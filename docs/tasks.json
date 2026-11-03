@@ -739,9 +739,9 @@
   "id": "P20-4",
   "phase": "20 CI와 풀 리퀘스트 파이프라인",
   "title": "배포 후 자동 확인 (check:prod)과 적용 전 점검 스크립트",
-  "status": "todo",
+  "status": "doing",
   "due": "2026-12-20",
-  "note": ""
+  "note": "post-deploy.yml: 운영 배포 완료 → check:prod(읽기 전용), 실패하면 이슈. scripts/ops/migration-preflight.mjs: 대기 마이그레이션·바뀌는 표·데이터 변경·제약·되돌리기 메모·사전 백업 표. e2e:prod는 수동(docs/ci.md)"
  },
  {
   "id": "P20-5",
