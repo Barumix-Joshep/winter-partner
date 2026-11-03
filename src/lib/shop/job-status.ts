@@ -33,7 +33,7 @@ export function formatLessonTime(startsAt: string, endsAt: string) {
   };
   const s = fmt(startsAt);
   const e = fmt(endsAt);
-  return `${s.md} ${s.hm}~${e.hm}`;
+  return `${s.md} ${s.hm}~${e.md === s.md ? "" : "다음 날 "}${e.hm}`; // 자정을 넘는 강습 (P19-3)
 }
 
 // 목록에 보일 강습: 지난 7일 이후에 끝나는 것

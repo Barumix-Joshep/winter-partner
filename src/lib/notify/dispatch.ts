@@ -3,6 +3,7 @@ import webpush from "web-push";
 import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notificationMessage } from "./messages";
+import { pushErrorSummary } from "./error-summary";
 
 const configured = () =>
   !!(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -42,6 +43,7 @@ export async function dispatchPending(limit = 50) {
       } catch (e) {
         const code = (e as { statusCode?: number }).statusCode;
         if (code === 404 || code === 410) dead.push(s.id); // 만료된 구독
+        else console.error("웹푸시 실패", pushErrorSummary(e));
       }
     }
   }
@@ -55,7 +57,7 @@ export function notifyAfterResponse() {
     try {
       await dispatchPending();
     } catch (e) {
-      console.error("알림 발송 실패", e);
+      console.error("알림 발송 실패", pushErrorSummary(e));
     }
   });
 }

@@ -114,6 +114,9 @@ function JobFields({ resorts, sports, customers, defaultCustomerId = "", prefill
             <input type="time" name="end" defaultValue={prefill?.end ?? "12:00"} step={600} required className={`${input} ${warn("end", prefill?.end)}`} />
             <Err m={e.end} />
           </label>
+          <p className="col-span-2 text-[11px] text-ink-muted">
+            끝 시간이 시작보다 이르면 다음 날로 봅니다(야간 강습). 일정 겹침과 정산 달은 시작 시각 기준이고, 지난 시간에는 등록할 수 없습니다.
+          </p>
         </div>
         <label className={field}>
           강습 유형

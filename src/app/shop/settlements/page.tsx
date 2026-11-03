@@ -106,7 +106,7 @@ async function Settlements({ searchParams }: { searchParams: SearchParams }) {
         </p>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
             <Stat label="강습료 지급 합계" value={won(total.gross)} />
             <Stat label="원천징수 합계" value={won(total.wh)} />
             <Stat label="실지급 합계" value={won(total.net)} />
@@ -211,11 +211,12 @@ async function Received({ shopId, month }: { shopId: string; month: string }) {
   );
 }
 
+// 휴대폰에서는 한 줄(이름 왼쪽·금액 오른쪽), 넓은 화면에서는 세 칸 (390px에서 금액이 두 줄로 갈라지던 문제, P19-3)
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-line bg-white p-4">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-white px-4 py-3 sm:block sm:p-4">
       <p className="text-xs text-ink-muted">{label}</p>
-      <p className="mt-1 text-lg font-bold sm:text-xl">{value}</p>
+      <p className="text-lg font-bold whitespace-nowrap sm:mt-1 sm:text-xl">{value}</p>
     </div>
   );
 }

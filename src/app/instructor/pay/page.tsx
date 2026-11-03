@@ -129,15 +129,15 @@ async function Pay({ searchParams }: { searchParams: SearchParams }) {
               const st = ITEM_STATE[r.jobs.status] ?? ITEM_STATE.assigned;
               const excluded = r.jobs.status === "canceled";
               return (
-                <div key={r.jobs.id} className="flex items-center justify-between border-b border-[#EEF1F6] py-3 last:border-b-0">
-                  <div>
+                <div key={r.jobs.id} className="flex items-center justify-between gap-3 border-b border-[#EEF1F6] py-3 last:border-b-0">
+                  <div className="min-w-0">
                     <p className="text-[13px] font-medium">
                       {formatLessonTime(r.jobs.starts_at, r.jobs.ends_at).split(" ")[0]} {r.jobs.sports?.name} {LESSON_TYPES[r.jobs.lesson_type].label} ·{" "}
                       {r.jobs.shops?.name}
                     </p>
                     {excluded && <p className="text-[11px] text-ink-muted">{r.jobs.canceled_by === "shop" ? "샵 사정 취소" : "손님 취소"}</p>}
                   </div>
-                  <div className={`text-right ${st.cls}`}>
+                  <div className={`shrink-0 text-right whitespace-nowrap ${st.cls}`}>
                     <p className="text-sm font-bold">{r.via_shop_id ? "팀 정산" : `${excluded ? "0" : won(r.final_rate)}원`}</p>
                     <p className="text-[11px]">{st.label}</p>
                   </div>

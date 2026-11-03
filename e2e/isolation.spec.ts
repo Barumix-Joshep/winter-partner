@@ -8,7 +8,7 @@ test("다른 샵 강습 상세는 열리지 않는다", async ({ browser }) => {
   const shop2 = await as(browser, "shop2@winter.test");
   await shop2.goto(`/shop/jobs/${SHOP1_JOB}`);
   // 스트리밍 응답이라 상태 코드는 200이 먼저 나간다. 내용으로 확인한다.
-  await expect(shop2.getByText(/could not be found|찾을 수 없/)).toBeVisible();
+  await expect(shop2.getByText(/could not be found|찾을 수 없|찾는 화면이 없습니다/)).toBeVisible();
   await expect(shop2.getByText("첫 강습, 겁이 많음")).toHaveCount(0);
   await expect(shop2.getByText("010-0000-1002")).toHaveCount(0);
   await shop2.goto("/shop/customers");

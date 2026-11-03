@@ -731,9 +731,9 @@
   "id": "P19-3",
   "phase": "19 시범 샵 전 필수 보완",
   "title": "사용자 경험과 보안 보완 (오류 화면·보안 헤더·강습 시간 검증·목록 쪽 나누기·푸시 로그·390px)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-20",
-  "note": ""
+  "note": "오류 화면(루트·샵·강사·본사 error.tsx, global-error, not-found, 오류 번호=digest↔ops_events), 보안 헤더(HSTS·nosniff·Referrer·Permissions·X-Frame-Options, CSP는 Report-Only로 시작 — 로컬 주요 화면 16개 위반 0, 운영 스모크 뒤 강제 전환 예정), 지난 시간 강습 차단·자정 넘김 허용(12시간 이내, 정산·충돌은 시작 기준), 강습·손님 목록 200개씩 쪽 나누기, 웹푸시 실패 로그는 종류·상태 코드만, 390px 3곳 (11/3)"
  },
  {
   "id": "P19-4",
