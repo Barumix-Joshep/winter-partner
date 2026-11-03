@@ -112,6 +112,9 @@ test("로그아웃 뒤 뒤로 가기로 손님 연락처를 다시 볼 수 없�
   await page.goBack();
   // 브라우저가 지난 화면을 그대로 띄우는지 기록 (bfcache). 새로 불러오면 반드시 로그인으로 가야 한다
   await expect(page.getByText("010-0000-1001")).toHaveCount(0); // 지난 화면이 메모리에서 다시 뜨지 않는다 (P18-4 수정)
+  // 뒤로 간 화면은 서버가 로그인으로 다시 보낸다. 그 이동이 끝난 뒤 새로고침한다(도중에 하면 ERR_ABORTED, P20 CI에서 발견)
+  await expect(page).toHaveURL(/\/login/);
+  await page.waitForLoadState("load");
   await page.reload();
   await expect(page.getByText("010-0000-1001")).toHaveCount(0);
   await expect(page).toHaveURL(/\/login/);
