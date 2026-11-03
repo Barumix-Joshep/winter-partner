@@ -731,9 +731,9 @@
   "id": "P20-3",
   "phase": "20 CI와 풀 리퀘스트 파이프라인",
   "title": "미리보기 배포와 스테이징 방안 (설정 없이 비교·추천)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-20",
-  "note": ""
+  "note": "docs/staging-plan.md: (a) 스테이징 프로젝트 (b) 브랜칭(Pro) (c) 미리보기 끄기+CI 비교, 추천 (c) Preview 변수 3개 삭제. 확인: Preview에 운영 Supabase URL·anon 키 있음(서비스 키 없음, 배포 주소는 Vercel 로그인 보호) — 보고함. 설정 변경 없음 (11/3)"
  },
  {
   "id": "P20-4",
