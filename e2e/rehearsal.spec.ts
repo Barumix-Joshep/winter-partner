@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { admin, as, createJob, kstDate, moveJobToPast, addAvailability, userClient } from "./helpers";
+import { admin, as, createJob, kstDate, moveJobToPast, addAvailability, userClient, approveOnJobPage } from "./helpers";
 import { setAiFeatures } from "./ai";
 
 // P15-4 가상 데이터 시범 운영 리허설 (로컬, AI는 가짜 모델).
@@ -182,7 +182,6 @@ test("3. 샵 간 일정 충돌, 강사 일방 취소와 패널티, 손님 취소
 });
 
 test("4. 완료 보고 → 승인 → 월 정산(3.3%·팀 0%) → PDF·Excel → 지급 완료", async ({ browser }) => {
-  test.setTimeout(180_000); // 단독 21초, 전체 실행 중에는 개발 서버가 PDF·엑셀 경로를 처음 컴파일하느라 90초를 넘긴 적이 있다 (P18)
   // 강사가 모두 달라 겹치지 않는다. 3시간 전으로 옮겨 이번 달 정산에 들어가게 한다(월초에 며칠 전으로 옮기면 지난달로 넘어간다)
   const reports: [string, Who, number][] = [[S.jobs.r1, "ex1", 3], [S.jobs.r2, "ex3", 3], [S.jobs.r3, "fr1", 3]];
   const shop = await login(browser, "rental");
@@ -194,9 +193,7 @@ test("4. 완료 보고 → 승인 → 월 정산(3.3%·팀 0%) → PDF·Excel �
     await card.getByLabel("강습 노트").fill("[테스트] 플루그보겐 진행, 다음엔 연속 턴");
     await card.getByRole("button", { name: "완료 보고하기" }).click();
     await expect(p.getByRole("status")).toContainText("완료 보고했습니다");
-    await shop.goto(`/shop/jobs/${jobId}`);
-    await shop.getByRole("button", { name: "승인" }).click();
-    await expect(shop.getByText("승인했습니다.")).toBeVisible();
+    await approveOnJobPage(shop, jobId);
   }
   await shop.goto("/shop/settlements");
   await shop.getByRole("button", { name: /이 달 정산 집계|다시 집계/ }).click();
@@ -269,7 +266,7 @@ test("6. 보호자 동의 링크, 삭제(익명화) 요청, 연락처 열람 기
 test("7. 샵 간 격리 (화면·직접 조회·권한 우회 시도)", async ({ browser }) => {
   const other = await as(browser, "shop1@winter.test");
   await other.goto(`/shop/jobs/${S.jobs.r1}`);
-  await expect(other.getByText(/could not be found|찾을 수 없/)).toBeVisible();
+  await expect(other.getByText(/could not be found|찾을 수 없|찾는 화면이 없습니다/)).toBeVisible();
   await expect(other.getByText("[테스트] R1 접수 강습")).toHaveCount(0);
   const c = await userClient("shop1@winter.test");
   for (const table of ["customers", "jobs", "settlements", "customer_contacts", "customer_consents", "access_logs"] as const) {

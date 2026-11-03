@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { PARK, admin, as, createJob, kstDate, moveJobToPast } from "./helpers";
+import { PARK, admin, as, createJob, kstDate, moveJobToPast, approveOnJobPage } from "./helpers";
 
 // 2단계 팀 입찰: 공고(팀 입찰 허용) → 강습팀 입찰 → 선정 → 팀장이 팀원 지정 → 완료 보고 → 승인 → 팀 정산(원천세 0) → PDF
 const TEAM = "b0000000-0000-0000-0000-000000000003"; // 평창 라이딩스쿨 (team@)
@@ -45,9 +45,7 @@ test("팀 입찰부터 팀 정산 수령까지", async ({ browser }) => {
   await park.goto("/instructor");
   await park.locator("article").filter({ has: park.getByRole("button", { name: "완료 보고하기" }) }).getByRole("button", { name: "완료 보고하기" }).click();
   await expect(park.getByRole("status")).toContainText("완료 보고했습니다");
-  await shop.goto(`/shop/jobs/${jobId}`);
-  await shop.getByRole("button", { name: "승인" }).click();
-  await expect(shop.getByText("승인했습니다.")).toBeVisible();
+  await approveOnJobPage(shop, jobId);
 
   // 정산: 팀에게 원천세 없이
   await shop.goto("/shop/settlements");

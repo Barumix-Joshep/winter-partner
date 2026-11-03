@@ -1,0 +1,96 @@
+# 테스트 CI (P20-1). 운영 DB는 쓰지 않는다: GitHub 서버 안에 임시 로컬 Supabase를 띄워 거기에만 붙는다.
+# 필수 상태 점검 이름: unit, db, e2e-core (docs/ci.md). 실제 AI는 부르지 않는다(AI_MOCK=1, 키 없음).
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  SUPABASE_CLI_VERSION: 3.0.0
+  # Supabase 서비스 중 테스트에 안 쓰는 것은 띄우지 않는다
+  SUPABASE_EXCLUDE: realtime,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 단위 테스트 (vitest)
+        run: npm test
+
+  db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: 로컬 Supabase 시작
+        run: supabase start -x "$SUPABASE_EXCLUDE,mailpit" > /dev/null
+      - name: 빈 DB에 마이그레이션 전부 + 시드 다시 적용 (db reset)
+        run: supabase db reset --local
+      - name: DB 테스트 (pgTAP)
+        run: supabase test db
+
+  e2e-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "1"
+      E2E_SERVER: start # next build → next start (운영과 같은 빌드)
+      E2E_SET: core # 리허설·시즌 종합 시나리오는 e2e-full.yml에서
+      SUPABASE_BIN: supabase
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: 로컬 Supabase 시작
+        run: supabase start -x "$SUPABASE_EXCLUDE" > /dev/null
+      - name: Playwright 브라우저 캐시
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - name: Next 빌드 캐시
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+      - name: E2E 핵심 세트 (Playwright)
+        run: npx playwright test
+      - name: 실패하면 리포트·스크린샷·trace 올리기
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-core-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14

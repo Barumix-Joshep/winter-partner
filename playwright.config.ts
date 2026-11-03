@@ -5,15 +5,21 @@ import { localSupabase } from "./e2e/local-env";
 // 시작할 때 로컬 DB를 시드로 되돌린다 (e2e/global-setup.ts). 원격 DB는 쓰지 않는다.
 const sb = localSupabase();
 const PORT = 3100;
+// E2E_SERVER=start: 운영과 같은 빌드(next build → next start)로 돈다. CI가 이렇게 돌고, 로컬 기본은 개발 서버(next dev).
+const prodBuild = process.env.E2E_SERVER === "start";
+// E2E_SET=core: 풀 리퀘스트 필수 세트. 오래 걸리는 종합 시나리오(리허설·시즌)는 main 병합 뒤와 매일 밤에 돈다 (docs/ci.md).
+export const SLOW_SPECS = ["rehearsal.spec.ts", "season.spec.ts"];
+const core = process.env.E2E_SET === "core";
 
 export default defineConfig({
   testDir: "e2e",
+  testIgnore: core ? SLOW_SPECS.map((f) => `**/${f}`) : undefined,
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
   workers: 1,
   timeout: 90_000,
   expect: { timeout: 15_000 },
-  reporter: [["list"]],
+  reporter: process.env.CI ? [["list"], ["html", { open: "never" }], ["json", { outputFile: "test-results/report.json" }]] : [["list"]],
   use: {
     baseURL: `http://localhost:${PORT}`,
     locale: "ko-KR",
@@ -22,9 +28,9 @@ export default defineConfig({
     ...devices["Pixel 7"],
   },
   webServer: {
-    command: `npx next dev --port ${PORT}`,
+    command: prodBuild ? `npx next build && npx next start --port ${PORT}` : `npx next dev --port ${PORT}`,
     url: `http://localhost:${PORT}/login`,
-    timeout: 180_000,
+    timeout: prodBuild ? 600_000 : 180_000,
     reuseExistingServer: false,
     // .env.local(원격)보다 이 값이 먼저다
     env: {
