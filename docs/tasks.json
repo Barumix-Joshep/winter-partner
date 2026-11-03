@@ -747,9 +747,9 @@
   "id": "P20-5",
   "phase": "20 CI와 풀 리퀘스트 파이프라인",
   "title": "롤백과 사고 대응 문서",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-20",
-  "note": ""
+  "note": "docs/rollback.md: Vercel Instant Rollback·git revert PR, 마이그레이션 되돌리기 메모 규칙·데이터 변경 시 사전 백업 필수, 알림 오발송·AI 비용 급증·로그인 장애 첫 10분 (11/3)"
  },
  {
   "id": "P20-6",
