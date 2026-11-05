@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authErrorMessage, parseLogin, parseOnboarding, parseSignup, safeNext, parseResetRequest } from "./validate";
+import { authErrorMessage, parseLogin, parseOnboarding, parseSignup, passwordProblem, safeNext, parseResetRequest } from "./validate";
 
 function form(fields: Record<string, string>) {
   const fd = new FormData();
@@ -103,5 +103,26 @@ describe("parseResetRequest", () => {
     const fd = new FormData();
     fd.set("email", "kim");
     expect(parseResetRequest(fd).ok).toBe(false);
+  });
+});
+
+// 보안 5(인증 설정): 비밀번호는 8자 이상 + 영문·숫자 포함. Supabase 설정(minimum_password_length=8, letters_digits)과 같은 규칙.
+describe("passwordProblem", () => {
+  it("8자 이상이고 영문과 숫자가 모두 있으면 통과", () => {
+    expect(passwordProblem("winter1234")).toBeNull();
+    expect(passwordProblem("A1b2c3d4")).toBeNull();
+  });
+  it("짧거나 한 종류만 있으면 안내 문구", () => {
+    expect(passwordProblem("abc123")).toMatch(/8자/);
+    expect(passwordProblem("abcdefgh")).toMatch(/영문과 숫자/);
+    expect(passwordProblem("12345678")).toMatch(/영문과 숫자/);
+  });
+  it("가입 검증도 같은 규칙", () => {
+    const r = parseSignup(form({ name: "김스키", email: "kim@winter.test", password: "12345678", role: "instructor", agree: "on" }));
+    expect(r.ok).toBe(false);
+  });
+  it("Supabase의 약한 비밀번호 오류를 한국어로", () => {
+    expect(authErrorMessage("Password should contain at least one character of each: abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ, 0123456789.")).toMatch(/영문과 숫자/);
+    expect(authErrorMessage("Password should be at least 8 characters.")).toMatch(/8자/);
   });
 });
