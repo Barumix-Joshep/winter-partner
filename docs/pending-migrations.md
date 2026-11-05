@@ -9,7 +9,9 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 
 ## 대기 중
 
-없음.
+| 마이그레이션 | 작업 | 데이터 변경 | 적용 순서 |
+|---|---|---|---|
+| `20261105214254_instructor_assignments_comment.sql` | P21-5 Security Advisor 예외 기록 | 없음(`instructor_assignments` 뷰에 설명 comment만, 정의·권한 그대로) | 순서 무관(화면이 읽는 표·열 변화 없음). 백업 생략 가능(실사용자 0명, 설명만) |
 
 ## 적용 기록
 
