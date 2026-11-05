@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Claude Code 작업 공간(git worktree) — 그 안의 빌드 결과(.next)까지 검사하지 않게
+    ".claude/**",
   ]),
 ]);
 
