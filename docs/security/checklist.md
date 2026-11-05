@@ -14,7 +14,7 @@
 
 ## 점검 항목
 - [!] 1. 세션 관리 — JWT 만료, 리프레시 회전·재사용 감지, Time-box, 비활성 타임아웃, signOut scope, 앱 유휴 자동 로그아웃(관리자는 더 짧게)
-- [ ] 2. RLS — public 모든 표 RLS, 역할별 정책, 다른 샵·다른 강사 차단, 전속 강사에게 입찰 공고 숨김
+- [x] 2. RLS — public 모든 표 RLS, 역할별 정책, 다른 샵·다른 강사 차단, 전속 강사에게 입찰 공고 숨김
 - [ ] 3. 서버 측 권한 검사 — API·서버 액션의 역할·소유권 검사, IDOR
 - [ ] 4. 비밀값 — 번들·공개 env·로그·히스토리, .gitignore, gitleaks 히스토리 스캔
 - [ ] 5. 인증 설정 — 비밀번호 정책, 유출 비밀번호 차단, 이메일 인증, OTP 만료, 로그인 rate limit, Redirect URL, 관리자 MFA
@@ -50,3 +50,16 @@
 | 날짜 | 항목 | 발견 | 조치 | 커밋 |
 |---|---|---|---|---|
 | 2026-11-05 | 1. 세션 관리 | 서버 Time-box·비활성 타임아웃 꺼짐, 앱 유휴 로그아웃 없음 | 앱 유휴 로그아웃 추가(본사 30분·샵 2시간·강사 7일), 서버 설정은 P21-1 | 25df620 (security/session-idle-logout) |
+
+### 2. RLS — [x] (정책 문제 없음, 빠진 표를 테스트로 고정)
+근거(로컬 DB, 마이그레이션 전부 적용 상태, 2026-11-05):
+- public 표 43개 모두 `relrowsecurity = true`, 정책 1개 이상(`pg_class`·`pg_policies` 조회). 이미 `supabase/tests/rls_matrix.test.sql` 1)이 "모든 표에 RLS", 2) anon·public 쓰기 정책 없음, 3) 조건 없는(`true`) 쓰기 정책 없음을 강제한다.
+- 뷰 2개: `customer_consent_state`는 `security_invoker=true`(밑 표 RLS 적용). `instructor_assignments`는 소유자 권한 뷰지만 정의에 `where instructor_id = private.my_instructor_id()`, `security_barrier`, anon 권한 회수(`20261102151000_access_hardening.sql:16-23`), 테스트 `access_hardening.test.sql:27-35`. 의도된 설계.
+- 역할별 실제 조회(shop1 관리자 / 다른 샵 / 강습팀 / 프리랜서 김·박 / 전속): 다른 샵·팀은 shop1 강습·강습료·손님 연결·배정·입찰·제안·전속·정산 0행. 강사에게 보이는 배정·제안·입찰은 모두 자기 것. 다른 강사 자격증은 승인된 것만. 강사 가용 시간은 샵 전체에 보임 — 강사 찾기(P3)용 설계.
+- 전속 강사 입찰 공고 숨김: `rls.test.sql`·`bids.test.sql`에 있고, 새 테스트에서 "프리랜서에게는 보이는 공고"를 대조로 다시 확인.
+
+조치(테스트): 브랜치 `security/rls-role-tests` 커밋 `c999c24`(푸시, 병합 안 함). `supabase/tests/rls_roles.test.sql` 12개 — 다른 샵·강습팀·프리랜서·다른 강사의 조회 차단, ID를 알 때의 수정·삭제 0행, 강사의 "지급 완료" 변경 불가, 본인은 보인다는 대조. 표마다 RLS를 꺼 보면(job_prices, job_customers, shop_members, pay_type_log, lesson_corrections, settlement_items, notifications, push_subscriptions, instructor_penalties, exclusive_invites) 이 테스트가 실패하는 것을 확인. 전체 pgTAP 583, 단위 267, E2E 핵심 55, 린트·타입·빌드 통과.
+
+| 날짜 | 항목 | 발견 | 조치 | 커밋 |
+|---|---|---|---|---|
+| 2026-11-05 | 2. RLS | 정책 문제 없음. 행렬 테스트에 빠진 표 다수 | 역할별 차단 테스트 12개 추가 | c999c24 (security/rls-role-tests) |
