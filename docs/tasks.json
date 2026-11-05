@@ -862,5 +862,13 @@
   "status": "todo",
   "due": "2026-12-20",
   "note": "체크리스트 9. 웹 보안 헤더와 쿠키. 운영 CSP는 Report-Only. 시범 샵 실제 기기에서 위반 보고가 없으면 next.config.ts CSP_ENFORCE=true로 전환(코드 1줄 + E2E). 쿠키 HttpOnly 브랜치(security/auth-cookies, 98c1dd2) 병합 검토와 함께"
+ },
+ {
+  "id": "P21-8",
+  "phase": "21 보안",
+  "title": "입찰·의뢰 횟수 제한·자격증 파일 상한 마이그레이션 병합·원격 적용 승인",
+  "status": "todo",
+  "due": "2026-12-20",
+  "note": "체크리스트 10. 남용 방지. security/write-limits(c21e1cc) 20261105050316_write_limits.sql — 트리거·정책·함수만, 데이터 변경 없음. 한도는 app_settings limit_*로 조정 가능(docs/rate-limits.md)"
  }
 ]

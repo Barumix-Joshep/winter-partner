@@ -22,7 +22,7 @@
 - [!] 7. DB 함수 — SECURITY DEFINER search_path, anon/authenticated 실행 권한, 동적 SQL, `supabase db lint`·Security Advisor
 - [!] 8. 입력 검증·오류 처리 — 서버 검증, 금액·정산 범위, 오류 메시지 누출
 - [!] 9. 웹 보안 헤더·쿠키 — CSP, HSTS, frame-ancestors, Referrer-Policy, 쿠키 속성, CORS
-- [ ] 10. 남용 방지 — 쓰기 API rate limit, 중복 입찰
+- [!] 10. 남용 방지 — 쓰기 API rate limit, 중복 입찰
 - [ ] 11. 개인정보 — 수집 최소화, 암호화, 마스킹, 주민번호 미수집, 로그
 - [ ] 12. 감사 로그 — 배정·선정·정산 금액·취소·벌점 기록, 수정 불가
 - [ ] 13. 의존성 — npm audit high/critical
@@ -188,3 +188,17 @@
 | 날짜 | 항목 | 발견 | 조치 | 커밋 |
 |---|---|---|---|---|
 | 2026-11-05 | 9. 웹 보안 헤더·쿠키 | 세션 쿠키 HttpOnly·Secure 없음, CSP Report-Only | 쿠키 HttpOnly·Secure, CSP 강제는 P21-7 | 98c1dd2 (security/auth-cookies) |
+
+### 10. 남용 방지 — [!] (횟수 제한 추가, 운영 적용은 승인 필요)
+근거(2026-11-05):
+- **이미 있는 제한**(`src/lib/ops/limits.ts`, `docs/rate-limits.md`, `e2e/rate-limit.spec.ts`): 로그인 실패 IP 30·계정 10/10분, 가입 IP 10/시간(+ Auth 서버 `sign_in_sign_ups` 30/5분), 재설정 메일, 공개 동의·셀프 등록 링크 열람·제출, 의견 보내기, AI 호출 사용자 30/10분 + 샵 하루 200 + 월 비용 상한.
+- **중복 방지**(고유 색인): 입찰 `bids_one_open_per_instructor`(공고·강사당 진행 중 하나), 팀 입찰 공고당 하나(`team_bids.test.sql`), 의뢰 `job_offers_job_id_instructor_id_key`, 전속 제안 대기 하나, 사업자 변경 요청 대기 하나, 푸시 구독 endpoint.
+- **문제**: 상대에게 알림이 가는 쓰기에 횟수 제한이 없었다 — `place_bid`·`place_team_bid`는 재입찰(금액 변경)마다 샵에 알림, `send_job_offer`는 의뢰마다 강사에게 알림(함수 본문에서 `notifications` insert 확인). 승인된 샵·강사가 반복 호출하면 알림을 쏟아낼 수 있었다. 강사 폴더의 자격증 파일 수에도 상한이 없어 Storage API로 4MB씩 계속 올릴 수 있었다(항목 6에서 넘김). 강습 등록(`create_job`)·입찰 공고는 알림을 만들지 않아 제외.
+
+조치: 브랜치 `security/write-limits` 커밋 `c21e1cc`(푸시, 병합 안 함). 마이그레이션 `20261105050316_write_limits.sql` — `private.hit_write_limit`(기존 `private.rate_limits` 고정 창, 로그인 사용자만 셈), 트리거 `limit_bids`(insert·금액 변경, 10분 30번)·`limit_job_offers`(1시간 100번), 저장소 올리기 정책에 `private.cert_folder_has_room`(폴더 30개). 한도는 `private.app_settings`의 `limit_*`로 조정. 앱은 초과 시 "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." 안내(입찰·팀 입찰). `docs/rate-limits.md`에 근거 추가. 테스트 `supabase/tests/write_limits.test.sql` 6개(**수정 전 3개 실패 확인** → 통과). pgTAP 전체, 단위 267, 전체 E2E 69, 린트·타입·빌드 통과. 기능 영향: 정상 사용량(E2E 전체에서 의뢰 11·입찰 8회)보다 한참 높은 한도라 평소에는 걸리지 않는다.
+
+사람 조치: `docs/tasks.json` P21-8 — 병합·원격 적용 승인.
+
+| 날짜 | 항목 | 발견 | 조치 | 커밋 |
+|---|---|---|---|---|
+| 2026-11-05 | 10. 남용 방지 | 입찰·의뢰(알림 발생) 횟수 제한 없음, 자격증 파일 수 무제한 | DB 트리거·정책 한도, 적용은 P21-8 | c21e1cc (security/write-limits) |
