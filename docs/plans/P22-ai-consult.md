@@ -21,5 +21,13 @@
 4. E2E `e2e/ai-consult-kakao.spec.ts`: 가짜 모델 지연(`[가짜:지연]`) + localhost 가짜 콜백 서버(`KAKAO_CALLBACK_ALLOW_LOCAL=1`, 시험용 `CONSULT_HASH_KEY`는 playwright 설정에만).
 5. 사장님 설정 안내 `docs/kakao-setup.md`.
 
-## 다음 (P22-4~8)
+## P22-4 인스타 어댑터·웹훅·연결 (브랜치 `task/P22-4`, `task/P22-3` 위)
+1. 단위 먼저: `src/lib/channels/instagram/adapter.test.ts`(창 경계 23:59·24:00 통과, 24:01 자동 거부, 24:01·6일 23:59 사장님 승인 HUMAN_AGENT, 7일+1분 거부, Human Agent 꺼짐 거부, 서명 원문 바이트·상수 시간, 에코·스토리·리액션·첨부 해석, Send API 형식·1000바이트·실패), `webhook.test.ts`(GET verify·403·404, POST 서명 400·JSON 400·크기 400·404·200 후 처리, mid 중복, 저장만·무시, 요청 제한, 고지, escalate 안내 한 번, 늦은 전달 skipped, 로그에 원문 없음), `oauth.test.ts`(설정 꺼짐, state 서명·만료·nonce, 콜백 판단, 토큰 교환 순서, 갱신 7일·만료·실패).
+2. `config.ts` → `adapter.ts` → `webhook.ts` → `oauth.ts`·`connect.ts`·`tokens.ts` → `deps.ts` → 라우트(웹훅·연결·콜백) → 매일 정리 작업에 토큰 갱신 → 안내 정보 화면 연결 칸·해제.
+3. 공통 저장 `src/lib/channels/store.ts`로 카카오 `deps.ts`의 저장 코드를 옮겨 같이 쓴다(동작 같음).
+4. 마이그레이션 `20261105133519_consult_instagram.sql` + pgTAP `supabase/tests/consult_instagram.test.sql`.
+5. E2E `e2e/ai-consult-instagram.spec.ts`: 시험용 메타 값·암호화 키(playwright 설정에만), localhost 가짜 Graph 서버(포트 3198, `META_GRAPH_BASE`).
+6. 사장님 준비 안내 `docs/meta-setup.md`.
+
+## 다음 (P22-5~8)
 설계 문서 "구현 단계" 표. 각 단계 브랜치 → PR → CI → 사장님 보고 → 병합. 마이그레이션은 원격 적용 승인 뒤.

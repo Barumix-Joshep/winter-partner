@@ -17,7 +17,7 @@ export type NormalizedMessage = {
 
 export type DeliveryStatus = "sent" | "failed" | "skipped";
 
-export type SendResult = { ok: boolean; status: DeliveryStatus; reason?: string; message?: string };
+export type SendResult = { ok: boolean; status: DeliveryStatus; reason?: string; message?: string; tag?: string };
 export type CanSendResult = { ok: boolean; tag?: string; reason?: string; message?: string };
 
 export type SendOptions = { escalate?: boolean; approvedByOwner?: boolean };
