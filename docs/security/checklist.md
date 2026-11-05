@@ -12,6 +12,24 @@
 - **운영**: Vercel(main 병합 = 배포), Supabase 무료 요금제 프로젝트 winter-partner 1개, CI는 GitHub Actions(임시 로컬 Supabase).
 - 원격 설정은 `npx supabase config diff`(읽기 전용)로만 본다. `config push`·`db push`·원격 SQL은 하지 않는다.
 
+## 최종 요약 (2026-11-05)
+- 13개 항목 점검 완료: **[x] 4개**(2 RLS, 3 서버 측 권한, 4 비밀값, 13 의존성), **[!] 9개**(코드 수정은 끝났고 사람 결정·운영 적용이 남음).
+- 코드 수정 브랜치 12개(모두 푸시, 병합 안 함 — 사장님 검토 뒤 PR → CI → 병합):
+  `security/session-idle-logout`(25df620) · `security/rls-role-tests`(c999c24) · `security/server-authz`(edfd78b) · `security/secrets-scan`(8a7b663) · `security/password-policy`(f20ef38) · `security/storage-cert-guard`(f6c813e) · `security/db-functions`(ddd4b43) · `security/input-ranges`(3418041) · `security/auth-cookies`(98c1dd2) · `security/write-limits`(c21e1cc) · `security/privacy-mask`(da033a9) · `security/audit-log`(f961856) · `security/deps`(54cfc0f)
+- 운영 DB 마이그레이션이 든 브랜치 6개(각각 `docs/pending-migrations.md`에 한 줄, 병합할 때 함께 들어감): storage-cert-guard · db-functions · input-ranges · write-limits · audit-log (+ 원격 적용 승인 필요). 모두 데이터 변경 없음.
+- 사람 조치 목록(`docs/tasks.json` "21 보안"):
+  - P21-1 세션 Time-box·비활성 타임아웃(Pro)
+  - P21-2 인증 설정(비밀번호 8자·영문숫자, 재인증, OTP 15분, 유출 비밀번호 차단)
+  - P21-3 본사 관리자 MFA(복구 방법 결정 후 구현)
+  - P21-4 자격증 파일 삭제 정책 적용 승인
+  - P21-5 DB 함수 search_path 적용 승인 + Security Advisor 결과 공유
+  - P21-6 금액·인원 제약 적용 승인
+  - P21-7 CSP 강제 전환 결정
+  - P21-8 입찰·의뢰 횟수 제한 적용 승인
+  - P21-9 개인정보 법률 확인(건강 정보·암호화)
+  - P21-10 감사 기록 적용 승인·보존 기간
+- 병합 순서 메모: 여러 브랜치가 `docs/pending-migrations.md`·`supabase/config.toml`·`e2e/edge-cases.spec.ts`를 건드린다. 하나씩 병합하면서 main 기준으로 다시 맞춘다(충돌은 대기 목록 줄 합치기 정도).
+
 ## 점검 항목
 - [!] 1. 세션 관리 — JWT 만료, 리프레시 회전·재사용 감지, Time-box, 비활성 타임아웃, signOut scope, 앱 유휴 자동 로그아웃(관리자는 더 짧게)
 - [x] 2. RLS — public 모든 표 RLS, 역할별 정책, 다른 샵·다른 강사 차단, 전속 강사에게 입찰 공고 숨김
@@ -25,7 +43,7 @@
 - [!] 10. 남용 방지 — 쓰기 API rate limit, 중복 입찰
 - [!] 11. 개인정보 — 수집 최소화, 암호화, 마스킹, 주민번호 미수집, 로그
 - [!] 12. 감사 로그 — 배정·선정·정산 금액·취소·벌점 기록, 수정 불가
-- [ ] 13. 의존성 — npm audit high/critical
+- [x] 13. 의존성 — npm audit high/critical
 
 ## 항목별 기록
 
@@ -234,3 +252,12 @@
 | 날짜 | 항목 | 발견 | 조치 | 커밋 |
 |---|---|---|---|---|
 | 2026-11-05 | 12. 감사 로그 | 선정·지급액·취소·정산 지급·벌점에 행위자 기록 없음, 벌점은 흔적 없이 수정 가능 | 고칠 수 없는 audit_events + 트리거, 적용은 P21-10 | f961856 (security/audit-log) |
+
+### 13. 의존성 — [x] (high·critical 0, 운영 moderate 2건 해소)
+근거(`npm audit`, 2026-11-05): 전체 moderate 10·high 0·critical 0. 운영 의존성만 보면 moderate 2(exceljs → uuid@8.3.2, GHSA-w5hq-g745-h8pq: uuid <11.1.1에서 v3/v5/v6에 buf를 넘길 때 경계 검사 누락). exceljs는 `uuidv4()`만 버퍼 없이 써서(`node_modules/exceljs/lib/xlsx/xform/sheet/cf-ext/cf-rule-ext-xform.js:1,43,77`) 실제 영향은 없다. 나머지 8건은 eslint 계열(minimatch ReDoS, GHSA-g3hv-75wg-m249) — 개발 도구 전용(운영 번들에 없음)이고 npm이 권하는 해결이 `eslint-config-next` 16→15 다운그레이드라 쓰지 않는다. CI·pre-push의 `scripts/security-check.mjs`가 npm audit을 계속 돈다.
+
+조치: 브랜치 `security/deps` 커밋 `54cfc0f`(푸시, 병합 안 함). `package.json` `overrides`로 exceljs의 uuid를 11.1.1(같은 v4 API, CommonJS 지원)로 → 운영 의존성 취약점 0. exceljs가 uuid를 쓰는 조건부 서식 경로로 xlsx 생성 확인, 정산서 Excel E2E 포함 전체 E2E 69, 단위 267, pgTAP, 린트·타입·빌드·보안 점검 통과. eslint 계열은 `eslint-config-next`가 고친 typescript-eslint를 받으면 자연히 사라진다(다음 Next 업데이트 때 다시 본다).
+
+| 날짜 | 항목 | 발견 | 조치 | 커밋 |
+|---|---|---|---|---|
+| 2026-11-05 | 13. 의존성 | high·critical 0. 운영 moderate 2(exceljs→uuid, 실영향 없음), 개발 moderate 8 | uuid override로 운영 0건, 개발 도구는 유지 | 54cfc0f (security/deps) |
