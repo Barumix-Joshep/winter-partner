@@ -79,6 +79,17 @@ describe("ownerSendInstagram", () => {
     expect(recorded).toEqual([expect.objectContaining({ delivery: "failed" })]);
   });
 
+  it("보낸 뒤 기록이 실패해도 '보냈다'고 알려 다시 보내지 않게 한다", async () => {
+    const { deps, calls } = setup();
+    deps.record = async () => {
+      throw new Error("db");
+    };
+    const r = await ownerSendInstagram(deps, "conv-1", "답장");
+    expect(r.ok).toBe(true);
+    expect(r.message).toMatch(/보냈어요.*기록/);
+    expect(calls).toHaveLength(1);
+  });
+
   it("연결이 끊겼거나 손님 계정 정보가 없으면 보내지 않는다", async () => {
     const off = setup({ enabled: false });
     expect((await ownerSendInstagram(off.deps, "conv-1", "답장")).message).toMatch(/연결/);
