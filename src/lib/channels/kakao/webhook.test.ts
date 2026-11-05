@@ -98,7 +98,7 @@ describe("즉답 (3.5초 안)", () => {
     const { deps, flush } = makeDeps({ result: ESC });
     expect(await run(deps)).toEqual(escalateResponse());
     await flush();
-    expect(deps.openInquiry).toHaveBeenCalledWith({ conversationId: "conv-1", type: "booking", extracted: ESC.extracted, draft: ESC.draft });
+    expect(deps.openInquiry).toHaveBeenCalledWith({ conversationId: "conv-1", type: "booking", extracted: ESC.extracted, draft: ESC.draft, contact: null });
     expect(deps.recordReply).toHaveBeenCalledWith(expect.objectContaining({ role: "system", text: ESCALATE_TEXT, intent: "booking", delivery: "sent" }));
   });
 
@@ -261,6 +261,34 @@ describe("중복·요청 제한", () => {
     expect(deps.runConsult).not.toHaveBeenCalled();
     expect(deps.rateOk).toHaveBeenCalledWith("consult_conversation", "conv-1");
     expect(deps.rateOk).toHaveBeenCalledWith("consult_shop", "shop-1");
+  });
+
+  it("대화 요청 제한을 넘으면 상담 연결 안내 + 사장님께 문의로 넘긴다 (P22-6)", async () => {
+    const { deps, flush, logs } = makeDeps({ rateOk: vi.fn(async (name: string) => name !== "consult_conversation") });
+    const res = await run(deps, skillPayload({ utterance: "010-0000-7777 로 전화 주세요" }));
+    expect(res).toEqual(busyResponse());
+    expect(JSON.stringify(res)).toContain("operator"); // 상담 연결 버튼
+    await flush();
+    expect(deps.runConsult).not.toHaveBeenCalled();
+    expect(deps.openInquiry).toHaveBeenCalledWith({ conversationId: "conv-1", type: "other", extracted: undefined, draft: undefined, contact: "010-0000-7777" });
+    expect(logs.map((l) => l.outcome)).toContain("rate_conversation");
+  });
+
+  it("손님 글 속 전화·이메일: 메시지에는 가린 글, 문의에는 연락처(저장 쪽이 암호화), 자동 답변이어도 문의를 연다 (P22-6)", async () => {
+    const { deps, flush, logs } = makeDeps();
+    expect(await run(deps, skillPayload({ utterance: "강습료 얼마예요? 010-0000-1234 kim@example.com" }))).toEqual(simpleTextResponse(AUTO.reply));
+    await flush();
+    const saved = (deps.recordCustomerMessage as ReturnType<typeof vi.fn>).mock.calls[0][0] as { text: string };
+    expect(saved.text).toBe("강습료 얼마예요? 010-****-1234 k***@example.com");
+    expect(deps.openInquiry).toHaveBeenCalledWith(expect.objectContaining({ conversationId: "conv-1", contact: "010-0000-1234, kim@example.com" }));
+    expect(JSON.stringify(logs)).not.toMatch(/0000-1234|kim@example/);
+  });
+
+  it("연락처가 없는 자동 답변은 문의를 열지 않는다", async () => {
+    const { deps, flush } = makeDeps();
+    await run(deps);
+    await flush();
+    expect(deps.openInquiry).not.toHaveBeenCalled();
   });
 });
 

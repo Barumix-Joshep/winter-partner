@@ -4,7 +4,10 @@
 // 3. 샵·대화 요청 제한 → 넘으면 AI 없이 상담 연결 안내
 // 4. 엔진이 요청을 받은 때부터 약 3.5초 안에 끝나면 바로 답하고, 넘기면 useCallback으로 답한 뒤 after()에서 callbackUrl로 한 번만 보낸다
 // 5. escalate면 상담 연결 버튼 + 문의 열기. 첫 자동 답변에는 샵 고지 문구를 붙인다.
-// 로그에는 손님 글·손님 id를 쓰지 않는다(길이·의도·경로만).
+// 6. 손님 글 속 전화·이메일은 서버 규칙으로 뽑아(P22-6) 문의에 넘기고(저장하는 쪽이 암호화), 메시지에는 가린 글만 저장한다.
+//    연락처를 남긴 손님은 사장님이 연락해야 하므로 자동 답변을 했더라도 문의를 연다.
+// 로그에는 손님 글·손님 id·연락처를 쓰지 않는다(길이·의도·경로만).
+import { extractContact } from "@/lib/ai/consult/contact";
 import { hashExternalId } from "@/lib/ai/consult/crypto";
 import { CONSULT_PROMPT_VERSION } from "@/lib/ai/consult/prompt";
 import type { ConsultInput, ConsultIntent, ConsultResult, Extracted } from "@/lib/ai/consult/types";
@@ -47,7 +50,8 @@ export type KakaoWebhookDeps = {
     promptVersion: string;
     delivery: DeliveryStatus;
   }) => Promise<void>;
-  openInquiry: (i: { conversationId: string; type: InquiryType; extracted: Extracted | undefined; draft: string | undefined }) => Promise<void>;
+  // contact: 손님 글에서 뽑은 연락처 원문(없으면 null) — 저장하는 쪽이 암호화한다(inquiries.contact_enc)
+  openInquiry: (i: { conversationId: string; type: InquiryType; extracted: Extracted | undefined; draft: string | undefined; contact: string | null }) => Promise<void>;
   markDisclosed: (conversationId: string) => Promise<void>;
   postCallback: (url: string, body: KakaoSkillResponse) => Promise<boolean>;
   defer: (task: () => Promise<void>) => void; // 라우트에서는 next/server의 after
@@ -103,13 +107,27 @@ export async function handleKakaoSkill(token: string, raw: unknown, deps: KakaoW
     given && given.length <= 200
       ? given
       : hashExternalId("kakao-utterance", `${ch.id}|${msg.externalUserId}|${msg.messageId ?? Math.floor(deps.now() / UTTERANCE_BUCKET_MS)}|${msg.text}`, key);
-  const rec = await deps.recordCustomerMessage({ channelId: ch.id, userHash, messageId, text: msg.text }).catch(() => null);
+  const { contact, masked } = extractContact(msg.text);
+  const rec = await deps.recordCustomerMessage({ channelId: ch.id, userHash, messageId, text: masked }).catch(() => null);
   if (!rec) return (log("record_failed", { len }), guidanceResponse());
   if (rec.duplicate) return (log("duplicate", { len }), duplicateResponse());
   const conversationId = rec.conversationId;
 
-  // 3-2. 대화 요청 제한
-  if (!(await deps.rateOk("consult_conversation", conversationId))) return (log("rate_conversation", { len }), busyResponse());
+  const safely = (path: string, task: () => Promise<void>) =>
+    deps.defer(async () => {
+      try {
+        await task();
+      } catch (e) {
+        log("after_failed", { len, path, error: (e as Error)?.name ?? "error" });
+      }
+    });
+
+  // 3-2. 대화 요청 제한: AI를 부르지 않고 상담 연결 안내 + 사장님께 문의로 넘긴다(열린 문의가 있으면 그 문의에 합친다)
+  if (!(await deps.rateOk("consult_conversation", conversationId))) {
+    log("rate_conversation", { len });
+    safely("rate", () => deps.openInquiry({ conversationId, type: "other", extracted: undefined, draft: undefined, contact }));
+    return busyResponse();
+  }
 
   // 4. 엔진 (남은 시간 안에 끝나는지)
   const engine = deps.runConsult({ shopId: ch.shop_id, conversationId, text: msg.text, channel: "kakao" }).catch(() => FALLBACK);
@@ -120,18 +138,9 @@ export async function handleKakaoSkill(token: string, raw: unknown, deps: KakaoW
   // 저장·문의·고지 표시 (손님 응답을 늦추지 않게 after()에서)
   const finish = async (r: ConsultResult, reply: Reply, delivery: DeliveryStatus) => {
     await deps.recordReply({ conversationId, role: reply.role, text: reply.text, intent: r.intent, confidence: r.confidence, promptVersion: r.promptVersion, delivery });
-    if (r.mode === "escalate") await deps.openInquiry({ conversationId, type: inquiryType(r.intent), extracted: r.extracted, draft: r.draft });
+    if (r.mode === "escalate" || contact) await deps.openInquiry({ conversationId, type: inquiryType(r.intent), extracted: r.extracted, draft: r.draft, contact });
     if (reply.disclose && delivery === "sent") await deps.markDisclosed(conversationId);
   };
-  const safely = (path: string, task: () => Promise<void>) =>
-    deps.defer(async () => {
-      try {
-        await task();
-      } catch (e) {
-        log("after_failed", { len, path, error: (e as Error)?.name ?? "error" });
-      }
-    });
-
   if (first !== TIMEOUT) {
     const reply = buildReply(first, await ctxP);
     log("reply", { len, path: "immediate", mode: first.mode, intent: first.intent, reason: first.reason });
@@ -161,7 +170,7 @@ export async function handleKakaoSkill(token: string, raw: unknown, deps: KakaoW
     if (r.mode === "auto") {
       await deps.recordReply({ conversationId, role: "ai", text: r.reply, intent: r.intent, confidence: r.confidence, promptVersion: r.promptVersion, delivery: "skipped" });
     }
-    await deps.openInquiry({ conversationId, type: inquiryType(r.intent), extracted: r.extracted, draft: r.mode === "auto" ? r.reply : r.draft });
+    await deps.openInquiry({ conversationId, type: inquiryType(r.intent), extracted: r.extracted, draft: r.mode === "auto" ? r.reply : r.draft, contact });
   });
   return escalateResponse();
 }

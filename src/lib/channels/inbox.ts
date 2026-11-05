@@ -1,4 +1,5 @@
 // 사장님 인박스(P22-5) 화면 도움 함수 (서버·화면 공용, DB 없음). docs/ai-consult/README.md "화면"
+import { maskContactsInText } from "@/lib/ai/consult/contact";
 import type { ConsultChannel } from "./types";
 
 export const CHANNEL_LABEL: Record<string, string> = { kakao: "카카오톡", instagram: "인스타그램", kakao_cstalk: "카카오 상담톡" };
@@ -73,3 +74,12 @@ export function kbPrefill(question: string, answer: string): { kind: "faq"; titl
   const first = question.trim().split("\n")[0]?.trim() ?? "";
   return { kind: "faq", title: first.slice(0, 80) || "손님 문의", content: answer.trim().slice(0, 2000) };
 }
+
+// 화면에 보낼 메시지 글 (P22-6): 손님·AI·안내 글 속 전화·이메일은 가린다(P22-6 전에 원문으로 저장된 글도).
+// 사장님이 직접 쓴 답장은 그대로 둔다. 연락처 원문은 문의(contact_enc, 암호화)에만 있고 화면에는 가린 값만 간다.
+export function displayText(role: string, text: string | null | undefined): string {
+  return role === "owner" ? (text ?? "") : maskContactsInText(text);
+}
+
+// [강습 등록]을 누를 수 있는 문의 (답장 전·답장함). 이미 넘겼거나 닫은 문의는 아니다.
+export const canConvert = (status: string | null | undefined) => status === "open" || status === "replied";

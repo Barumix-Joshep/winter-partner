@@ -10,6 +10,7 @@ import {
   INTENT_LABEL,
   STATUS_LABEL,
   customerLabel,
+  displayText,
   kstDayRange,
   kstTime,
   kstToday,
@@ -79,7 +80,7 @@ async function Conversations({ shopId }: { shopId: string }) {
       ])
     : [{ data: [] }, { data: [] }];
   const preview = new Map<string, string>();
-  for (const m of msgs ?? []) if (!preview.has(m.conversation_id as string)) preview.set(m.conversation_id as string, m.text as string);
+  for (const m of msgs ?? []) if (!preview.has(m.conversation_id as string)) preview.set(m.conversation_id as string, displayText("customer", m.text as string));
   const open = new Set((inqs ?? []).map((i) => i.conversation_id as string));
   const waiting = convs.filter((c) => c.status === "waiting_owner").length;
 
@@ -157,7 +158,7 @@ async function AutoReplyLog({ shopId, day }: { shopId: string; day: string }) {
                 {m.tag ? ` · ${m.tag}` : ""}
               </span>
             </span>
-            <p className="text-sm break-words whitespace-pre-wrap">{m.text as string}</p>
+            <p className="text-sm break-words whitespace-pre-wrap">{displayText("ai", m.text as string)}</p>
             <div className="flex flex-wrap items-center gap-3">
               <Link href={`/shop/ai-consult/inbox/${m.conversation_id}`} className="flex min-h-11 items-center text-sm text-brand underline">
                 대화 보기

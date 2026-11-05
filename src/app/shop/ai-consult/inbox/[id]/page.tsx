@@ -5,13 +5,14 @@ import { requireArea } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getMyShop } from "@/lib/shop/my-shop";
 import { decryptSecret, maskContact } from "@/lib/ai/consult/crypto";
-import { CHANNEL_LABEL, DELIVERY_LABEL, INTENT_LABEL, ROLE_LABEL, STATUS_LABEL, customerLabel, kstTime } from "@/lib/channels/inbox";
+import { CHANNEL_LABEL, DELIVERY_LABEL, INTENT_LABEL, ROLE_LABEL, STATUS_LABEL, canConvert, customerLabel, displayText, kstTime } from "@/lib/channels/inbox";
 import type { Extracted } from "@/lib/ai/consult/types";
 import { LiveRefresh } from "../live";
-import { ReplyPanel } from "../reply-panel";
+import { ConvertButton, ReplyPanel } from "../reply-panel";
 import { closeConversation } from "../actions";
 
 // 대화 상세(P22-5): 전체 메시지(손님·AI·사장님·안내, 시각), AI 초안, 추출 정보(날짜·인원·종목·레벨), 연락처(가린 값만) + 답장 칸.
+// P22-6: 메시지 글 속 전화·이메일도 가려서 보낸다(displayText). [강습 등록]은 샵 대표만(RPC consult_convert_inquiry) — 90일 정리 뒤에도 문의를 남긴다(연락처는 지움).
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
@@ -108,13 +109,19 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
               <dd>{contact ?? "없음"}</dd>
             </div>
           </dl>
+          {canConvert(inq.status as string) && <ConvertButton inquiryId={inq.id as string} />}
+          {inq.status === "converted" && (
+            <Link href="/shop/jobs/new" className="flex min-h-11 items-center text-sm text-brand underline">
+              강습 만들기 →
+            </Link>
+          )}
         </section>
       )}
 
       <section aria-label="대화" className="flex flex-col gap-2">
         {messages.map((m) => (
           <article key={m.id} aria-label={`${ROLE_LABEL[m.role] ?? m.role} 메시지`} className={`flex max-w-[85%] min-w-0 flex-col gap-1 rounded-[14px] px-3 py-2 ${BUBBLE[m.role] ?? ""}`}>
-            <p className="text-sm break-words whitespace-pre-wrap">{m.text}</p>
+            <p className="text-sm break-words whitespace-pre-wrap">{displayText(m.role, m.text)}</p>
             <p className={`text-[11px] ${m.role === "owner" ? "text-white/80" : "text-ink-muted"}`}>
               {ROLE_LABEL[m.role] ?? m.role} · {kstTime(m.sent_at)}
               {m.role !== "customer" && ` · ${DELIVERY_LABEL[m.delivery_status] ?? m.delivery_status}`}
@@ -126,7 +133,7 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
       </section>
 
       {conv.status !== "closed" && (
-        <ReplyPanel conversationId={conv.id} channel={conv.channel} draft={draft} question={lastCustomer?.text ?? ""} feedbackMessageId={lastAi?.id ?? null} />
+        <ReplyPanel conversationId={conv.id} channel={conv.channel} draft={draft} question={displayText("customer", lastCustomer?.text)} feedbackMessageId={lastAi?.id ?? null} />
       )}
       {conv.status !== "closed" && (
         <form action={closeConversation} className="flex justify-end">
