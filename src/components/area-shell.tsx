@@ -24,6 +24,7 @@ const NAV: Partial<Record<Area, NavItem[]>> = {
     { href: "/shop/instructors", label: "강사 찾기" },
     { href: "/shop/jobs", label: "강습 등록·입찰" },
     { href: "/shop/customers", label: "손님" },
+    { href: "/shop/ai-consult/inbox", label: "AI 상담" },
     { href: "/shop/team", label: "전속 강사" },
     { href: "/shop/settlements", label: "정산" },
     { href: "/shop/access-logs", label: "접속 기록" },
@@ -94,12 +95,15 @@ export function AreaShell({ area, children }: { area: Area; children: ReactNode 
 async function Guarded({ area, children }: { area: Area; children: ReactNode }) {
   const user = await requireArea(area);
   const supabase = await createClient();
-  const [{ count }, shop] = await Promise.all([
+  const [{ count }, shop, consult] = await Promise.all([
     supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("read_at", null),
     area === "shop" ? getMyShop(user.id) : Promise.resolve(null),
+    // AI 상담 사장님 대기 수(P22-5). RLS가 내 샵 대화만 센다. 인박스 화면은 10초마다 다시 그려 이 숫자도 함께 바뀐다.
+    area === "shop" ? supabase.from("conversations").select("id", { count: "exact", head: true }).eq("status", "waiting_owner") : Promise.resolve({ count: 0 }),
   ]);
   const unread = count ?? 0;
   const idle = <IdleLogout area={area} sessionId={user.sessionId} />;
+  const waitingConsult = consult.count ?? 0;
   const agreement = !user.termsAgreed && (
     <form action={recordAgreement} className="mb-4 flex print:hidden flex-wrap items-center gap-3 rounded-[14px] border border-[#BFD0FF] bg-[#E3EBFF] p-4 text-sm text-brand-dark">
       <span className="min-w-0 flex-1">
@@ -166,7 +170,9 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
         {nav && (
           <nav aria-label="샵 메뉴" className="mt-4 flex flex-wrap gap-1 md:mt-4 md:flex-col md:flex-nowrap">
             <SideNav
-              items={shop?.type === "lesson_team" ? [...nav.slice(0, 3), { href: "/shop/team-bids", label: "팀 입찰" }, ...nav.slice(3)] : nav}
+              items={(shop?.type === "lesson_team" ? [...nav.slice(0, 3), { href: "/shop/team-bids", label: "팀 입찰" }, ...nav.slice(3)] : nav).map((n) =>
+                n.href === "/shop/ai-consult/inbox" ? { ...n, badge: waitingConsult, badgeLabel: "대기" } : n,
+              )}
               root="/shop"
             />
             <Link href="/notifications" className="hidden min-h-11 shrink-0 items-center justify-between rounded-lg px-3 text-sm text-[#C9D4EA] hover:bg-navy-2 hover:text-white md:flex">

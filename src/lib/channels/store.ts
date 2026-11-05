@@ -89,6 +89,11 @@ export function consultStore(db: Db) {
       });
       if (error) throw error;
     },
+    // 인스타 손님 id(암호화한 값)를 대화에 둔다 — 사장님 승인 발송(P22-5)에서만 푼다. 샵 관리자도 이 열은 못 읽는다(열 권한).
+    async saveReplyTarget(conversationId: string, replyToEnc: string) {
+      const { error } = await db.from("conversations").update({ reply_to_enc: replyToEnc }).eq("id", conversationId);
+      if (error) throw error;
+    },
     async markDisclosed(conversationId: string) {
       const { error } = await db.from("conversations").update({ disclosed_at: new Date().toISOString() }).eq("id", conversationId).is("disclosed_at", null);
       if (error) throw error;

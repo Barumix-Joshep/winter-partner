@@ -46,6 +46,7 @@ function makeDeps(over: Partial<InstagramWebhookDeps> & { result?: ConsultResult
     hasOpenInquiry: vi.fn(async () => false),
     openInquiry: vi.fn(async () => {}),
     markDisclosed: vi.fn(async () => {}),
+    saveReplyTarget: vi.fn(async () => {}),
     sender: () => ({
       send: async (target, text, opts) => {
         sends.push({ target, text, opts });
@@ -158,10 +159,18 @@ describe("이벤트 처리", () => {
     await handleInstagramEvent(ev(igText("가격?")), deps);
     expect(new TextEncoder().encode(sends[0].text).length).toBeLessThanOrEqual(1000);
   });
+  it("사장님 승인 발송(P22-5)용으로 손님 인스타 id를 대화에 남긴다(저장 함수가 암호화) — 새 메시지·저장만 메시지 모두", async () => {
+    const { deps } = makeDeps();
+    await handleInstagramEvent(ev(igText("강습료 얼마예요?")), deps);
+    await handleInstagramEvent(ev({ mid: "m-story", attachments: [{ type: "story_mention", payload: { url: "https://cdn.example/x" } }] }), deps);
+    expect(deps.saveReplyTarget).toHaveBeenCalledTimes(2);
+    expect(deps.saveReplyTarget).toHaveBeenCalledWith("conv-1", IG_CUSTOMER);
+  });
   it("같은 mid 재전송(중복)은 엔진·발송 없이 끝", async () => {
     const { deps, sends, logs } = makeDeps({ recordCustomerMessage: vi.fn(async () => ({ conversationId: "conv-1", duplicate: true })) });
     await handleInstagramEvent(ev(igText("강습료 얼마예요?")), deps);
     expect(deps.runConsult).not.toHaveBeenCalled();
+    expect(deps.saveReplyTarget).not.toHaveBeenCalled();
     expect(sends).toHaveLength(0);
     expect(logs.at(-1)?.outcome).toBe("duplicate");
   });
