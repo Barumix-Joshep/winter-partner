@@ -21,7 +21,11 @@ export async function placeTeamBid(_prev: TeamState | undefined, formData: FormD
     p_memo: String(formData.get("memo") ?? "").slice(0, 100),
   });
   revalidatePath("/shop/team-bids");
-  if (error) return { message: error.message.includes("마감") ? "마감된 공고입니다." : "입찰하지 못했습니다. 금액을 확인해 주세요." };
+  if (error) {
+    if (error.message.includes("마감")) return { message: "마감된 공고입니다." };
+    if (error.message.includes("요청이 너무 많습니다")) return { message: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." };
+    return { message: "입찰하지 못했습니다. 금액을 확인해 주세요." };
+  }
   return { ok: true, message: "제시했습니다." };
 }
 
