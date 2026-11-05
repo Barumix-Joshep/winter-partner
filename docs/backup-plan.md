@@ -42,8 +42,9 @@ bash scripts/ops/db-backup.sh
 2. 로컬 DB를 비우고 백업을 넣기:
    ```bash
    npx supabase db reset --no-seed
-   psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f backups/<날짜>/roles.sql
-   psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "set session_replication_role = replica" -f backups/<날짜>/data.sql
+   eval "$(npx supabase status -o env | grep '^DB_URL=')"   # 로컬 DB 주소
+   psql "$DB_URL" -f backups/<날짜>/roles.sql
+   psql "$DB_URL" -c "set session_replication_role = replica" -f backups/<날짜>/data.sql
    ```
 3. 확인: 로컬 앱(`npm run dev`)에 시범 샵 계정으로 로그인 → 손님 수, 지난달 정산서 금액이 운영 화면과 같은지 3곳 비교.
 4. 결과(날짜·걸린 시간·차이)를 이 문서 아래 표에 적습니다.
