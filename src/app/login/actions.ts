@@ -96,6 +96,12 @@ export async function signOutSession() {
   await supabase.auth.signOut();
 }
 
+// 유휴 자동 로그아웃 (components/idle-logout.tsx): 이 기기 세션만 끊는다. 다른 기기(휴대폰 등)는 그대로 둔다.
+export async function signOutIdle() {
+  const supabase = await createClient();
+  await supabase.auth.signOut({ scope: "local" });
+}
+
 // 약관·개인정보 처리방침 동의 (가입 때 동의하지 않은 기존 회원)
 export async function recordAgreement() {
   const supabase = await createClient();

@@ -4,6 +4,7 @@ import { requireArea } from "@/lib/auth/session";
 import type { Area } from "@/lib/auth/routing";
 import { recordAgreement } from "@/app/login/actions";
 import { LogoutButton } from "./logout-button";
+import { IdleLogout } from "./idle-logout";
 import { createClient } from "@/lib/supabase/server";
 import { getMyShop } from "@/lib/shop/my-shop";
 import { SideNav, TabBar, type NavItem } from "./nav-links";
@@ -98,6 +99,7 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
     area === "shop" ? getMyShop(user.id) : Promise.resolve(null),
   ]);
   const unread = count ?? 0;
+  const idle = <IdleLogout area={area} sessionId={user.sessionId} />;
   const agreement = !user.termsAgreed && (
     <form action={recordAgreement} className="mb-4 flex print:hidden flex-wrap items-center gap-3 rounded-[14px] border border-[#BFD0FF] bg-[#E3EBFF] p-4 text-sm text-brand-dark">
       <span className="min-w-0 flex-1">
@@ -130,6 +132,7 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
           </div>
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-5 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
+          {idle}
           {agreement}
           {children}
           <div className="mt-10 flex flex-wrap gap-4 print:hidden">
@@ -196,6 +199,7 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
         </div>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-6 md:px-8">
+        {idle}
         {agreement}
         {children}
         <div className="mt-10 flex flex-wrap gap-4 md:hidden print:hidden">
