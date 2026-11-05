@@ -838,5 +838,13 @@
   "status": "todo",
   "due": "2026-12-20",
   "note": "체크리스트 6. Storage. security/storage-cert-guard(f6c813e)의 20261105041909_storage_cert_guard.sql — 정책·함수만, 데이터 변경 없음. 승인 → 백업 → db push → PR 병합 순서(화면 변경 없음이라 병합 먼저도 무방)"
+ },
+ {
+  "id": "P21-5",
+  "phase": "21 보안",
+  "title": "DB 함수 search_path 마이그레이션 적용 승인 + Security Advisor 결과 확인",
+  "status": "todo",
+  "due": "2026-12-20",
+  "note": "체크리스트 7. DB 함수. security/db-functions(ddd4b43) 20261105043347_fn_search_path.sql(설정만, 데이터 변경 없음) 병합·원격 적용 승인. 대시보드 Advisors → Security Advisor 결과를 알려 주시면 반영(예상: instructor_assignments 뷰 security_definer_view는 의도된 설계)"
  }
 ]
