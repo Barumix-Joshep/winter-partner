@@ -3,7 +3,11 @@
 // POST: 원문 바이트로 서명 검증(실패 400) → 200을 바로 돌려주고, 처리는 after()에서.
 // 처리: 수신 계정 id로 샵 채널 찾기 → 손님 id 해시 → mid로 중복 제거하며 저장 → 요청 제한 → 엔진 → 24시간 창 확인 → Send API → 답변 기록(태그·발송 결과).
 // 에코(우리가 보낸 것)·리액션·읽음은 무시, 스토리 답장·스토리 멘션·첨부·지원 안 함은 저장만(자동 답변 없음).
-// 환경변수가 없으면 기능 꺼짐(404). 로그에는 손님 글·손님 id를 쓰지 않는다(종류·길이·결과만).
+// 손님 글 속 전화·이메일은 서버 규칙으로 뽑아(P22-6) 문의에 넘기고(저장하는 쪽이 암호화), 메시지에는 가린 글만 저장한다.
+// 연락처를 남긴 손님은 사장님이 연락해야 하므로 자동 답변을 했더라도 문의를 연다.
+// 대화 요청 제한을 넘으면 AI 없이 escalate(열린 문의가 없을 때만 "사장님께 전달했어요" 한 번 + 문의).
+// 환경변수가 없으면 기능 꺼짐(404). 로그에는 손님 글·손님 id·연락처를 쓰지 않는다(종류·길이·결과만).
+import { extractContact } from "@/lib/ai/consult/contact";
 import { hashExternalId } from "@/lib/ai/consult/crypto";
 import { ESCALATE_REPLY } from "@/lib/ai/consult/engine";
 import { CONSULT_PROMPT_VERSION } from "@/lib/ai/consult/prompt";
@@ -29,7 +33,8 @@ export type InstagramWebhookDeps = {
   replyContext: (shopId: string, conversationId: string) => Promise<ReplyContext>;
   recordReply: (r: ReplyRecord) => Promise<void>;
   hasOpenInquiry: (conversationId: string) => Promise<boolean>;
-  openInquiry: (i: { conversationId: string; type: InquiryType; extracted: ConsultResult["extracted"]; draft: string | undefined }) => Promise<void>;
+  // contact: 손님 글에서 뽑은 연락처 원문(없으면 null) — 저장하는 쪽이 암호화한다(inquiries.contact_enc)
+  openInquiry: (i: { conversationId: string; type: InquiryType; extracted: ConsultResult["extracted"]; draft: string | undefined; contact: string | null }) => Promise<void>;
   markDisclosed: (conversationId: string) => Promise<void>;
   // 사장님 승인 발송(P22-5, 인박스)에 쓸 손님 인스타 id를 대화에 남긴다(저장하는 쪽이 암호화 — 원문은 DB·로그에 남지 않는다)
   saveReplyTarget: (conversationId: string, senderId: string) => Promise<void>;
@@ -41,6 +46,7 @@ export type InstagramWebhookDeps = {
 };
 
 const FALLBACK: ConsultResult = { mode: "escalate", reply: "", confidence: 0, intent: "unknown", promptVersion: CONSULT_PROMPT_VERSION, reason: "ai_unavailable" };
+const RATE_LIMITED: ConsultResult = { ...FALLBACK, reason: "rate_limited" };
 const NO_DISCLOSE: ReplyContext = { disclosureText: "", discloseFirst: false, disclosedAt: null };
 
 function inquiryType(intent: string): InquiryType {
@@ -117,18 +123,23 @@ export async function handleInstagramEvent(e: InstagramEvent, deps: InstagramWeb
   // 저장·중복 제거 (메타는 실패하면 36시간 동안 다시 보낸다 → mid 한 번만)
   const userHash = hashExternalId("instagram", e.senderId, key);
   const messageId = e.mid.length <= 200 ? e.mid : hashExternalId("instagram-mid", e.mid, key);
-  const rec = await deps.recordCustomerMessage({ channelId: ch.id, userHash, messageId, text: e.text }).catch(() => null);
+  const { contact, masked } = extractContact(e.text);
+  const rec = await deps.recordCustomerMessage({ channelId: ch.id, userHash, messageId, text: masked }).catch(() => null);
   if (!rec) return log("record_failed");
   if (rec.duplicate) return log("duplicate");
   const conversationId = rec.conversationId;
   await deps.saveReplyTarget(conversationId, e.senderId).catch(() => log("reply_target_failed"));
-  if (STORE_ONLY.has(e.kind)) return log("stored_only");
+  if (STORE_ONLY.has(e.kind)) {
+    if (contact) await deps.openInquiry({ conversationId, type: "other", extracted: undefined, draft: undefined, contact });
+    return log("stored_only");
+  }
 
-  // 대화 요청 제한 (넘으면 AI를 부르지 않고 답하지 않는다 — 메시지는 저장됨)
-  if (!(await deps.rateOk("consult_conversation", conversationId))) return log("rate_conversation");
+  // 대화 요청 제한 (넘으면 AI를 부르지 않고 escalate — 메시지는 저장됨, 안내는 열린 문의가 없을 때 한 번만)
+  const limited = !(await deps.rateOk("consult_conversation", conversationId));
+  if (limited) log("rate_conversation");
 
   const [r, ctx] = await Promise.all([
-    deps.runConsult({ shopId: ch.shop_id, conversationId, text: e.text, channel: "instagram" }).catch(() => FALLBACK),
+    limited ? RATE_LIMITED : deps.runConsult({ shopId: ch.shop_id, conversationId, text: e.text, channel: "instagram" }).catch(() => FALLBACK),
     deps.replyContext(ch.shop_id, conversationId).catch(() => NO_DISCLOSE),
   ]);
 
@@ -165,5 +176,5 @@ export async function handleInstagramEvent(e: InstagramEvent, deps: InstagramWeb
   } else {
     log("escalate_quiet", { mode: r.mode, intent: r.intent, reason: r.reason });
   }
-  if (r.mode === "escalate") await deps.openInquiry({ conversationId, type: inquiryType(r.intent), extracted: r.extracted, draft: r.draft });
+  if (r.mode === "escalate" || contact) await deps.openInquiry({ conversationId, type: inquiryType(r.intent), extracted: r.extracted, draft: r.draft, contact });
 }

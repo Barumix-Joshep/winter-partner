@@ -229,6 +229,39 @@ test("자동응답 기록 탭: AI 답변의 의도·신뢰도·발송 결과, �
   await expect(page.getByText("2026-01-01 자동응답 0건")).toBeVisible();
 });
 
+test("연락처: 손님 글 속 전화·이메일은 어느 화면에도 원문이 없고(가린 값만), 문의에는 암호화로만 → [강습 등록] (P22-6)", async ({ page, request }) => {
+  const phone = "010-0000-5678";
+  const email = "e2e.contact@example.com";
+  const q = `12월 22일 2명 예약 가능할까요? ${phone} ${email}`;
+  await kakao(request, q, "e2e-inbox-kakao-contact");
+  await expect.poll(async () => (await admin().from("inquiries").select("id").eq("shop_id", SHOP3).not("contact_enc", "is", null)).data?.length ?? 0, { timeout: 20_000 }).toBe(1);
+  const { data: stored } = await admin().from("messages").select("conversation_id, text").eq("shop_id", SHOP3).eq("role", "customer").like("text", "12월 22일%").single();
+  expect(stored!.text).toBe("12월 22일 2명 예약 가능할까요? 010-****-5678 e***@example.com"); // 메시지에는 가린 글만
+  const { data: inq } = await admin().from("inquiries").select("id, contact_enc, status").eq("conversation_id", stored!.conversation_id).single();
+  expect(inq!.contact_enc).toMatch(/^v1\./);
+  expect(inq!.contact_enc).not.toContain("5678");
+
+  await login(page, "team@winter.test");
+  await page.goto("/shop/ai-consult/inbox");
+  const list = page.getByRole("list", { name: "상담 목록" });
+  await expect(list).toContainText("010-****-5678");
+  for (const raw of [phone, "01000005678", email]) expect(await page.content()).not.toContain(raw);
+
+  await page.goto(`/shop/ai-consult/inbox/${stored!.conversation_id}`);
+  const info = page.getByRole("region", { name: "문의 정보" });
+  await expect(info).toContainText("010-****-5678, e***@example.com");
+  await expect(page.getByRole("article", { name: "손님 메시지" })).toContainText("010-****-5678");
+  for (const raw of [phone, "01000005678", email]) expect(await page.content()).not.toContain(raw);
+  expect(await noOverflow(page)).toBe(true);
+
+  // [강습 등록] (샵 대표) → 상태 바뀜, 강습 만들기 안내
+  await info.getByRole("button", { name: "강습 등록" }).click();
+  await expect(info.getByRole("link", { name: "강습 만들기 →" })).toBeVisible();
+  await expect(info).toContainText("강습 등록");
+  await expect(info.getByRole("button", { name: "강습 등록" })).toHaveCount(0);
+  expect((await admin().from("inquiries").select("status").eq("id", inq!.id).single()).data?.status).toBe("converted");
+});
+
 test("다른 샵은 대화를 볼 수 없고 답장도 기록할 수 없다", async ({ page }) => {
   const conv = await convOf(igChannel, IG_Q);
   await login(page, "shop1@winter.test");

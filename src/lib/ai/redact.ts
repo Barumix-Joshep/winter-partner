@@ -9,6 +9,9 @@ export type Redaction = { text: string; aliases: Record<string, string> };
 const PHONE = /(?:\+82[-\s]?|0)(?:1[016789]|[2-6]\d?)[-.\s]?\d{3,4}[-.\s]?\d{4}/g;
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const RRN = /\d{6}[-\s]?[1-4]\d{6}/g;
+// 손님 글 속 연락처 뽑기(src/lib/ai/consult/contact.ts)도 같은 규칙을 쓴다 (g 정규식은 lastIndex를 공유하므로 패턴 글자만 내보낸다)
+export const PHONE_PATTERN = PHONE.source;
+export const EMAIL_PATTERN = EMAIL.source;
 
 const label = (i: number) => `손님${String.fromCharCode(65 + (i % 26))}${i >= 26 ? Math.floor(i / 26) : ""}`;
 

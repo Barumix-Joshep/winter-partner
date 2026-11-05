@@ -46,7 +46,7 @@
 - **messages**: `conversation_id`, `shop_id`, `role`('customer'|'ai'|'owner'|'system'), `text`, `intent`, `confidence`, `prompt_version`, `channel_message_id`(채널별 고유 → **중복 제거·replay 방지**), `sent_at`, `delivery_status`('pending'|'sent'|'failed'|'skipped'), `tag`(인스타 HUMAN_AGENT 등).
 - **inquiries 확장**(기존 표): `conversation_id`, `type`('lesson'|'rental'|'booking'|'complaint'|'other'), `extracted`(JSON: 날짜·인원·종목·레벨), `contact_enc`(연락처는 암호화, 화면 마스킹), `ai_draft`, `status`('open'|'replied'|'converted'|'closed'). 기존 `outcome`·`lost_reason`·`customer_id`는 그대로 둔다(손님 카드 연결용).
 - **ai_feedback**: `message_id`, `shop_id`, `kind`('wrong'|'edited'), `corrected_text`, `created_by`, `created_at`.
-- **보존**(사장님 결정): 대화·메시지·피드백은 90일 뒤 매일 정리 작업(`api/maintenance/daily`, P22-6)이 삭제. 문의는 사장님이 "강습 등록"으로 넘긴 것(`status='converted'`)만 연락처(`contact_enc`)를 지운 뒤 남기고 나머지는 함께 삭제.
+- **보존**(사장님 결정): 대화·메시지·피드백은 90일 뒤 매일 정리 작업(`api/maintenance/daily`, P22-6)이 삭제. 문의는 사장님이 "강습 등록"으로 넘긴 것(`status='converted'`)만 연락처(`contact_enc`)를 지운 뒤 남기고 나머지는 함께 삭제. 구현은 아래 "보안·개인정보 — 보존 기간 정리".
 
 ## 화면
 - `/shop/ai-consult/knowledge`: 종류별 KB 편집, 채널 연결 상태, AI 응대 켜기/끄기, 고지 문구, 임계값(고급).
@@ -72,14 +72,33 @@
 2. `mid`로 중복 제거(36시간 재전송 대비). 에코(우리가 보낸 것)·스토리 답장·스토리 멘션·리액션은 자동응답 제외(저장만).
 3. `canSend`: 마지막 손님 메시지 후 24시간 이내 → 자동 발송 가능. 24시간~7일 → **사장님이 인박스에서 승인 버튼을 누른 경우에만** `HUMAN_AGENT` 태그로 발송(자동 경로에서는 코드가 거부). 7일 초과 → 발송 불가. 첫 자동응답에는 고지 문구(기본 켬).
 4. 연결: Instagram 로그인 OAuth로 샵 계정 연결(아래 결정 1), 토큰 암호화 저장, 매일 정리 작업이 만료 7일 전 갱신.
-5. 구현(P22-4): `src/lib/channels/instagram/`(`config.ts` 환경변수 — 하나라도 없으면 기능 꺼짐·404·화면 "준비 중", `adapter.ts` 서명·해석·`canSend`·Send API, `webhook.ts` 흐름, `oauth.ts`·`connect.ts` 연결, `tokens.ts` 갱신, `deps.ts` DB). 라우트 `GET/POST /api/webhooks/instagram`, `GET /api/channels/instagram/connect`·`/callback`. 저장은 공통 `src/lib/channels/store.ts`(카카오와 같이 씀). mid가 200자를 넘으면 HMAC으로 줄여 중복 제거. escalate 안내("사장님께 전달했어요")는 대화에 열린 문의가 없을 때 한 번만 보낸다. 요청 제한은 카카오와 같은 `consult_shop`·`consult_conversation`(넘으면 답하지 않음). 마이그레이션 `20261105133519_consult_instagram.sql`: `consult_record_reply`에 `p_tag`, 인스타 계정 하나 = 샵 하나, 연결(서버 전용)·해제(샵 멤버) RPC. Human Agent는 `META_HUMAN_AGENT=1`(심사 통과 뒤)일 때만 사장님 승인 경로에서 쓴다. 사장님 준비 순서는 **[docs/meta-setup.md](../meta-setup.md)**.
+5. 구현(P22-4): `src/lib/channels/instagram/`(`config.ts` 환경변수 — 하나라도 없으면 기능 꺼짐·404·화면 "준비 중", `adapter.ts` 서명·해석·`canSend`·Send API, `webhook.ts` 흐름, `oauth.ts`·`connect.ts` 연결, `tokens.ts` 갱신, `deps.ts` DB). 라우트 `GET/POST /api/webhooks/instagram`, `GET /api/channels/instagram/connect`·`/callback`. 저장은 공통 `src/lib/channels/store.ts`(카카오와 같이 씀). mid가 200자를 넘으면 HMAC으로 줄여 중복 제거. escalate 안내("사장님께 전달했어요")는 대화에 열린 문의가 없을 때 한 번만 보낸다. 요청 제한은 카카오와 같은 `consult_shop`·`consult_conversation`(샵 한도는 답하지 않음, 대화 한도는 P22-6부터 AI 없이 escalate — "보안·개인정보"). 마이그레이션 `20261105133519_consult_instagram.sql`: `consult_record_reply`에 `p_tag`, 인스타 계정 하나 = 샵 하나, 연결(서버 전용)·해제(샵 멤버) RPC. Human Agent는 `META_HUMAN_AGENT=1`(심사 통과 뒤)일 때만 사장님 승인 경로에서 쓴다. 사장님 준비 순서는 **[docs/meta-setup.md](../meta-setup.md)**.
    - 확인 필요(오프라인이라 공식 문서 재확인 못 함): Human Agent가 Instagram 로그인 방식에서도 같은 이름·규칙인지, 장기 토큰 교환(`ig_exchange_token`)·갱신(`ig_refresh_token`) 주소와 만료(60일)·갱신 조건, `me?fields=user_id`가 웹훅 `recipient.id`와 같은 값인지, `me/subscribed_apps` 구독, Graph API 버전(기본 v24.0, `META_GRAPH_API_VERSION`으로 바꿈). 모두 설정·한 곳 코드로 두어 첫 테스터 연결 때 고친다.
 
 ## 보안·개인정보
-- 웹훅 검증(위), 샵별·대화별 요청 제한(기존 `public_rate_limit`), `channel_message_id` 고유 제약으로 replay 방지.
-- 손님 id는 HMAC 해시만, 연락처는 AES-GCM 암호화 + 화면 마스킹(`010-****-1234`). 로그(`console`·`ops_events`)에는 메시지 원문을 쓰지 않는다(길이·의도만).
-- AI에는 KB와 손님 글만 보내고, 글 속 전화번호·이메일은 `redact`로 가린다(추출은 규칙으로 서버에서). 샵별 하루 상한을 넘으면 자동응답을 멈추고 escalate.
-- 웹훅 쓰기는 security definer RPC(서비스 키)로, 화면은 세션 클라이언트 + RLS.
+P22-6에서 마무리했다. 시험: `src/lib/channels/privacy.test.ts`(카카오·인스타 웹훅과 엔진을 실제 의존성으로 돌리고 DB·Graph만 가짜), `src/lib/ai/consult/contact.test.ts`, `src/app/api/maintenance/daily/route.test.ts`, `supabase/tests/consult_retention.test.sql`, `e2e/ai-consult-inbox.spec.ts`("연락처 … 강습 등록").
+
+- **웹훅 검증**: 카카오는 추측할 수 없는 token 주소 + 봇 id 대조, 인스타는 원문 바이트 `X-Hub-Signature-256` HMAC(틀리면 저장 전에 400). `channel_message_id` 고유 제약으로 replay·재전송 중복 방지.
+- **요청 제한**(`docs/rate-limits.md`): 두 웹훅 모두 `consult_shop`(샵, 10분 300)·`consult_conversation`(대화, 10분 20)을 쓴다.
+  - 샵 한도 초과: 저장·AI 없음. 카카오는 상담 연결 안내(카카오는 응답이 꼭 있어야 함), 인스타는 답하지 않는다.
+  - 대화 한도 초과: 메시지는 저장(가린 글), **AI는 부르지 않고 escalate** — 카카오는 상담 연결 안내, 인스타는 열린 문의가 없을 때만 "사장님께 전달했어요" 한 번. 둘 다 사장님 문의를 연다(열린 문의가 있으면 거기에 합침).
+  - AI 호출 자체도 대화 단위 `ai_user`(10분 30)를 따른다. 상담 하루 상한(샵별 300, `ai_consult_daily_calls_per_shop`)이나 플랫폼 월 비용 상한에 걸리면 `ai_gate`가 막고 엔진은 `ai_unavailable`로 escalate → 자동 답변 없이 상담 연결·문의(모델 호출 없음).
+- **손님 id**: HMAC 해시(`hashExternalId`)만 저장. 인스타 답장용 손님 id는 `conversations.reply_to_enc`에 AES-GCM 암호화(P22-5, 샵 관리자도 못 읽는 열, 사장님 승인 발송 때만 서버가 푼다). AI에는 보내지 않는다.
+- **연락처**(P22-6): 손님 글 속 전화·이메일은 **AI가 아니라 서버 규칙**(`src/lib/ai/consult/contact.ts`, `redact.ts`와 같은 정규식)으로 뽑는다.
+  - 원문은 `encryptSecret`으로 암호화해 `inquiries.contact_enc`에만 둔다(`src/lib/channels/store.ts`, 키가 없으면 두지 않음). 연락처를 남긴 손님은 사장님이 연락해야 하므로 자동 답변을 했더라도 문의를 연다.
+  - `messages.text`에는 가린 글(`010-****-1234`, `m***@example.com`)만 저장한다. AI에는 `redact`가 `[전화]`·`[이메일]`로 바꾼 글이 간다.
+  - 화면은 가린 값만: 문의 연락처는 서버에서 풀어 `maskContact`, 메시지 글·목록 미리보기·자동응답 기록은 `displayText`(P22-6 전에 원문으로 저장된 글도 가림, 사장님이 쓴 답장만 그대로).
+- **로그**: `console.*`·운영 기록(`ops_events`)에 손님 글·전화·이메일·손님 원래 id를 쓰지 않는다 — 길이·의도·경로·결과만. 매일 정리 작업 결과도 건수만.
+- **쓰기 권한**: 웹훅 쓰기는 security definer RPC(서비스 키). 화면은 세션 클라이언트 + RLS. 문의 상태·연락처·대화 연결·초안은 RPC로만 바꾼다(P22-6에서 `inquiries` 고치기 권한을 열 단위로 줄임 — 샵 멤버가 직접 고칠 수 있는 열은 `customer_id·channel·outcome·lost_reason·type·extracted`).
+
+### 보존 기간 정리 (사장님 결정 3, P22-6)
+- 함수 `public.purge_consult_data()`(security definer, **service_role만** 실행 — 로그인 사용자·anon·본사 관리자 거부). 매일 정리 작업 `GET /api/maintenance/daily`가 손님 익명화·접속 기록 정리와 함께 부른다. 실패하면 작업 전체가 500 + 운영 기록(실패)으로 본사가 안다.
+- 규칙(기준 90일):
+  1. 마지막 활동(대화 생성·손님 마지막 메시지·마지막 메시지 중 가장 늦은 시각)이 90일 전인 대화 → 삭제(메시지·피드백 함께).
+  2. 남는 대화 안에서도 90일 지난 메시지 → 삭제(피드백 함께).
+  3. 지우는 대화의 문의: **"강습 등록"으로 넘긴 것(`converted`)만 남기고** 연락처(`contact_enc`)·대화 연결(`conversation_id`)·AI 초안(`ai_draft`, 손님 글로 만든 글)을 비운다(유형·추출 정보·등록 시각은 남김). 나머지 문의는 삭제. 대화와 이어지지 않은 문의(상담 이전 기능)는 건드리지 않는다.
+- [강습 등록]: 대화 상세의 문의 정보 칸 버튼 → RPC `consult_convert_inquiry`(**샵 대표만**, 답장 전·답장함 문의만, 감사 기록 `consult_inquiry_converted`). 넘긴 뒤 "강습 만들기 →" 링크. 강습 자체는 사람이 강습 만들기 화면에서 등록한다(AI가 만들지 않는다).
+- 마이그레이션 `20261105145008_consult_retention.sql`. **적용할 때는 데이터가 바뀌지 않는다**(함수·권한만). 삭제는 병합·배포 뒤 매일 정리 작업이 돌 때부터. 되돌리기는 파일 머리 주석(지운 상담은 백업에서만 되살린다).
 
 ## 기존 원칙과 바뀌는 점 (승인 필요)
 - CLAUDE.md "AI는 제안만 하고 확정은 사람이 한다·AI 출력을 DB에 바로 쓰지 않는다" → **AI 상담 FAQ 자동응답만 예외**: 샵이 켠 경우에 한해 KB 범위의 사실만 손님에게 바로 답한다. 예약·금액 협상·불만·KB 밖은 여전히 사람이 처리. 승인되면 CLAUDE.md 도메인 규칙에 이 예외를 적는다.
@@ -108,9 +127,15 @@
 6. **개인정보 문구**: 법률 검토 항목(P14-5·P13-7)에 합친다. 이번에는 아래 초안만.
 
 ### 개인정보 문구 초안 (초안 — 법률 검토 전)
+> **초안 — 법률 검토 전.** 법률 검토 의뢰서(`docs/legal-review-packet.md` (d), main에 있음)의 질문 18~22와 함께 검토받는다. 공개 `/privacy`는 채널을 실제로 연결하기 전까지 바꾸지 않는다.
+
 - 처리방침 4항(재위탁) Anthropic 줄에 추가할 문구: "AI 상담: 샵이 켠 경우 카카오톡 채널·인스타그램 DM으로 받은 손님 상담 글을 답변·초안 작성을 위해 보냅니다. 글 속 전화번호·이메일은 가린 뒤 보내고, 손님 카카오·인스타 계정 id는 보내지 않습니다(저장도 해시로만)."
 - 처리방침 4항에 추가할 업체: "㈜카카오 — 카카오톡 채널 챗봇 메시지 전달", "Meta Platforms, Inc. (미국) — 인스타그램 DM 메시지 전달 [국외 이전 고지 법률 검토 필요]".
 - 처리방침 3항(손님 정보)에 추가: "상담 기록: 카카오톡·인스타그램 상담 글·답변은 90일 보관 후 삭제합니다. 강습 등록으로 이어진 문의는 연락처를 지운 뒤 보관합니다."
+- (P22-6 추가) 처리방침 3항 상담 기록 줄에 이어서: "상담 글 속 전화번호·이메일은 따로 암호화해 보관하고 화면에는 가운데를 가려 보여 줍니다. 인스타그램 답장을 보내기 위해 손님 인스타그램 계정 id를 암호화해 보관하며, 샵 직원도 볼 수 없습니다. 모두 위 90일 보관 기간을 따릅니다."
+- (P22-6 추가) 처리방침 4항 Anthropic 줄 보충: "보내는 항목: 손님 상담 글(전화번호·이메일은 가림)과 샵 안내 정보. 보내지 않는 항목: 손님 카카오·인스타 계정 id, 연락처 원문. 샵별 하루 상한(300회)을 넘으면 보내지 않습니다."
+- (P22-6 추가) 처리방침 4항 카카오·메타 줄 보충: "손님이 카카오톡 채널·인스타그램으로 보낸 글과 샵 답장은 해당 서비스를 거쳐 전달됩니다(각 서비스의 개인정보 처리방침이 함께 적용됩니다)." [수탁자 여부·국외 이전 고지 — 법률 검토 질문 21]
+- (P22-6 추가) 샵용 고지 템플릿(`/shop/privacy-notice`)에 AI 상담을 켠 샵만 게시할 줄: "카카오톡·인스타그램 상담 글은 답변 작성을 위해 AI 서비스(Anthropic, 미국)로 전송되며 90일 뒤 삭제됩니다." [게시 방식은 P14-5와 같이 검토]
 - 손님 첫 자동 답변 고지(샵이 바꿀 수 있음, 기본값): "안녕하세요! 이 답변은 AI가 샵 안내 정보로 드리는 자동 답변이에요. 예약·변경은 사장님이 직접 확인해 드려요."
 - 채널이 실제로 연결되기 전(P22-3·4 시범 전)에는 `/privacy`를 바꾸지 않는다 — 없는 처리를 적지 않기 위해. 안내 정보 화면에는 "손님 글은 AI 서비스로 전송, 연락처는 가림 (초안 — 법률 검토 전)"을 표시했다.
 
