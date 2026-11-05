@@ -16,7 +16,7 @@
 - [!] 1. 세션 관리 — JWT 만료, 리프레시 회전·재사용 감지, Time-box, 비활성 타임아웃, signOut scope, 앱 유휴 자동 로그아웃(관리자는 더 짧게)
 - [x] 2. RLS — public 모든 표 RLS, 역할별 정책, 다른 샵·다른 강사 차단, 전속 강사에게 입찰 공고 숨김
 - [x] 3. 서버 측 권한 검사 — API·서버 액션의 역할·소유권 검사, IDOR
-- [ ] 4. 비밀값 — 번들·공개 env·로그·히스토리, .gitignore, gitleaks 히스토리 스캔
+- [x] 4. 비밀값 — 번들·공개 env·로그·히스토리, .gitignore, gitleaks 히스토리 스캔
 - [ ] 5. 인증 설정 — 비밀번호 정책, 유출 비밀번호 차단, 이메일 인증, OTP 만료, 로그인 rate limit, Redirect URL, 관리자 MFA
 - [ ] 6. Storage — 비공개 버킷, signed URL 짧은 만료, 형식·크기 제한, 버킷 정책
 - [ ] 7. DB 함수 — SECURITY DEFINER search_path, anon/authenticated 실행 권한, 동적 SQL, `supabase db lint`·Security Advisor
@@ -85,3 +85,18 @@
 | 날짜 | 항목 | 발견 | 조치 | 커밋 |
 |---|---|---|---|---|
 | 2026-11-05 | 3. 서버 측 권한 검사 | tidyNote가 배정 확인 없이 다른 샵 AI 상한 사용 가능 | 자기 배정 확인 추가 + 재현 테스트 | edfd78b (security/server-authz) |
+
+### 4. 비밀값 — [x] (노출 없음, 검사 범위 1건 고침)
+근거(2026-11-05):
+- `.gitignore:34` `.env*`, `:42` `.env*.local`, `:49` `/backups/`. 저장소에 올라간 env 파일은 `.env.local.example`뿐이고 값은 자리 표시자(`https://xxxx.supabase.co` 등, 비밀 키 칸은 비어 있음). 이력 전체에서 추가된 env 파일도 이것 하나.
+- 공개 접두사 변수는 `NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_ANON_KEY`·`NEXT_PUBLIC_VAPID_PUBLIC_KEY` 3개뿐(모두 공개용). `scripts/security-check.mjs:57-58`이 `NEXT_PUBLIC_*SERVICE_ROLE|SECRET`과 클라이언트 컴포넌트의 service role 사용을 막는다(pre-push 훅·CI).
+- 서버 비밀(`SUPABASE_SERVICE_ROLE_KEY`·`ANTHROPIC_API_KEY`·`VAPID_PRIVATE_KEY`)을 읽는 파일은 모두 `import "server-only"`(클라이언트에서 가져오면 빌드 실패). `"use client"` 파일에서 서버 비밀·`supabase/admin` 사용 0건.
+- 번들: 로컬 운영 빌드 `.next/static` 167개 파일에 `.env.local`의 서비스 키·VAPID 비밀 값 일치 0, `service_role`·`sk-ant-` 문자열 0. 운영 사이트(`winter-partner.vercel.app`) JS 12개에서 JWT 0·`service_role`·`sk-ant-`·`sb_secret_`·`PRIVATE KEY` 0.
+- 로그: `console.*` 11곳 모두 오류 이름·코드·상태만(키·토큰·요청 원문 없음).
+- 이력: gitleaks 8.24.3(공식 이미지)로 모든 브랜치 130커밋 검사 → **유출 0건**.
+
+발견·조치: CI `security.yml`의 "커밋 이력 전체 비밀값 검사" 단계가 실제로는 gitleaks-action 기본값(main 푸시 `--log-opts=-1`, PR은 PR 커밋)이라 이력 전체를 보지 않았다(로그 `gitleaks cmd: ... --log-opts=-1`). 단계 이름을 실제 범위로 고치고, 매주 월 04:00 KST·수동 실행 때 `--log-opts=--all` 전체 검사를 추가. 로컬 명령도 `docs/ci.md`에 적음. 브랜치 `security/secrets-scan` 커밋 `8a7b663`(푸시, 병합 안 함). 같은 명령 로컬 실행 유출 0·종료 0, 린트·타입·단위 267·빌드·보안 점검 통과. 키 교체 필요 없음.
+
+| 날짜 | 항목 | 발견 | 조치 | 커밋 |
+|---|---|---|---|---|
+| 2026-11-05 | 4. 비밀값 | 노출 없음. CI gitleaks가 이력 전체를 안 봄 | 매주 전체 이력 검사 추가·단계 이름 수정 | 8a7b663 (security/secrets-scan) |
