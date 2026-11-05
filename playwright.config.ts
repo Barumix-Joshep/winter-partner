@@ -40,6 +40,9 @@ export default defineConfig({
       // AI는 가짜 모델로. 기능 기본값은 global-setup에서 모두 끄고, AI 테스트만 켰다 끈다.
       AI_MOCK: "1",
       ANTHROPIC_API_KEY: "",
+      // AI 상담 카카오 웹훅 E2E (P22-3): 시험용 해시 키(비밀 아님)와 가짜 콜백 서버(localhost) 허용. 운영 환경변수에는 넣지 않는다
+      CONSULT_HASH_KEY: "e2e-only-consult-hash-key-not-a-secret-0000",
+      KAKAO_CALLBACK_ALLOW_LOCAL: "1",
     },
   },
 });

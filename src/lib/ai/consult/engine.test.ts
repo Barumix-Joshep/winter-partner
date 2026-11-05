@@ -194,3 +194,18 @@ describe("규정 질문과 변경 요청 구분", () => {
     expect(await setup().run("예약을 내일로 변경하고 싶어요")).toMatchObject({ mode: "escalate", intent: "booking" });
   });
 });
+
+describe("느린 모델 (카카오 3.5초)", () => {
+  it("가짜 모델 [가짜:지연]은 카카오 타임아웃(3.5초)에 끊겨 escalate, 재시도 없음", async () => {
+    vi.useFakeTimers();
+    try {
+      const { run, seen } = setup();
+      const p = run("강습료 얼마예요? [가짜:지연]", "kakao");
+      await vi.advanceTimersByTimeAsync(3_500);
+      expect(await p).toMatchObject({ mode: "escalate", reason: "ai_unavailable" });
+      expect(seen).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

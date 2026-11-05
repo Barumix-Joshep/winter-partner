@@ -23,5 +23,8 @@ describe("요청 횟수 제한 값", () => {
     expect(LIMITS.login_ip.count).toBe("fail");
     // 하루 상한 200회인 AI를 10분에 30회까지
     expect(LIMITS.ai_user.max).toBeGreaterThanOrEqual(30);
+    // AI 상담: 손님 한 명이 10분에 20번, 샵 전체는 그 15배(성수기 여러 손님 동시 문의)
+    expect(LIMITS.consult_conversation.max).toBeGreaterThanOrEqual(20);
+    expect(LIMITS.consult_shop.max).toBeGreaterThanOrEqual(LIMITS.consult_conversation.max * 15);
   });
 });
