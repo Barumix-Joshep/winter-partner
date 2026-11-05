@@ -17,7 +17,7 @@
 - [x] 2. RLS — public 모든 표 RLS, 역할별 정책, 다른 샵·다른 강사 차단, 전속 강사에게 입찰 공고 숨김
 - [x] 3. 서버 측 권한 검사 — API·서버 액션의 역할·소유권 검사, IDOR
 - [x] 4. 비밀값 — 번들·공개 env·로그·히스토리, .gitignore, gitleaks 히스토리 스캔
-- [ ] 5. 인증 설정 — 비밀번호 정책, 유출 비밀번호 차단, 이메일 인증, OTP 만료, 로그인 rate limit, Redirect URL, 관리자 MFA
+- [!] 5. 인증 설정 — 비밀번호 정책, 유출 비밀번호 차단, 이메일 인증, OTP 만료, 로그인 rate limit, Redirect URL, 관리자 MFA
 - [ ] 6. Storage — 비공개 버킷, signed URL 짧은 만료, 형식·크기 제한, 버킷 정책
 - [ ] 7. DB 함수 — SECURITY DEFINER search_path, anon/authenticated 실행 권한, 동적 SQL, `supabase db lint`·Security Advisor
 - [ ] 8. 입력 검증·오류 처리 — 서버 검증, 금액·정산 범위, 오류 메시지 누출
@@ -100,3 +100,27 @@
 | 날짜 | 항목 | 발견 | 조치 | 커밋 |
 |---|---|---|---|---|
 | 2026-11-05 | 4. 비밀값 | 노출 없음. CI gitleaks가 이력 전체를 안 봄 | 매주 전체 이력 검사 추가·단계 이름 수정 | 8a7b663 (security/secrets-scan) |
+
+### 5. 인증 설정 — [!] (비밀번호 규칙 코드 수정, 대시보드 설정·MFA는 사람 조치)
+근거(원격은 `npx supabase config diff` 읽기 전용, 2026-11-05):
+- **비밀번호**: 앱은 가입·재설정에서 8자 이상 검사(`src/lib/auth/validate.ts`, `src/app/login/actions.ts`). 그러나 Auth 서버는 `minimum_password_length = 6`(원격 같음), `password_requirements` 없음 → 공개 키로 Auth API를 바로 부르면 6자·숫자만 비밀번호로 가입·변경 가능. **문제.**
+- **유출 비밀번호 차단**(HaveIBeenPwned): 켜져 있지 않음(Supabase Pro 기능 — 확인 필요).
+- **이메일 인증**: 원격 `enable_confirmations = true`. 적정. `double_confirm_changes = true`(이메일 변경 시 양쪽 확인). `secure_password_change = false` — 로그인한 지 오래된 세션으로 비밀번호를 바꿀 때 재인증을 요구하지 않음(낮음, 켜기 권장).
+- **OTP**: 원격 `otp_length = 8`, `otp_expiry = 3600`(1시간), 재발송 간격 `max_frequency = 1m`. 만료 1시간은 길다(권장 15분).
+- **로그인 rate limit**: Auth 서버 `sign_in_sign_ups = 30`(원격, IP당 5분), 앱 `src/lib/ops/limits.ts` 실패 기준 IP 30·계정 10/10분, 가입 IP 10/시간, 재설정 IP 10·계정 3/시간(`docs/rate-limits.md`, `e2e/rate-limit.spec.ts`). 적정.
+- **Redirect URL**: 원격 `site_url = https://winter-partner.vercel.app`, 허용 목록 `https://winter-partner.vercel.app/auth/confirm` 하나. 와일드카드 없음, 적정. 앱 쪽 `safeNext`가 외부 주소 이동(열린 리다이렉트)을 막고 테스트 있음.
+- **MFA**: 원격 TOTP 등록·인증 켜짐. 그러나 앱 어디에서도 MFA를 쓰지 않음(`mfa.`·`aal2` 검색 0건) → 본사 관리자도 비밀번호만으로 로그인. **권장 미충족.**
+
+조치(코드): 브랜치 `security/password-policy` 커밋 `f20ef38`(푸시, 병합 안 함).
+- 규칙 하나로: `passwordProblem()` = 8자 이상 + 영문·숫자(가입·재설정 공용), 화면 안내 "(8자 이상, 영문·숫자 포함)", 서버 약한 비밀번호 오류도 한국어로.
+- `supabase/config.toml` `minimum_password_length = 8`, `password_requirements = "letters_digits"`(로컬·CI 서버가 강제).
+- 테스트: `e2e/password-policy.spec.ts` — anon 키로 Auth API 직접 가입(6자/숫자 없음/영문 없음) → `weak_password` 거부 3개 + 가입 화면 안내 1개. **이전 설정에서 3개 실패 확인 → 새 설정에서 통과.** 단위 `validate.test.ts` 4개 추가. 단위 271, pgTAP, 전체 E2E 73, 린트·타입·빌드 통과.
+- 기능 영향: 새 가입·비밀번호 재설정부터 영문·숫자를 함께 넣어야 한다. 기존 비밀번호는 그대로 로그인된다(규칙은 바꿀 때만 검사).
+
+사람 조치:
+- `docs/tasks.json` P21-2 — Supabase 대시보드 → winter-partner → **Authentication → Sign In / Providers → Email**: Minimum password length **8**, Password requirements **Letters and digits**, **Secure password change** 켜기, Email OTP Expiration **900초**. **Authentication → Attack Protection**(또는 Policies): "Prevent use of leaked passwords" 켜기(Pro 필요 시 Pro 전환 때). 이유: 앱 검사는 Auth API 직접 호출로 건너뛸 수 있으므로 서버가 강제해야 한다. 바꾼 뒤 `npx supabase config diff`로 로컬과 같은지 확인(제가 읽기 전용으로 확인합니다).
+- `docs/tasks.json` P21-3 — 본사 관리자 MFA 필수화: **결정 필요(확인 필요)** — 관리자 계정이 하나라 휴대폰 분실 시 복구 방법(복구 코드 보관 또는 두 번째 관리자)을 먼저 정해야 한다. 정해지면 등록·인증 화면, `/admin` 접근 시 aal2 요구, 본사 전용 RPC에서 JWT `aal` 확인을 구현. 샵 관리자 MFA는 선택 기능으로 권장.
+
+| 날짜 | 항목 | 발견 | 조치 | 커밋 |
+|---|---|---|---|---|
+| 2026-11-05 | 5. 인증 설정 | 서버 비밀번호 6자·조합 없음(앱 검사 우회 가능), MFA 미사용, OTP 1시간 | 앱·로컬 서버 규칙 8자+영문·숫자, 대시보드는 P21-2, MFA는 P21-3 | f20ef38 (security/password-policy) |
