@@ -25,8 +25,10 @@ export function parseInstructorProfile(fd: FormData): Result {
 
   let baseRate: number | null = null;
   if (rawRate) {
-    if (/^\d+$/.test(rawRate)) baseRate = Number(rawRate);
-    else errors.baseRate = "기본 강습료는 숫자로 입력해 주세요 (예: 80000).";
+    if (!/^\d+$/.test(rawRate)) errors.baseRate = "기본 강습료는 숫자로 입력해 주세요 (예: 80000).";
+    // DB 제약(instructors_base_rate_range)과 같은 범위
+    else if (Number(rawRate) < 1 || Number(rawRate) > 10_000_000) errors.baseRate = "기본 강습료는 1원 이상 1,000만 원 이하로 입력해 주세요.";
+    else baseRate = Number(rawRate);
   }
   if (bio && bio.length > BIO_MAX) errors.bio = `소개는 ${BIO_MAX}자까지 쓸 수 있습니다.`;
   if (!sportIds?.length) errors.sportIds = "종목을 하나 이상 골라 주세요.";
