@@ -49,7 +49,12 @@ export async function ownerSendInstagram(deps: OwnerSendDeps, conversationId: st
     { approvedByOwner: true },
   );
   if (res.status === "skipped") return { ok: false, message: res.message ?? "지금은 인스타그램으로 보낼 수 없어요. 인스타그램 앱에서 직접 답해 주세요." };
-  await deps.record({ conversationId, text, delivery: res.status, tag: res.tag ?? null });
+  try {
+    await deps.record({ conversationId, text, delivery: res.status, tag: res.tag ?? null });
+  } catch {
+    // 이미 보냈는데 "실패"로 보이면 사장님이 다시 눌러 두 번 보낼 수 있다 → 보낸 사실은 그대로 알린다
+    if (res.status === "sent") return { ok: true, message: "인스타그램으로 보냈어요. 다만 기록을 남기지 못했어요 — 새로고침해 확인해 주세요." };
+  }
   if (res.status !== "sent") return { ok: false, message: "보내지 못했어요. 잠시 뒤 다시 시도하거나 인스타그램 앱에서 답해 주세요." };
   return { ok: true, message: res.tag === "HUMAN_AGENT" ? "인스타그램으로 보냈어요(24시간이 지나 Human Agent로)." : "인스타그램으로 보냈어요." };
 }
