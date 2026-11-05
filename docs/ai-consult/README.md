@@ -2,7 +2,7 @@
 
 렌탈샵이 카카오톡 채널·인스타그램 DM으로 받는 손님 상담을 AI가 돕는다. FAQ(가격·영업시간·위치·정책)는 AI가 바로 답하고, 예약·협상·불만처럼 판단이 필요한 문의는 사장님께 초안을 보여 주고 사장님이 처리한다.
 
-상태: **설계 검토 대기** (2026-11-05). 사장님 승인 전에는 구현하지 않는다(CLAUDE.md 작업 방식).
+상태: **설계 승인, 구현 중** (2026-11-05 사장님 결정 6개 반영 — 맨 아래 "사장님 결정"). P22-1(스키마·안내 정보 화면)·P22-2(상담 엔진)부터.
 
 ## 스택 요약 (0단계 파악, 2026-11-05)
 - **웹·서버**: Next.js 16.4 App Router(`src/app`), React 19, cacheComponents. 서버 코드는 **서버 액션**(`src/app/**/actions.ts`)과 **라우트 핸들러**(`src/app/**/route.ts`). Supabase Edge Functions는 쓰지 않는다(`supabase/functions` 없음) → 웹훅도 라우트 핸들러로 만든다. Vercel 배포(main 병합 = 운영 배포), 크론은 Vercel Cron + `CRON_SECRET`(`src/app/api/maintenance/daily`, `src/app/api/notify/dispatch`).
@@ -39,13 +39,14 @@
 - **프롬프트 인젝션**: KB·샵 정보·규칙은 system, 손님 글은 항상 user 턴의 인용 블록. "지시 무시/시스템 프롬프트" 류는 규칙으로 먼저 unknown. 모델 출력은 스키마 검증 후에만 쓰고, 답변 속 금액은 KB 금액 집합과 대조해 하나라도 없으면 escalate.
 
 ## 데이터 모델 (모든 표 shop_id + RLS `private.is_shop_member(shop_id)`, 웹훅 쓰기는 security definer RPC)
-- **shop_channels**: `channel`('kakao'|'instagram'|'kakao_cstalk'), `public_token`(웹훅 주소용 무작위값, 고유), `external_id`(카카오 봇 id / 인스타 계정 id), `credentials_enc`(bytea, 앱에서 AES-256-GCM 암호화), `webhook_secret_enc`, `enabled`, `auto_reply_enabled`(기본 false), `ai_disclosure_text`, `disclose_first_reply`(기본 true), `confidence_threshold`(기본 0.85), `token_expires_at`. 샵 관리자는 비밀 열을 읽지 못한다(열 권한 + 화면용 뷰).
+- **shop_channels**: `channel`('kakao'|'instagram'|'kakao_cstalk'), `public_token`(웹훅 주소용 무작위값, 고유), `external_id`(카카오 봇 id / 인스타 계정 id), `credentials_enc`·`webhook_secret_enc`(앱에서 AES-256-GCM 암호화한 `v1.<base64>` 텍스트만, DB CHECK), `enabled`, `token_expires_at`. 샵 관리자는 비밀 열을 읽지 못한다(열 권한).
+- **shop_consult_settings**(구현 때 분리, 샵당 하나): `auto_reply_enabled`(기본 false), `ai_disclosure_text`, `disclose_first_reply`(기본 true), `confidence_threshold`(기본 0.85). 채널을 연결하기 전에도 안내 정보·켜기를 준비할 수 있게 채널과 따로 둔다. 바꾸기는 RPC `set_consult_settings`(켜기·끄기는 `audit_events`에 남김).
 - **shop_knowledge**: `kind`('price'|'hours'|'location'|'policy'|'faq'|'free_text'), `title`, `content`, `is_active`, `updated_at`. 샵 생성 시 기본 FAQ 템플릿(비활성 상태로 넣어 사장님이 채운 뒤 켬). 처음엔 임베딩 없이 활성 KB 전체를 프롬프트에(샵당 글자 수 상한).
 - **conversations**: `channel`, `channel_id → shop_channels`, `external_user_hash`(HMAC-SHA256, 키는 서버 비밀), `display_name`, `status`('bot'|'waiting_owner'|'owner'|'closed'), `last_customer_message_at`, `summary`, `disclosed_at`(AI 고지 보낸 시각).
 - **messages**: `conversation_id`, `shop_id`, `role`('customer'|'ai'|'owner'|'system'), `text`, `intent`, `confidence`, `prompt_version`, `channel_message_id`(채널별 고유 → **중복 제거·replay 방지**), `sent_at`, `delivery_status`('pending'|'sent'|'failed'|'skipped'), `tag`(인스타 HUMAN_AGENT 등).
 - **inquiries 확장**(기존 표): `conversation_id`, `type`('lesson'|'rental'|'booking'|'complaint'|'other'), `extracted`(JSON: 날짜·인원·종목·레벨), `contact_enc`(연락처는 암호화, 화면 마스킹), `ai_draft`, `status`('open'|'replied'|'converted'|'closed'). 기존 `outcome`·`lost_reason`·`customer_id`는 그대로 둔다(손님 카드 연결용).
 - **ai_feedback**: `message_id`, `shop_id`, `kind`('wrong'|'edited'), `corrected_text`, `created_by`, `created_at`.
-- **보존**: 대화·메시지·피드백은 90일 뒤 매일 정리 작업(`api/maintenance/daily`)이 삭제. inquiry는 사장님이 "강습 등록"으로 넘긴 것만 연락처를 지운 뒤 남긴다(확인 필요: 사장님 결정).
+- **보존**(사장님 결정): 대화·메시지·피드백은 90일 뒤 매일 정리 작업(`api/maintenance/daily`, P22-6)이 삭제. 문의는 사장님이 "강습 등록"으로 넘긴 것(`status='converted'`)만 연락처(`contact_enc`)를 지운 뒤 남기고 나머지는 함께 삭제.
 
 ## 화면
 - `/shop/ai-consult/knowledge`: 종류별 KB 편집, 채널 연결 상태, AI 응대 켜기/끄기, 고지 문구, 임계값(고급).
@@ -90,7 +91,22 @@
 
 각 단계는 브랜치 → PR → CI → 병합. 마이그레이션은 단계마다 `docs/pending-migrations.md`에 올리고 원격 적용은 사장님 승인. **새 화면이 새 표를 읽으므로 병합 전에 원격 적용 순서를 정한다.**
 
-## 사장님이 결정·처리할 것
+## 사장님 결정 (2026-11-05)
+1. **인스타 연결**: Instagram 로그인 방식(페이스북 페이지 불필요). 구현은 P22-4. Human Agent 태그가 이 방식에서도 같은지는 P22-4 착수 전에 공식 문서로 다시 확인.
+2. **AI 원칙 예외**: 샵이 켠 경우에 한해 안내 정보 범위 사실(가격·영업시간·위치·정책)만 자동응답. 예약 확정·금액 협상·불만·안내 정보 밖 질문은 항상 escalate(초안만). CLAUDE.md 도메인 규칙에 적음.
+3. **문의 보존**: 대화·메시지·피드백 90일 뒤 삭제, "강습 등록"으로 넘긴 문의만 연락처를 지운 뒤 보존.
+4. **비용 상한**: 상담 전용 샵별 하루 300회(다른 AI 기능 200회와 별도, `ai_consult_daily_calls_per_shop`), 넘으면 자동응답을 멈추고 escalate. 플랫폼 월 비용 상한은 함께 쓴다.
+5. **비밀값 이름**: `CONSULT_ENCRYPTION_KEY`(base64로 적은 32바이트), `CONSULT_HASH_KEY`(32자 이상). `.env.local.example`에는 설명만, 운영 값은 사장님이 Vercel에 넣는다. 메타 쪽 `META_APP_ID`·`META_APP_SECRET`·`META_VERIFY_TOKEN`은 P22-4에서.
+6. **개인정보 문구**: 법률 검토 항목(P14-5·P13-7)에 합친다. 이번에는 아래 초안만.
+
+### 개인정보 문구 초안 (초안 — 법률 검토 전)
+- 처리방침 4항(재위탁) Anthropic 줄에 추가할 문구: "AI 상담: 샵이 켠 경우 카카오톡 채널·인스타그램 DM으로 받은 손님 상담 글을 답변·초안 작성을 위해 보냅니다. 글 속 전화번호·이메일은 가린 뒤 보내고, 손님 카카오·인스타 계정 id는 보내지 않습니다(저장도 해시로만)."
+- 처리방침 4항에 추가할 업체: "㈜카카오 — 카카오톡 채널 챗봇 메시지 전달", "Meta Platforms, Inc. (미국) — 인스타그램 DM 메시지 전달 [국외 이전 고지 법률 검토 필요]".
+- 처리방침 3항(손님 정보)에 추가: "상담 기록: 카카오톡·인스타그램 상담 글·답변은 90일 보관 후 삭제합니다. 강습 등록으로 이어진 문의는 연락처를 지운 뒤 보관합니다."
+- 손님 첫 자동 답변 고지(샵이 바꿀 수 있음, 기본값): "안녕하세요! 이 답변은 AI가 샵 안내 정보로 드리는 자동 답변이에요. 예약·변경은 사장님이 직접 확인해 드려요."
+- 채널이 실제로 연결되기 전(P22-3·4 시범 전)에는 `/privacy`를 바꾸지 않는다 — 없는 처리를 적지 않기 위해. 안내 정보 화면에는 "손님 글은 AI 서비스로 전송, 연락처는 가림 (초안 — 법률 검토 전)"을 표시했다.
+
+## 사장님이 처리할 것 (외부 계정·설정)
 1. **인스타 연결 방식**: 요청서는 Facebook 로그인. 메타에는 "Instagram 로그인" 방식(페이스북 페이지 연결 불필요, 같은 메시지 권한)도 있다. **추천: Instagram 로그인** — 렌탈샵 사장님이 페이스북 페이지를 따로 만들 필요가 없다. (확인 필요: Human Agent 태그가 이 방식에서도 같은지 4단계 착수 전에 확인)
 2. **외부 계정(새 서비스 가입)**: 메타 개발자 앱 만들기·비즈니스 인증·앱 심사(Advanced Access, Human Agent) — 심사에 수 주가 걸릴 수 있어 일찍 시작해야 한다. 카카오는 샵마다 채널·챗봇 관리자센터 설정(무료). 제가 대신 가입하지 않는다.
 3. **새 비밀값**(Vercel 환경변수, 사장님이 넣음): `CONSULT_ENCRYPTION_KEY`(32바이트), `CONSULT_HASH_KEY`, `META_APP_ID`·`META_APP_SECRET`·`META_VERIFY_TOKEN`. 값은 문서·대화에 쓰지 않는다.

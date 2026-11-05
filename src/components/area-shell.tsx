@@ -189,6 +189,11 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
               AI 도우미 설정
             </Link>
           )}
+          {shop && (
+            <Link href="/shop/ai-consult/knowledge" className="flex min-h-11 items-center rounded-lg px-3 text-sm text-[#C9D4EA] hover:bg-navy-2 hover:text-white">
+              AI 상담 안내 정보
+            </Link>
+          )}
           <Link href="/help?for=shop" className="flex min-h-11 items-center rounded-lg px-3 text-sm text-[#C9D4EA] hover:bg-navy-2 hover:text-white">
             사용 안내
           </Link>
@@ -210,6 +215,11 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
           {shop && (
             <Link href="/shop/ai" className="flex min-h-11 items-center text-sm text-ink-muted underline">
               AI 도우미 설정
+            </Link>
+          )}
+          {shop && (
+            <Link href="/shop/ai-consult/knowledge" className="flex min-h-11 items-center text-sm text-ink-muted underline">
+              AI 상담 안내 정보
             </Link>
           )}
           <LogoutButton className="min-h-11 text-sm text-ink-muted underline" />

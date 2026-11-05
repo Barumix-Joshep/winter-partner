@@ -9,7 +9,9 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 
 ## 대기 중
 
-없음.
+| 마이그레이션 | 작업 | 화면이 새 열·표를 읽나 | 사전 백업 |
+|---|---|---|---|
+| `20261105114656_consult_schema.sql` | P22-1 AI 상담: 새 표 6개(shop_channels·shop_consult_settings·shop_knowledge·conversations·messages·ai_feedback), inquiries 열 추가, 웹훅 RPC, ai_gate 상담 전용 상한 | **예** (`/shop/ai-consult/knowledge`가 새 표를 읽음) → **원격 적용 뒤 병합** | **필수** (데이터 변경: 기존 샵마다 기본 안내 템플릿 8행 비활성 추가, app_settings 3개 키) |
 
 ## 적용 기록
 
