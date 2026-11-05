@@ -51,6 +51,11 @@
 ## 화면
 - `/shop/ai-consult/knowledge`: 종류별 KB 편집, 채널 연결 상태, AI 응대 켜기/끄기, 고지 문구, 임계값(고급).
 - `/shop/ai-consult/inbox`: 대기 문의 목록(Realtime), 대화 상세(전체 메시지·AI 초안·추출 정보), 버튼 [수정] [승인·발송(인스타)] [복사(카카오)] [KB에 추가] [AI 답변 틀림], 자동응답 기록 탭. 카카오 대화에는 "무료 챗봇은 먼저 말을 걸 수 없어요 — 채널 1:1 채팅에서 답해 주세요" 표시. 모바일 우선.
+- 구현(P22-5): `src/app/shop/ai-consult/inbox/`(`page.tsx` 목록·자동응답 기록 탭, `[id]/page.tsx` 상세, `reply-panel.tsx` 버튼, `live.tsx` 갱신, `actions.ts`), 도움 함수 `src/lib/channels/inbox.ts`, 승인 발송 `src/lib/channels/owner-reply.ts`. 샵 메뉴 "AI 상담"에 사장님 대기 수.
+  - **갱신 방식(Realtime 대신 서버 확인)**: 로그인 쿠키가 HttpOnly(#26)라 브라우저에 Supabase 토큰이 없고 브라우저용 Supabase 클라이언트도 두지 않는다 → 브라우저에서 Supabase Realtime을 구독하지 않는다(토큰을 브라우저에 내보내지 않기 위해). 대신 화면이 보이는 동안 10초마다 서버 액션 `inboxPulse`(세션 클라이언트, RLS — 대기 수 1개 + 마지막 메시지 시각 1개, 행은 읽지 않음)를 묻고 값이 바뀌었을 때만 `router.refresh()`로 다시 그린다. 화면이 숨으면 멈춘다(`visibilitychange`). 열린 화면 하나당 10초에 가벼운 쿼리 2개. 입력 중인 답장은 refresh 뒤에도 남는다. 유휴 자동 로그아웃(P21-1)은 사용자 조작만 세므로 이 확인이 로그인을 늘리지 않는다.
+  - 쓰기: 사장님 답장(role owner)·문의 replied·대화 owner는 RPC `consult_owner_reply`(샵 멤버 확인, 카카오·상담톡은 `skipped`만, 감사 기록), 닫기는 `consult_close_conversation`, [AI 답변 틀림]은 `ai_feedback` 직접 insert(RLS `member_insert`, 고친 글이 있으면 `edited`), [KB에 추가]는 안내 정보 저장 액션(꺼진 채로 미리 채움). 마이그레이션 `20261105141851_consult_inbox.sql`.
+  - [승인·발송(인스타)]: 손님 인스타 id는 해시만 있어 보낼 수 없으므로, 웹훅이 손님 id를 암호화해 `conversations.reply_to_enc`에 둔다(샵 관리자도 못 읽는 열). 발송 때만 서버가 서비스 키로 읽어 풀고 어댑터 `send(approvedByOwner=true)` — 24시간 안 RESPONSE, 24시간~7일은 `META_HUMAN_AGENT=1`일 때만 HUMAN_AGENT, 7일 초과 거부(거부는 기록하지 않고 이유만 표시). 대화가 우리 샵인지는 먼저 세션(RLS)으로 확인한다. 이 열이 생기기 전에 온 대화는 "인스타그램 앱에서 직접 답해 주세요".
+  - [복사(카카오)]: 클립보드 쓰기만(읽지 않음) → `skipped`로 기록·문의 replied. 연락처는 서버에서 풀어 `maskContact`한 값만 화면에 보낸다.
 - 본사 `/admin/ai`에 지표 카드(자동응답률·에스컬레이션률·평균 첫 응답시간·틀림 건수·샵별 LLM 비용).
 
 ## 채널 흐름

@@ -31,6 +31,8 @@ export type InstagramWebhookDeps = {
   hasOpenInquiry: (conversationId: string) => Promise<boolean>;
   openInquiry: (i: { conversationId: string; type: InquiryType; extracted: ConsultResult["extracted"]; draft: string | undefined }) => Promise<void>;
   markDisclosed: (conversationId: string) => Promise<void>;
+  // 사장님 승인 발송(P22-5, 인박스)에 쓸 손님 인스타 id를 대화에 남긴다(저장하는 쪽이 암호화 — 원문은 DB·로그에 남지 않는다)
+  saveReplyTarget: (conversationId: string, senderId: string) => Promise<void>;
   // 채널 토큰을 풀어 보낼 어댑터를 만든다(토큰이 없거나 못 풀면 null)
   sender: (ch: InstagramChannelRow) => Pick<ChannelAdapter, "send"> | null;
   defer: (task: () => Promise<void>) => void; // 라우트에서는 next/server의 after
@@ -119,6 +121,7 @@ export async function handleInstagramEvent(e: InstagramEvent, deps: InstagramWeb
   if (!rec) return log("record_failed");
   if (rec.duplicate) return log("duplicate");
   const conversationId = rec.conversationId;
+  await deps.saveReplyTarget(conversationId, e.senderId).catch(() => log("reply_target_failed"));
   if (STORE_ONLY.has(e.kind)) return log("stored_only");
 
   // 대화 요청 제한 (넘으면 AI를 부르지 않고 답하지 않는다 — 메시지는 저장됨)
