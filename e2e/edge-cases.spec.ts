@@ -50,6 +50,11 @@ test("CSV 손님 500명: 미리 보기와 등록이 30초 안에 끝나고 한 �
   expect(Date.now() - t0).toBeLessThan(30_000);
   const { count } = await db.from("customers").select("*", { count: "exact", head: true }).eq("shop_id", shopId);
   expect(count).toBe(500);
+  // P19-3 손님 목록은 200명씩: 잘렸다는 표시와 다음 쪽
+  await page.goto("/shop/customers");
+  await expect(page.getByText("전체 500명 중 1~200 (1/3쪽)")).toBeVisible();
+  await page.getByRole("link", { name: "다음 쪽" }).click();
+  await expect(page.getByText("전체 500명 중 201~400 (2/3쪽)")).toBeVisible();
   // 한 행 더: 501행 파일은 상한으로 막는다
   await page.goto("/shop/import?type=customers");
   await page.getByLabel("CSV 파일").setInputFiles(csv("손님501.csv", ["이름,휴대폰", ...Array.from({ length: 501 }, (_, i) => `[테스트] 초과${i},010-0000-${String(i).padStart(4, "0")}`)].join("\n")));
@@ -72,7 +77,13 @@ test("강습 1000건: 목록이 10초 안에 열린다", async ({ page }) => {
   await page.goto("/shop/jobs");
   await expect(page.getByRole("link", { name: /\[테스트\] 대량 0 / })).toBeVisible({ timeout: 10_000 });
   expect(Date.now() - t0).toBeLessThan(10_000);
-  test.info().annotations.push({ type: "jobs-shown", description: String(await page.locator("main li").count()) }); // 쪽 나누기 없음 (P2 기록용)
+  // P19-3 쪽 나누기: 200건씩, 잘렸다는 표시와 다음 쪽
+  await expect(page.getByText("전체 1,000건 중 1~200 (1/5쪽)").first()).toBeVisible();
+  await page.getByRole("link", { name: "다음 쪽" }).first().click();
+  await expect(page.getByText("전체 1,000건 중 201~400 (2/5쪽)").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /\[테스트\] 대량 200 / })).toBeVisible();
+  await page.goto("/shop/jobs?page=5");
+  await expect(page.getByRole("link", { name: /\[테스트\] 대량 999 / })).toBeVisible();
   await noCrash(page);
 });
 

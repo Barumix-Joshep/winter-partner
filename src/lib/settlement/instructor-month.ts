@@ -7,7 +7,8 @@ type Settlement = { id: string; shopId: string; gross: number; withholding: numb
 const STATE: Record<string, string> = { draft: "집계됨", issued: "지급 대기", paid: "지급 완료" };
 
 // 정산서가 있으면 그 금액을, 없으면 승인 강습으로 예상치를 쓴다 (원천세는 샵별로 계산)
-export function instructorMonth(lessons: Lesson[], settlements: Settlement[]) {
+// noWithholdingShops: 전속 지급 방식이 "원천징수 샵 별도 처리"인 샵 (P19-1)
+export function instructorMonth(lessons: Lesson[], settlements: Settlement[], noWithholdingShops: ReadonlySet<string> = new Set()) {
   const byShop = new Map<string, { name: string; approved: number[]; pending: number }>();
   for (const l of lessons) {
     if (l.status === "canceled") continue;
@@ -21,7 +22,7 @@ export function instructorMonth(lessons: Lesson[], settlements: Settlement[]) {
     .map(([shopId, s]) => {
       const st = settlements.find((x) => x.shopId === shopId);
       const gross = st?.gross ?? s.approved.reduce((a, b) => a + b, 0);
-      const wh = st?.withholding ?? withholding(gross).total;
+      const wh = st?.withholding ?? withholding(gross, !noWithholdingShops.has(shopId)).total;
       return {
         shopId,
         name: s.name,

@@ -9,10 +9,11 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 
 ## 대기 중
 
-(없음)
+없음.
 
 ## 적용 기록
 
 | 날짜 | 마이그레이션 | 승인 |
 |---|---|---|
 | 2026-11-03 | 20261102150000_settlement_integrity, 20261102151000_access_hardening | 사장님 승인 (P18) |
+| 2026-11-05 | `20261103090000_pay_types.sql`, `20261103100000_settlement_guard.sql` | 사장님 승인 (P19). 사전 백업 backups/20261105-1128, 영향: 개인 정산 2행에 pay_type=business_3_3, 제약 위반 0. 적용 뒤 PR #4 병합 |

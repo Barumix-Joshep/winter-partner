@@ -37,6 +37,7 @@ export async function renderStatementPdf(s: Statement): Promise<Uint8Array> {
   const info: [string, string][] = [
     ["지급하는 곳", `${s.shop.name}${s.shop.businessNo ? ` (사업자 ${s.shop.businessNo})` : ""}`],
     ["받는 분", `${s.payee.name} · ${s.payee.kind}`],
+    ["지급 방식", s.payType.label],
     ["정산 기간", `${s.month.replace("-", "년 ")}월 1일 ~ 말일 (샵 승인 강습)`],
   ];
   for (const [k, v] of info) {
@@ -72,8 +73,12 @@ export async function renderStatementPdf(s: Statement): Promise<Uint8Array> {
   y -= 8;
   const sums: [string, string, boolean][] = [
     [`강습료 합계 (${s.items.length}건)`, won(s.gross), false],
-    ["소득세 (3%)", `- ${won(s.tax.incomeTax)}`, false],
-    ["지방소득세 (0.3%)", `- ${won(s.tax.localTax)}`, false],
+    ...((s.payType.byShop
+      ? [["원천세 (샵에서 별도 처리)", won(0), false]]
+      : [
+          ["소득세 (3%)", `- ${won(s.tax.incomeTax)}`, false],
+          ["지방소득세 (0.3%)", `- ${won(s.tax.localTax)}`, false],
+        ]) as [string, string, boolean][]),
     ["실지급액", won(s.net), true],
   ];
   for (const [k, v, strong] of sums) {
@@ -82,13 +87,7 @@ export async function renderStatementPdf(s: Statement): Promise<Uint8Array> {
     y -= strong ? 24 : 18;
   }
   y -= 16;
-  const notes = [
-    s.tax.total > 0
-      ? "원천세는 사업소득 3.3%(소득세 3% + 지방소득세 0.3%)이며 각 10원 미만은 절사했습니다."
-      : "원천징수 대상이 아닌 지급입니다(사업자 지급 또는 소액부징수).",
-    "송금은 지급하는 곳에서 직접 합니다. 이 정산서는 겨울파트너에서 발행했습니다.",
-  ];
-  for (const n of notes) {
+  for (const n of s.notes) {
     text(page, n, M, y, 8.5, regular, MUTED);
     y -= 14;
   }

@@ -161,7 +161,7 @@ async function Guarded({ area, children }: { area: Area; children: ReactNode }) 
           <Bell unread={unread} className="md:hidden" />
         </div>
         {nav && (
-          <nav aria-label="샵 메뉴" className="-mx-5 mt-4 flex gap-1 overflow-x-auto px-5 md:mx-0 md:mt-4 md:flex-col md:px-0">
+          <nav aria-label="샵 메뉴" className="mt-4 flex flex-wrap gap-1 md:mt-4 md:flex-col md:flex-nowrap">
             <SideNav
               items={shop?.type === "lesson_team" ? [...nav.slice(0, 3), { href: "/shop/team-bids", label: "팀 입찰" }, ...nav.slice(3)] : nav}
               root="/shop"

@@ -12,6 +12,13 @@ describe("withholding (사업소득 3.3%)", () => {
     expect(withholding(33340).incomeTax).toBe(1000);
   });
 
+  it("면제 경계 (P19-1): 소득세 999원은 면제, 1,000원부터 징수", () => {
+    expect(withholding(33330)).toEqual({ incomeTax: 0, localTax: 0, total: 0, net: 33330 }); // 999.9 → 990 → 면제
+    expect(withholding(33333)).toEqual({ incomeTax: 0, localTax: 0, total: 0, net: 33333 });
+    expect(withholding(33340)).toEqual({ incomeTax: 1000, localTax: 100, total: 1100, net: 32240 });
+    expect(withholding(33679)).toEqual({ incomeTax: 1010, localTax: 100, total: 1110, net: 32569 }); // 지방세 101 → 100
+  });
+
   it("팀(사업자) 지급은 원천세 없음", () => {
     expect(withholding(500000, false)).toEqual({ incomeTax: 0, localTax: 0, total: 0, net: 500000 });
   });

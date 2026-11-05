@@ -8,6 +8,7 @@ import { monthWindowKst } from "@/lib/shop/today";
 import { formatLessonTime } from "@/lib/shop/job-status";
 import { LESSON_TYPES, type LessonType } from "@/lib/shop/job";
 import { instructorMonth } from "@/lib/settlement/instructor-month";
+import { payTypeOf } from "@/lib/settlement/pay-type";
 import { requestTime } from "@/lib/time";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -54,7 +55,7 @@ async function Pay({ searchParams }: { searchParams: SearchParams }) {
   const win = monthWindowKst(`${month}-01`);
 
   const supabase = await createClient();
-  const [{ data: lessons }, { data: sts }] = await Promise.all([
+  const [{ data: lessons }, { data: sts }, { data: mine }] = await Promise.all([
     supabase
       .from("instructor_assignments")
       .select("final_rate, via_shop_id, jobs!inner(id, starts_at, ends_at, status, lesson_type, canceled_by, sports(name), shops(id, name))")
@@ -62,11 +63,13 @@ async function Pay({ searchParams }: { searchParams: SearchParams }) {
       .gte("jobs.starts_at", win.from)
       .lt("jobs.starts_at", win.to),
     supabase.from("settlements").select("id, shop_id, gross, withholding, net, status").eq("instructor_id", me ?? "").eq("month", `${month}-01`),
+    supabase.from("shop_instructors").select("shop_id, pay_type").eq("instructor_id", me ?? ""),
   ]);
   const rows = ((lessons ?? []) as unknown as A[]).sort((a, b) => b.jobs.starts_at.localeCompare(a.jobs.starts_at));
   const m = instructorMonth(
     rows.filter((r) => !r.via_shop_id).map((r) => ({ amount: r.final_rate, status: r.jobs.status, shop: r.jobs.shops ?? { id: "", name: "" } })),
     (sts ?? []).map((s) => ({ id: s.id, shopId: s.shop_id, gross: s.gross, withholding: s.withholding, net: s.net, status: s.status })),
+    new Set((mine ?? []).filter((x) => payTypeOf(x.pay_type, false).byShop).map((x) => x.shop_id as string)),
   );
   const mo = Number(month.slice(5));
 
@@ -126,15 +129,15 @@ async function Pay({ searchParams }: { searchParams: SearchParams }) {
               const st = ITEM_STATE[r.jobs.status] ?? ITEM_STATE.assigned;
               const excluded = r.jobs.status === "canceled";
               return (
-                <div key={r.jobs.id} className="flex items-center justify-between border-b border-[#EEF1F6] py-3 last:border-b-0">
-                  <div>
+                <div key={r.jobs.id} className="flex items-center justify-between gap-3 border-b border-[#EEF1F6] py-3 last:border-b-0">
+                  <div className="min-w-0">
                     <p className="text-[13px] font-medium">
                       {formatLessonTime(r.jobs.starts_at, r.jobs.ends_at).split(" ")[0]} {r.jobs.sports?.name} {LESSON_TYPES[r.jobs.lesson_type].label} ·{" "}
                       {r.jobs.shops?.name}
                     </p>
                     {excluded && <p className="text-[11px] text-ink-muted">{r.jobs.canceled_by === "shop" ? "샵 사정 취소" : "손님 취소"}</p>}
                   </div>
-                  <div className={`text-right ${st.cls}`}>
+                  <div className={`shrink-0 text-right whitespace-nowrap ${st.cls}`}>
                     <p className="text-sm font-bold">{r.via_shop_id ? "팀 정산" : `${excluded ? "0" : won(r.final_rate)}원`}</p>
                     <p className="text-[11px]">{st.label}</p>
                   </div>

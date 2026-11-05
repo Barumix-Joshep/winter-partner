@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { pageInfo, pageRange, parsePage } from "@/lib/paging";
+import { Pager } from "@/components/pager";
 import { redirect } from "next/navigation";
 import { requireArea } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -67,6 +69,7 @@ function consentLabel(s: ConsentState | undefined): { text: string; cls: string 
 
 type Contact = { id: string; channel: ContactChannel; memo: string | null; created_at: string; profiles: { name: string } | null };
 
+const CUSTOMER_PAGE = 200;
 const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
 
 async function Customers({ searchParams }: { searchParams: SearchParams }) {
@@ -77,28 +80,32 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
   const q = one(sp.q).trim();
   const selectedId = one(sp.id);
   const isNew = one(sp.new) === "1";
+  const page = parsePage(sp.page);
   const today = todayKst(await requestTime());
 
   const supabase = await createClient();
   let list = supabase
     .from("customers")
-    .select("id, name, phone, level, tags, next_contact_on, merge_candidate_id")
+    .select("id, name, phone, level, tags, next_contact_on, merge_candidate_id", { count: "exact" })
     .eq("shop_id", shop.id)
     .is("anonymized_at", null)
     .order("name")
-    .limit(200);
+    .order("id")
+    .range(...pageRange(page, CUSTOMER_PAGE));
   if (q) {
     // 이름·연락처는 부분 일치, 태그는 정확히
     const safe = q.replace(/[%,()]/g, "");
     list = list.or(`name.ilike.%${safe}%,phone.ilike.%${safe}%,tags.cs.{${safe.replace(/^#/, "")}}`);
   }
-  const [{ data: rows }, { data: dueRows }, { count: total }, { data: recipients }] = await Promise.all([
+  const [{ data: rows, count: listed }, { data: dueRows }, { count: total }, { data: recipients }] = await Promise.all([
     list,
     supabase.from("customers").select("id, name").eq("shop_id", shop.id).is("anonymized_at", null).lte("next_contact_on", today).order("next_contact_on"),
     supabase.from("customers").select("id", { count: "exact", head: true }).eq("shop_id", shop.id).is("anonymized_at", null),
     supabase.rpc("marketing_recipients", { p_shop_id: shop.id }),
   ]);
   const customers = (rows ?? []) as (Pick<Customer, "id" | "name" | "phone" | "level" | "tags" | "next_contact_on"> & { merge_candidate_id: string | null })[];
+  const info = pageInfo(page, CUSTOMER_PAGE, listed ?? customers.length);
+  const pageHref = (p: number) => `/shop/customers?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
   const toConfirm = customers.filter((c) => c.merge_candidate_id).length;
   const due = dueRows ?? [];
 
@@ -149,6 +156,7 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
             </p>
           </div>
         )}
+        <Pager info={info} href={pageHref} unit="명" />
         <ul className="flex max-h-[60vh] flex-col gap-1 overflow-y-auto">
           {customers.map((c) => (
             <li key={c.id}>

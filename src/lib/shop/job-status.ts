@@ -33,10 +33,16 @@ export function formatLessonTime(startsAt: string, endsAt: string) {
   };
   const s = fmt(startsAt);
   const e = fmt(endsAt);
-  return `${s.md} ${s.hm}~${e.hm}`;
+  return `${s.md} ${s.hm}~${e.md === s.md ? "" : "다음 날 "}${e.hm}`; // 자정을 넘는 강습 (P19-3)
 }
 
 // 목록에 보일 강습: 지난 7일 이후에 끝나는 것
 export function recentJobsCutoff(now = new Date()) {
   return new Date(now.getTime() - 7 * 86400_000).toISOString();
+}
+
+// 폼 기본값용 한국 시간 날짜·시각 ("2026-12-20", "10:00")
+export function kstHm(iso: string) {
+  const s = new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString();
+  return { date: s.slice(0, 10), time: s.slice(11, 16) };
 }

@@ -9,6 +9,7 @@ import { formatLessonTime } from "@/lib/shop/job-status";
 import { LESSON_TYPES, type LessonType } from "@/lib/shop/job";
 import { requestTime } from "@/lib/time";
 import { generate, issue, setPaid } from "./actions";
+import { payTypeOf } from "@/lib/settlement/pay-type";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -18,7 +19,7 @@ export default function SettlementsPage({ searchParams }: { searchParams: Search
       <div>
         <h1 className="text-2xl font-bold">정산</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          그 달에 승인한 강습의 확정 금액으로 강사·팀별 정산을 냅니다. 개인 강사는 3.3%를 원천징수합니다. 발행하면 금액이 확정되고, 송금은 직접 하신 뒤
+          그 달에 승인한 강습의 확정 금액으로 강사·팀별 정산을 냅니다. 개인 강사는 지급 방식(기본 사업소득 3.3%, 전속 강사에서 설정)에 따라 원천세를 적습니다. 발행하면 금액이 확정되고, 송금은 직접 하신 뒤
           지급 완료로 표시합니다.
         </p>
       </div>
@@ -41,6 +42,7 @@ type Row = {
   withholding: number;
   net: number;
   status: string;
+  pay_type: string | null;
   instructors: { profiles: { name: string } | null } | null;
   shops: { name: string } | null;
   settlement_items: { amount: number; assignments: { jobs: { starts_at: string; ends_at: string; lesson_type: LessonType; sports: { name: string } | null } | null } | null }[];
@@ -64,7 +66,7 @@ async function Settlements({ searchParams }: { searchParams: SearchParams }) {
   const { data } = await supabase
     .from("settlements")
     .select(
-      "id, gross, withholding, net, status, instructors(profiles(name)), shops!settlements_payee_shop_id_fkey(name), settlement_items(amount, assignments(jobs(starts_at, ends_at, lesson_type, sports(name))))",
+      "id, gross, withholding, net, status, pay_type, instructors(profiles(name)), shops!settlements_payee_shop_id_fkey(name), settlement_items(amount, assignments(jobs(starts_at, ends_at, lesson_type, sports(name))))",
     )
     .eq("shop_id", shop.id)
     .eq("month", `${month}-01`);
@@ -104,25 +106,28 @@ async function Settlements({ searchParams }: { searchParams: SearchParams }) {
         </p>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
             <Stat label="강습료 지급 합계" value={won(total.gross)} />
-            <Stat label="원천징수 (3.3%)" value={won(total.wh)} />
+            <Stat label="원천징수 합계" value={won(total.wh)} />
             <Stat label="실지급 합계" value={won(total.net)} />
           </div>
           <ul className="flex flex-col gap-2">
             {rows.map((r) => {
               const s = STATUS[r.status];
               const name = r.shops?.name ? `${r.shops.name} (팀)` : (r.instructors?.profiles?.name ?? "—");
+              const pt = payTypeOf(r.pay_type, !!r.shops?.name);
               return (
                 <li key={r.id} className="rounded-[14px] border border-line bg-white">
                   <details>
                     <summary className="grid cursor-pointer grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 p-4 sm:grid-cols-[1.2fr_repeat(3,1fr)_auto]">
                       <span className="font-bold">
-                        {name} <span className="text-xs font-normal text-ink-muted">{r.settlement_items.length}건</span>
+                        {name} <span className="text-xs font-normal text-ink-muted">{r.settlement_items.length}건 · {pt.label}</span>
                       </span>
                       <span className={`justify-self-end rounded-full px-2.5 py-1 text-xs font-medium sm:order-last ${s.cls}`}>{s.label}</span>
                       <span className="text-sm text-ink-muted">총액 {won(r.gross)}</span>
-                      <span className="text-sm text-ink-muted">원천세 {won(r.withholding)}</span>
+                      <span className="text-sm text-ink-muted">
+                        원천세 {pt.byShop ? "샵 별도 처리" : won(r.withholding)}
+                      </span>
                       <span className="text-sm font-bold">실지급 {won(r.net)}</span>
                     </summary>
                     <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[#EEF1F6] px-4 pt-2">
@@ -206,11 +211,12 @@ async function Received({ shopId, month }: { shopId: string; month: string }) {
   );
 }
 
+// 휴대폰에서는 한 줄(이름 왼쪽·금액 오른쪽), 넓은 화면에서는 세 칸 (390px에서 금액이 두 줄로 갈라지던 문제, P19-3)
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-line bg-white p-4">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-white px-4 py-3 sm:block sm:p-4">
       <p className="text-xs text-ink-muted">{label}</p>
-      <p className="mt-1 text-lg font-bold sm:text-xl">{value}</p>
+      <p className="text-lg font-bold whitespace-nowrap sm:mt-1 sm:text-xl">{value}</p>
     </div>
   );
 }

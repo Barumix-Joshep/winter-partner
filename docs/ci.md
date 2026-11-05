@@ -110,4 +110,4 @@ GitHub 저장소 → **Settings → Rules → Rulesets → New ruleset → New b
 
 막힌 점·남은 것
 - 브랜치 보호를 켤 권한(admin)이 이 계정에 없다 → 사장님이 켠다.
-- `task/P19`(P19 코드·마이그레이션 2개)는 원격 적용 승인 전이라 아직 PR로 올리지 않았다. 승인 뒤 PR → CI → 병합 전에 원격 적용 순서를 정한다(새 화면이 새 열을 읽는다).
+- P19(PR #4): 2026-11-05 승인 → 백업 → CI 통과 → 원격 적용 → 병합 순서로 처리. CI에서 운영 빌드에만 나는 CSP Report-Only 경고(upgrade-insecure-requests)를 찾아 고침.

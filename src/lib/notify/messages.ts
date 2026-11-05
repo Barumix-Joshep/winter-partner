@@ -49,6 +49,12 @@ export function notificationMessage(kind: string, payload: Payload, job: JobInfo
       return { title: "서버 오류가 늘었습니다", body: `최근 한 시간 ${payload.count ?? ""}건 · 운영 상태를 확인해 주세요`, url: "/admin/ops" };
     case "ai_fail_rate":
       return { title: "AI 호출 실패가 많습니다", body: `최근 한 시간 ${payload.calls ?? ""}회 중 ${payload.fails ?? ""}회 실패 · 화면은 수동으로 동작합니다`, url: "/admin/ops" };
+    case "shop_change_requested":
+      return { title: "샵 정보 변경 요청", body: "유형·사업자번호 변경을 확인해 주세요", url: "/admin" };
+    case "shop_change_decided":
+      return payload.approved
+        ? { title: "샵 정보 변경이 승인됐습니다", body: "새 사업자번호·유형이 정산서에 반영됩니다", url: "/shop/settings" }
+        : { title: "샵 정보 변경이 반려됐습니다", body: "본사에 문의해 주세요", url: "/shop/settings" };
     default:
       return { title: "겨울파트너 알림", body: "", url: "/" };
   }

@@ -13,3 +13,14 @@ export async function reviewCert(formData: FormData) {
   await supabase.rpc("review_cert", { p_cert_id: id, p_approve: approve });
   revalidatePath("/admin");
 }
+
+// 승인된 샵의 유형·사업자번호 변경 요청 결정 (P19-2). decide_shop_change가 본사만 허용한다.
+export async function decideShopChange(formData: FormData) {
+  await requireArea("admin");
+  const supabase = await createClient();
+  await supabase.rpc("decide_shop_change", {
+    p_request_id: String(formData.get("id") ?? ""),
+    p_approve: formData.get("decision") === "approve",
+  });
+  revalidatePath("/admin");
+}
