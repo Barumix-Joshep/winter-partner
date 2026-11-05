@@ -22,6 +22,7 @@ import { isMinor, kstYear } from "@/lib/customer/minor";
 import { logAccess } from "@/lib/audit";
 import { termLabel } from "@/lib/privacy/health";
 import { CONTACT_CHANNELS, formatDay, type ContactChannel } from "@/lib/customer/contact";
+import { maskPhone } from "@/lib/privacy/mask";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -170,7 +171,7 @@ async function Customers({ searchParams }: { searchParams: SearchParams }) {
                     {c.name} <span className="text-[11px] font-normal text-ink-muted">{c.tags.map((t) => `#${t}`).join(" ")}</span>
                     {c.merge_candidate_id && <span className="ml-1 rounded-full bg-[#FFF1E0] px-1.5 py-0.5 text-[10px] font-medium text-[#B4560A]">확인 필요</span>}
                   </span>
-                  <span className="block truncate text-[11px] text-ink-muted">{[c.level, c.phone].filter(Boolean).join(" · ") || "정보 없음"}</span>
+                  <span className="block truncate text-[11px] text-ink-muted">{[c.level, maskPhone(c.phone)].filter(Boolean).join(" · ") || "정보 없음"}</span>
                 </span>
               </Link>
             </li>
