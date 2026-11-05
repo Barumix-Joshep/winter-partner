@@ -127,3 +127,20 @@ export async function closeConversation(formData: FormData) {
   revalidatePath(INBOX);
   revalidatePath(`${INBOX}/${id}`);
 }
+
+// [강습 등록] (P22-6): 문의를 "강습 등록으로 넘김"(converted)으로. 샵 대표만(RPC가 다시 확인, 감사 기록).
+// 넘긴 문의는 90일 상담 정리 뒤에도 남는다(연락처·대화 연결·초안은 지움). 강습은 강습 만들기 화면에서 사람이 등록한다.
+export async function convertInquiry(_prev: InboxState | undefined, formData: FormData): Promise<InboxState> {
+  const shopId = await myShopId();
+  if (!shopId) return { message: "샵 정보를 찾지 못했어요." };
+  const id = String(formData.get("inquiry_id") ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return { message: "문의를 찾지 못했어요." };
+  const supabase = await createClient();
+  const { data: inq } = await supabase.from("inquiries").select("id, conversation_id").eq("id", id).eq("shop_id", shopId).maybeSingle();
+  if (!inq) return { message: "문의를 찾지 못했어요." };
+  const { error } = await supabase.rpc("consult_convert_inquiry", { p_inquiry_id: id });
+  if (error) return { message: error.code === "42501" ? "샵 대표(사장님)만 강습 등록으로 넘길 수 있어요." : "바꾸지 못했어요. 다시 눌러 주세요." };
+  revalidatePath(INBOX);
+  if (inq.conversation_id) revalidatePath(`${INBOX}/${inq.conversation_id}`);
+  return { ok: true, message: "강습 등록으로 넘겼어요. 강습 만들기에서 강습을 등록해 주세요." };
+}

@@ -9,6 +9,7 @@ import type { InstagramConfig } from "./config";
 import { IG_ACCOUNT, IG_CUSTOMER, igMessaging, igPayload, igSign, igText } from "./fixtures";
 import { handleInstagramEvent, instagramRoute, instagramVerify, type InstagramWebhookDeps } from "./webhook";
 import { parseWebhook } from "./adapter";
+import { ESCALATE_REPLY } from "@/lib/ai/consult/engine";
 
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({}) }));
 
@@ -179,7 +180,7 @@ describe("이벤트 처리", () => {
     await handleInstagramEvent(ev(igText("20일 2명 예약돼요?")), first.deps);
     expect(first.sends).toHaveLength(1);
     expect(first.deps.recordReply).toHaveBeenCalledWith(expect.objectContaining({ role: "system", delivery: "sent" }));
-    expect(first.deps.openInquiry).toHaveBeenCalledWith({ conversationId: "conv-1", type: "booking", extracted: { people: 2 }, draft: ESC.draft });
+    expect(first.deps.openInquiry).toHaveBeenCalledWith({ conversationId: "conv-1", type: "booking", extracted: { people: 2 }, draft: ESC.draft, contact: null });
 
     const again = makeDeps({ result: ESC, hasOpenInquiry: async () => true });
     await handleInstagramEvent(ev(igText("3명으로 바꿀게요")), again.deps);
@@ -211,16 +212,48 @@ describe("이벤트 처리", () => {
       expect(deps.recordCustomerMessage).not.toHaveBeenCalled();
     }
   });
-  it("샵 요청 제한을 넘으면 저장하지 않고, 대화 제한을 넘으면 저장만", async () => {
+  it("샵 요청 제한을 넘으면 저장·AI·답장 없이 끝", async () => {
     const shop = makeDeps({ rateOk: vi.fn(async (name) => name !== "consult_shop") });
     await handleInstagramEvent(ev(igText("x")), shop.deps);
     expect(shop.deps.recordCustomerMessage).not.toHaveBeenCalled();
-
+    expect(shop.deps.runConsult).not.toHaveBeenCalled();
+    expect(shop.sends).toHaveLength(0);
+    expect(shop.logs.at(-1)?.outcome).toBe("rate_shop");
+  });
+  it("대화 요청 제한을 넘으면 AI 없이 escalate: 저장 + 사장님께 전달 안내 한 번 + 문의 (P22-6)", async () => {
     const conv = makeDeps({ rateOk: vi.fn(async (name) => name !== "consult_conversation") });
-    await handleInstagramEvent(ev(igText("x")), conv.deps);
+    await handleInstagramEvent(ev(igText("강습료 얼마예요?")), conv.deps);
     expect(conv.deps.recordCustomerMessage).toHaveBeenCalled();
     expect(conv.deps.runConsult).not.toHaveBeenCalled();
-    expect(conv.sends).toHaveLength(0);
+    expect(conv.sends).toHaveLength(1);
+    expect(conv.sends[0].text).toBe(ESCALATE_REPLY);
+    expect(conv.sends[0].opts).toMatchObject({ approvedByOwner: false, escalate: true });
+    expect(conv.deps.recordReply).toHaveBeenCalledWith(expect.objectContaining({ role: "system", intent: "unknown", confidence: 0 }));
+    expect(conv.deps.openInquiry).toHaveBeenCalledWith(expect.objectContaining({ conversationId: "conv-1", type: "other" }));
+    expect(conv.logs.map((l) => l.outcome)).toContain("rate_conversation");
+
+    // 이미 열린 문의가 있으면 안내를 되풀이하지 않는다
+    const again = makeDeps({ rateOk: vi.fn(async (name) => name !== "consult_conversation"), hasOpenInquiry: async () => true });
+    await handleInstagramEvent(ev(igText("또 물어요")), again.deps);
+    expect(again.deps.runConsult).not.toHaveBeenCalled();
+    expect(again.sends).toHaveLength(0);
+  });
+  it("손님 글 속 전화·이메일: 메시지에는 가린 글, 문의에는 연락처(저장 쪽이 암호화), 자동 답변이어도 문의를 연다 (P22-6)", async () => {
+    const { deps, sends, logs } = makeDeps();
+    await handleInstagramEvent(ev(igText("강습료 얼마예요? 010-0000-4321 / me@example.com")), deps);
+    const saved = (deps.recordCustomerMessage as ReturnType<typeof vi.fn>).mock.calls[0][0] as { text: string };
+    expect(saved.text).toBe("강습료 얼마예요? 010-****-4321 / m***@example.com");
+    expect(deps.runConsult).toHaveBeenCalledWith(expect.objectContaining({ text: "강습료 얼마예요? 010-0000-4321 / me@example.com" })); // 엔진이 AI 전에 가린다
+    expect(sends).toHaveLength(1); // 자동 답변은 그대로
+    expect(deps.openInquiry).toHaveBeenCalledWith(expect.objectContaining({ contact: "010-0000-4321, me@example.com" }));
+    expect(JSON.stringify(logs)).not.toMatch(/0000-4321|me@example/);
+  });
+  it("스토리 답장 속 연락처도 문의로 (AI·답장 없음)", async () => {
+    const { deps, sends } = makeDeps();
+    await handleInstagramEvent(ev({ mid: "m-s2", text: "010-0000-2222 연락주세요", reply_to: { story: { id: "s1", url: "https://cdn.example/s" } } }), deps);
+    expect(deps.runConsult).not.toHaveBeenCalled();
+    expect(sends).toHaveLength(0);
+    expect(deps.openInquiry).toHaveBeenCalledWith(expect.objectContaining({ contact: "010-0000-2222" }));
   });
   it("엔진이 실패하면 escalate(사장님께)", async () => {
     const { deps } = makeDeps({ runConsult: vi.fn(async () => Promise.reject(new Error("x"))) });

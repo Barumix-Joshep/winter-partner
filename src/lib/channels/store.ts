@@ -1,5 +1,6 @@
 import "server-only";
 import type { createAdminClient } from "@/lib/supabase/admin";
+import { encryptSecret } from "@/lib/ai/consult/crypto";
 import type { Extracted } from "@/lib/ai/consult/types";
 import type { DeliveryStatus } from "./types";
 
@@ -18,6 +19,16 @@ export type ReplyRecord = {
   delivery: DeliveryStatus;
   tag?: string | null; // 인스타 RESPONSE·HUMAN_AGENT
 };
+
+// 손님 연락처(손님 글에서 서버 규칙으로 뽑은 값)는 암호화해서만 둔다. 키가 없거나 실패하면 두지 않는다(가린 글은 메시지에 남는다).
+export function encryptContact(contact: string | null | undefined, encrypt: (v: string) => string = encryptSecret): string | null {
+  if (!contact) return null;
+  try {
+    return encrypt(contact);
+  } catch {
+    return null;
+  }
+}
 
 export function consultStore(db: Db) {
   return {
@@ -63,8 +74,9 @@ export function consultStore(db: Db) {
       if (error) throw error;
       return (count ?? 0) > 0;
     },
-    // 같은 대화에 아직 열린 문의가 있으면 새로 만들지 않고 초안·추출 정보만 새로 고친다(손님이 여러 번 나눠 보내도 문의는 하나)
-    async openInquiry(i: { conversationId: string; type: InquiryType; extracted: Extracted | undefined; draft: string | undefined }) {
+    // 같은 대화에 아직 열린 문의가 있으면 새로 만들지 않고 초안·추출 정보(·새 연락처)만 새로 고친다(손님이 여러 번 나눠 보내도 문의는 하나)
+    async openInquiry(i: { conversationId: string; type: InquiryType; extracted: Extracted | undefined; draft: string | undefined; contact?: string | null }) {
+      const contactEnc = encryptContact(i.contact);
       const { data: open } = await db
         .from("inquiries")
         .select("id, extracted")
@@ -76,6 +88,7 @@ export function consultStore(db: Db) {
       if (open) {
         const patch: Record<string, unknown> = { extracted: { ...((open.extracted as object) ?? {}), ...(i.extracted ?? {}) } };
         if (i.draft) patch.ai_draft = i.draft.slice(0, 2000);
+        if (contactEnc) patch.contact_enc = contactEnc;
         const { error } = await db.from("inquiries").update(patch).eq("id", open.id);
         if (error) throw error;
         return;
@@ -85,7 +98,7 @@ export function consultStore(db: Db) {
         p_type: i.type,
         p_extracted: i.extracted ?? {},
         p_ai_draft: i.draft ?? null,
-        p_contact_enc: null,
+        p_contact_enc: contactEnc,
       });
       if (error) throw error;
     },

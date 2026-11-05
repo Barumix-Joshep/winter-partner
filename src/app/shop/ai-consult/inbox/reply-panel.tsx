@@ -4,7 +4,7 @@ import { useActionState, useRef, useState } from "react";
 import { KAKAO_REPLY_NOTE, kbPrefill } from "@/lib/channels/inbox";
 import { KB_CONTENT_MAX, KB_KIND_LABEL, KB_KINDS, KB_TITLE_MAX } from "@/lib/ai/consult/knowledge";
 import { saveKnowledge, type KbState } from "../knowledge/actions";
-import { approveSend, markCopied, markWrong, type InboxState } from "./actions";
+import { approveSend, convertInquiry, markCopied, markWrong, type InboxState } from "./actions";
 
 // 대화 상세의 답장 칸(P22-5): [수정] [승인·발송(인스타)] / [복사(카카오)] [KB에 추가] [AI 답변 틀림].
 // AI 초안은 제안일 뿐이고, 보내기·복사·안내 정보 저장은 모두 사장님이 누를 때만 한다(CLAUDE.md AI 원칙).
@@ -159,6 +159,20 @@ function KbAddForm({ question, answer }: { question: string; answer: string }) {
       </label>
       <button disabled={pending} className={`${btn} border border-line bg-white`}>
         {pending ? "저장 중…" : "안내 정보 저장"}
+      </button>
+      <Status state={state} />
+    </form>
+  );
+}
+
+// [강습 등록] (P22-6): 문의를 강습으로 넘겼다고 표시 — 샵 대표만(서버 RPC가 확인). 강습 자체는 강습 만들기에서 사람이 등록한다.
+export function ConvertButton({ inquiryId }: { inquiryId: string }) {
+  const [state, act, pending] = useActionState<InboxState | undefined, FormData>(convertInquiry, undefined);
+  return (
+    <form action={act} className="flex flex-col gap-2">
+      <input type="hidden" name="inquiry_id" value={inquiryId} />
+      <button disabled={pending} className={`${btn} self-start border border-line bg-white text-brand`}>
+        강습 등록
       </button>
       <Status state={state} />
     </form>
