@@ -25,6 +25,7 @@ export async function placeBid(_prev: BidState | undefined, formData: FormData):
   if (error) {
     if (error.message.includes("같은 시간")) return { message: "같은 시간에 확정된 강습이 있어 입찰할 수 없습니다." };
     if (error.message.includes("마감")) return { message: "마감된 공고입니다." };
+    if (error.message.includes("요청이 너무 많습니다")) return { message: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." };
     return { message: "입찰하지 못했습니다. 금액을 확인해 주세요." };
   }
   return { ok: true, message: "제시했습니다." };
