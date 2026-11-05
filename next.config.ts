@@ -19,7 +19,8 @@ const csp = [
   "base-uri 'self'",
   `form-action 'self' ${supabase}`,
   "frame-ancestors 'none'",
-  ...(isDev ? [] : ["upgrade-insecure-requests"]),
+  // Report-Only에서는 브라우저가 이 지시어를 무시하고 경고만 남기므로 강제할 때만 넣는다
+  ...(isDev || !CSP_ENFORCE ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
 const securityHeaders = [
