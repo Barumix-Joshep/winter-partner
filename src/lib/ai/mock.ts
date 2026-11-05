@@ -5,11 +5,23 @@ import { mockConsult } from "./consult/mock";
 
 const usage = { input_tokens: 100, output_tokens: 50 };
 
-export const mockTransport: AiTransport = async (req): Promise<AiResponse> => {
+export const mockTransport: AiTransport = async (req, signal): Promise<AiResponse> => {
   const text = typeof req.content === "string" ? req.content : req.content.map((b) => (b.type === "text" ? b.text : "")).join("\n");
+  // 느린 모델 흉내(카카오 콜백 경로 E2E): "[가짜:지연]"이면 5초 기다리고, 그 전에 타임아웃으로 끊기면 실제 SDK처럼 실패한다
+  if (text.includes("[가짜:지연]")) await slow(5_000, signal);
   const handler = MOCKS[req.toolName];
   return { input: handler ? handler(text, req.system) : null, usage };
 };
+
+function slow(ms: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    const t = setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => {
+      clearTimeout(t);
+      reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+    });
+  });
+}
 
 // 기능별 목 응답 (각 기능 작업에서 채운다)
 export const MOCKS: Record<string, (text: string, system: string) => unknown> = {

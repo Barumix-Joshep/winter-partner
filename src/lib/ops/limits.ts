@@ -11,6 +11,9 @@ export const LIMITS = {
   link_view_ip: { max: 60, windowSeconds: 600, count: "all" },
   ai_user: { max: 30, windowSeconds: 600, count: "all" },
   feedback_ip: { max: 10, windowSeconds: 3600, count: "all" },
+  // AI 상담 웹훅 (P22-3). 손님은 로그인하지 않으므로 대화·샵 단위로 센다
+  consult_conversation: { max: 20, windowSeconds: 600, count: "all" },
+  consult_shop: { max: 300, windowSeconds: 600, count: "all" },
 } as const satisfies Record<string, { max: number; windowSeconds: number; count: "all" | "fail" }>;
 
 export type LimitName = keyof typeof LIMITS;

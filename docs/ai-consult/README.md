@@ -60,6 +60,7 @@
 3. 넘기면 `useCallback:true` + 대기 문구로 응답하고, `after()`로 엔진을 끝낸 뒤 callbackUrl에 **한 번만** POST. 실패해도 재시도하지 않고 `delivery_status='failed'` + 인박스에 표시.
 4. escalate면 "사장님께 전달했어요. 곧 1:1 채팅으로 답드릴게요." + 상담 연결(`operator`) 버튼.
 5. 웹훅 인증: 카카오 스킬 요청에는 서명이 없다 → 추측할 수 없는 token 주소 + 봇 id 대조 + 샵별 요청 제한. (관리자센터에서 스킬 헤더 값을 지정할 수 있으면 비밀 헤더도 대조 — 1단계에서 확인)
+6. 구현(P22-3): `src/lib/channels/kakao/`(`adapter.ts` 해석·봇 id·콜백 1회, `format.ts` 응답 JSON, `webhook.ts` 흐름, `deps.ts` DB·RPC, `cstalk.ts` 상담톡 껍데기), 공통 타입 `src/lib/channels/types.ts`. 발화 id가 요청에 없어(현재 문서) 손님·30초 구간·발화의 HMAC으로 중복을 막는다. 콜백 주소는 `https://*.kakao.com`만(요청 본문 값이라 SSRF 방지, 실제 도메인은 시범 때 확인). 블록 콜백이 꺼져 있고 3.5초를 넘기면 "사장님께 전달했어요" + 상담 연결로 답하고 늦은 AI 답은 `skipped`로 남겨 문의 초안으로. 같은 대화에 열린 문의가 있으면 새로 열지 않고 초안·추출 정보만 고친다. 요청 제한 `consult_shop`(10분 300)·`consult_conversation`(10분 20) — `docs/rate-limits.md`. 사장님 설정 순서는 **[docs/kakao-setup.md](../kakao-setup.md)**.
 
 **인스타** `GET/POST /api/webhooks/instagram`
 1. GET: verify token 대조 → challenge. POST: 원문 바이트로 `X-Hub-Signature-256` HMAC 검증, 실패 400. 200을 먼저 돌려주고 처리는 `after()`.
@@ -108,7 +109,7 @@
 
 ## 사장님이 처리할 것 (외부 계정·설정)
 1. **인스타 연결 방식**: 요청서는 Facebook 로그인. 메타에는 "Instagram 로그인" 방식(페이스북 페이지 연결 불필요, 같은 메시지 권한)도 있다. **추천: Instagram 로그인** — 렌탈샵 사장님이 페이스북 페이지를 따로 만들 필요가 없다. (확인 필요: Human Agent 태그가 이 방식에서도 같은지 4단계 착수 전에 확인)
-2. **외부 계정(새 서비스 가입)**: 메타 개발자 앱 만들기·비즈니스 인증·앱 심사(Advanced Access, Human Agent) — 심사에 수 주가 걸릴 수 있어 일찍 시작해야 한다. 카카오는 샵마다 채널·챗봇 관리자센터 설정(무료). 제가 대신 가입하지 않는다.
+2. **외부 계정(새 서비스 가입)**: 카카오 채널·오픈빌더 설정 순서는 [docs/kakao-setup.md](../kakao-setup.md). 메타 개발자 앱 만들기·비즈니스 인증·앱 심사(Advanced Access, Human Agent) — 심사에 수 주가 걸릴 수 있어 일찍 시작해야 한다. 카카오는 샵마다 채널·챗봇 관리자센터 설정(무료). 제가 대신 가입하지 않는다.
 3. **새 비밀값**(Vercel 환경변수, 사장님이 넣음): `CONSULT_ENCRYPTION_KEY`(32바이트), `CONSULT_HASH_KEY`, `META_APP_ID`·`META_APP_SECRET`·`META_VERIFY_TOKEN`. 값은 문서·대화에 쓰지 않는다.
 4. **AI 원칙 예외**(위)와 **개인정보 처리방침 갱신·법률 검토**.
 5. **문의 보존**: 90일 뒤 대화 삭제 때 "강습으로 넘긴 문의"를 남길지(연락처는 삭제).

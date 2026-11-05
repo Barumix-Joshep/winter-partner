@@ -14,5 +14,12 @@
 2. `src/lib/ai/consult/`: `rules.ts`(규칙·채널 길이) → `kb.ts`(검색) → `prompt.ts`(system·인용 블록·스키마·검증) → `amounts.ts`(금액 대조) → `engine.ts`(판정).
 3. 가짜 모델 `consult/mock.ts`(AI_MOCK·단위 테스트), 분류 케이스 `engine.test.ts`(사실 9·사람 8·인젝션 6·금액 2·꺼짐/상한/실패 7·내용/로그 3·길이 2 등 39개), 실제 API 평가 `consult.eval.test.ts`(AI_EVAL=1에서만).
 
-## 다음 (P22-3~8)
+## P22-3 카카오 어댑터·웹훅 (브랜치 `task/P22-3`, main 위)
+1. 단위 먼저: `src/lib/channels/kakao/adapter.test.ts`(요청 해석·봇 id·응답 JSON·콜백 주소 허용·콜백 1회·상담톡 껍데기), `webhook.test.ts`(3.4초 즉답/3.6·4초 콜백, 콜백 실패 failed·재시도 없음, 콜백 꺼짐 skipped, 중복 발화, 샵·대화 요청 제한, 꺼진 채널·토큰·봇 id 불일치·해시 키 없음 기본 안내, 고지, 로그에 원문 없음, Request → Response).
+2. `types.ts`(공통) → `format.ts` → `adapter.ts`·`cstalk.ts` → `webhook.ts`(deps 주입) → `deps.ts`(서비스 키 + RPC) → 라우트 `POST /api/webhooks/kakao/[token]`(after).
+3. 요청 제한 `consult_shop`·`consult_conversation`(`limits.ts`, `docs/rate-limits.md`). 마이그레이션 없음(고지 표시·열린 문의 갱신은 서비스 키 update).
+4. E2E `e2e/ai-consult-kakao.spec.ts`: 가짜 모델 지연(`[가짜:지연]`) + localhost 가짜 콜백 서버(`KAKAO_CALLBACK_ALLOW_LOCAL=1`, 시험용 `CONSULT_HASH_KEY`는 playwright 설정에만).
+5. 사장님 설정 안내 `docs/kakao-setup.md`.
+
+## 다음 (P22-4~8)
 설계 문서 "구현 단계" 표. 각 단계 브랜치 → PR → CI → 사장님 보고 → 병합. 마이그레이션은 원격 적용 승인 뒤.
