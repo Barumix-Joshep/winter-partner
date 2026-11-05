@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-export type NavItem = { href: string; label: string; icon?: ReactNode };
+export type NavItem = { href: string; label: string; icon?: ReactNode; badge?: number; badgeLabel?: string };
 
 // 구역 첫 화면(/shop, /instructor)은 그 주소일 때만, 나머지는 하위 경로까지 현재 메뉴로 본다
 export function isActive(pathname: string, href: string, root: string) {
@@ -23,11 +23,13 @@ export function SideNav({ items, root }: { items: NavItem[]; root: string }) {
             key={n.href}
             href={n.href}
             aria-current={on ? "page" : undefined}
-            className={`flex min-h-11 shrink-0 items-center rounded-lg px-3 text-sm ${
+            aria-label={n.badge ? `${n.label} ${n.badgeLabel ?? ""} ${n.badge}건`.replace(/\s+/g, " ") : undefined}
+            className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm ${
               on ? "bg-brand font-medium text-white" : "text-[#C9D4EA] hover:bg-navy-2 hover:text-white"
             }`}
           >
             {n.label}
+            {!!n.badge && <span className="rounded-full bg-[#F2994A] px-2 text-xs text-white">{n.badge > 99 ? "99+" : n.badge}</span>}
           </Link>
         );
       })}

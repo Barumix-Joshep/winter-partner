@@ -21,7 +21,8 @@ export type EscalateReason =
   | "low_confidence"
   | "amount_not_in_kb"
   | "no_kb"
-  | "contact_in_reply";
+  | "contact_in_reply"
+  | "rate_limited"; // 대화 요청 제한(consult_conversation)을 넘어 AI를 부르지 않음 (P22-6)
 
 export type ConsultResult = {
   mode: "auto" | "escalate";

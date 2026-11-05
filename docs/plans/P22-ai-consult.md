@@ -21,5 +21,19 @@
 4. E2E `e2e/ai-consult-kakao.spec.ts`: 가짜 모델 지연(`[가짜:지연]`) + localhost 가짜 콜백 서버(`KAKAO_CALLBACK_ALLOW_LOCAL=1`, 시험용 `CONSULT_HASH_KEY`는 playwright 설정에만).
 5. 사장님 설정 안내 `docs/kakao-setup.md`.
 
-## 다음 (P22-4~8)
+## P22-4 인스타 어댑터·웹훅·연결 (브랜치 `task/P22-4`, `task/P22-3` 위)
+1. 단위 먼저: `src/lib/channels/instagram/adapter.test.ts`(창 경계 23:59·24:00 통과, 24:01 자동 거부, 24:01·6일 23:59 사장님 승인 HUMAN_AGENT, 7일+1분 거부, Human Agent 꺼짐 거부, 서명 원문 바이트·상수 시간, 에코·스토리·리액션·첨부 해석, Send API 형식·1000바이트·실패), `webhook.test.ts`(GET verify·403·404, POST 서명 400·JSON 400·크기 400·404·200 후 처리, mid 중복, 저장만·무시, 요청 제한, 고지, escalate 안내 한 번, 늦은 전달 skipped, 로그에 원문 없음), `oauth.test.ts`(설정 꺼짐, state 서명·만료·nonce, 콜백 판단, 토큰 교환 순서, 갱신 7일·만료·실패).
+2. `config.ts` → `adapter.ts` → `webhook.ts` → `oauth.ts`·`connect.ts`·`tokens.ts` → `deps.ts` → 라우트(웹훅·연결·콜백) → 매일 정리 작업에 토큰 갱신 → 안내 정보 화면 연결 칸·해제.
+3. 공통 저장 `src/lib/channels/store.ts`로 카카오 `deps.ts`의 저장 코드를 옮겨 같이 쓴다(동작 같음).
+4. 마이그레이션 `20261105133519_consult_instagram.sql` + pgTAP `supabase/tests/consult_instagram.test.sql`.
+5. E2E `e2e/ai-consult-instagram.spec.ts`: 시험용 메타 값·암호화 키(playwright 설정에만), localhost 가짜 Graph 서버(포트 3198, `META_GRAPH_BASE`).
+6. 사장님 준비 안내 `docs/meta-setup.md`.
+
+## P22-5 사장님 인박스 (브랜치 `task/P22-5`, `task/P22-4` 위)
+1. 단위 먼저: `src/lib/channels/inbox.test.ts`(목록 순서·한국 날짜 범위·인스타 1000바이트·틀림/고침·KB 미리 채우기·갱신 값), `owner-reply.test.ts`(실제 어댑터 + 가짜 fetch: 24시간 RESPONSE, 24시간~7일 Human Agent 꺼짐 거부·켜짐 HUMAN_AGENT, 7일 초과 거부, 실패 기록·재시도 없음, 연결 끊김·손님 id 없음), 인스타 `webhook.test.ts`에 손님 id 저장(중복은 저장 안 함).
+2. 마이그레이션 `20261105141851_consult_inbox.sql` + pgTAP `supabase/tests/consult_inbox.test.sql`(다른 샵·강습팀·강사·본사·anon 거부, 카카오 sent 거부, replied/owner, 새 문의 → 다시 대기, 암호화 열 읽기 금지).
+3. 화면: `/shop/ai-consult/inbox`(목록·자동응답 기록 탭), `/shop/ai-consult/inbox/[id]`(상세·버튼 5개), 10초 서버 확인 갱신(Realtime 대신 — HttpOnly 쿠키), 샵 메뉴 대기 수.
+4. E2E `e2e/ai-consult-inbox.spec.ts`(390px): 가짜 인스타·카카오 웹훅 → 새로고침 없이 목록 → 상세 → 수정·틀림·KB 추가·승인 발송(가짜 Graph)·창 밖 거부 → 카카오 복사 → 자동응답 기록 → 다른 샵 차단.
+
+## 다음 (P22-6~8)
 설계 문서 "구현 단계" 표. 각 단계 브랜치 → PR → CI → 사장님 보고 → 병합. 마이그레이션은 원격 적용 승인 뒤.

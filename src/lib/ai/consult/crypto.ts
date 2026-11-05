@@ -1,6 +1,5 @@
 import "server-only";
 import { createCipheriv, createDecipheriv, createHmac, randomBytes } from "node:crypto";
-import { maskPhone } from "@/lib/privacy/mask";
 
 // AI 상담(P22) 비밀·개인 식별 값 보관.
 // - 채널 토큰·웹훅 비밀·손님 연락처: AES-256-GCM으로 암호화해 "v1.<base64(iv 12 | tag 16 | 암호문)>"으로만 DB에 둔다
@@ -44,12 +43,5 @@ export function hashExternalId(channel: string, externalId: string, key?: string
   return createHmac("sha256", hashKey(key ?? process.env.CONSULT_HASH_KEY)).update(`${channel}:${externalId}`).digest("hex");
 }
 
-// 화면 표시용 (전화는 010-****-1234, 이메일은 앞 한 글자만)
-export function maskContact(v: string | null | undefined): string {
-  if (!v) return "";
-  if (v.includes("@")) {
-    const [user, domain] = v.split("@");
-    return `${user.slice(0, 1)}***@${domain}`;
-  }
-  return maskPhone(v);
-}
+// 화면 표시용 가리기는 ./contact.ts (손님 글 속 연락처 뽑기와 같은 곳)
+export { maskContact } from "./contact";

@@ -6,9 +6,10 @@ import { requestTime } from "@/lib/time";
 import { aiKeyConfigured } from "@/lib/ai/flags";
 import { AI_FEATURE_LABEL, type AiFeature } from "@/lib/ai/types";
 import { setAiDefault } from "./actions";
+import { ConsultMetrics } from "./consult-metrics";
 
-// 본사: AI 기능별 사용량·비용·실패율과 플랫폼 기본값
-export default function AdminAiPage() {
+// 본사: AI 기능별 사용량·비용·실패율과 플랫폼 기본값, AI 상담 지표(P22-7)
+export default function AdminAiPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   return (
     <div className="flex flex-col gap-4">
       <Link href="/admin" className="text-sm text-ink-muted">
@@ -17,6 +18,9 @@ export default function AdminAiPage() {
       <h1 className="text-lg font-bold">AI 사용량</h1>
       <Suspense fallback={<p className="text-sm text-ink-muted">불러오는 중…</p>}>
         <Usage />
+      </Suspense>
+      <Suspense fallback={<p className="text-sm text-ink-muted">불러오는 중…</p>}>
+        <ConsultMetrics searchParams={searchParams} />
       </Suspense>
     </div>
   );
