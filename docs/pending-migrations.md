@@ -11,10 +11,6 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 
 | 마이그레이션 | 작업 | 데이터 변경 | 적용 순서 |
 |---|---|---|---|
-| `20261105133519_consult_instagram.sql` | P22-4 인스타 연결 | 없음(함수 교체·추가, 부분 고유 색인 — 인스타 채널 행 0이면 바로 생성) | **원격 적용 후 병합.** 기존 `consult_record_reply` 7개 인자 호출(카카오)은 적용 뒤에도 그대로 동작하므로 먼저 적용해도 안전 |
-| `20261105141851_consult_inbox.sql` | P22-5 사장님 인박스 | 없음(`conversations.reply_to_enc` 열 추가는 null, 사장님 답장·닫기 RPC 추가, `consult_open_inquiry` 교체, conversations 읽기 권한을 열 단위로) | **원격 적용 후 병합.** P22-4(`20261105133519_consult_instagram.sql`)를 먼저 적용한 뒤 적용한다. 인박스 목록·상세는 기존 열만 읽어 적용 전에도 열리지만, 답장 버튼(RPC)·인스타 손님 id 저장은 적용 뒤에만 동작 |
-| `20261105145008_consult_retention.sql` | P22-6 AI 상담 보존 기간 정리·[강습 등록] | **적용할 때는 없음**(함수 `purge_consult_data`·`consult_convert_inquiry` 추가, `inquiries` 고치기 권한을 열 단위로). **병합·배포 뒤 매일 정리 작업(`/api/maintenance/daily`)이 90일 지난 상담 대화·메시지·피드백을 지우고, 강습 등록으로 넘긴 문의만 연락처·대화 연결·초안을 비워 남긴다**(운영 상담 표는 2026-11-05 생성이라 첫 삭제 대상은 2027-02 이후) | **원격 적용 후 병합.** P22-4·P22-5 다음에 적용한다. 병합 전에 적용하지 않으면 매일 정리 작업이 `purge_consult_data`를 못 찾아 500(운영 기록 실패)이 되고 [강습 등록] 버튼이 동작하지 않는다 |
-| `20261105151914_consult_admin_metrics.sql` | P22-7 AI 상담 본사 지표 | 없음(본사 전용 숫자 집계 함수 `consult_admin_metrics`·`consult_admin_shop_costs`와 내부 기간 점검 함수만 추가, 표·권한 변경 없음) | **원격 적용 후 병합.** P22-4·P22-5·P22-6 다음에 적용한다(상담 표·`inquiries.conversation_id`를 읽는다). 적용 전에 배포되면 /admin/ai의 AI 상담 지표 칸만 "불러오지 못했습니다"로 나오고 나머지 화면은 그대로 |
 
 ## 적용 기록
 
@@ -28,3 +24,4 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 | 2026-11-05 | `20261105052447_audit_events.sql` | 사장님 승인 (P21, P21-10). 사전 백업: 사장님이 적용 직전에 직접. 영향: 데이터 변경 0, 제약·한도 위반 0. 원격 적용 뒤 병합 |
 | 2026-11-05 | `20261105050316_write_limits.sql` | 사장님 승인 (P21, P21-8). 사전 백업: 사장님이 적용 직전에 직접. 영향: 데이터 변경 0, 제약·한도 위반 0. 원격 적용 뒤 병합 |
 | 2026-11-05 | `20261105114656_consult_schema.sql` | 사장님 승인 (P22-1). 백업 생략(사장님 지시: 실사용자 0명, 삽입은 테스트 샵의 꺼진 기본값). 적용 직전 실사용자 0·샵 2·문의 0 재확인. 영향: 안내 템플릿 16행(모두 비활성)·상담 설정 2행(자동응답 꺼짐)·app_settings 키 3개. 적용 뒤 기존 AI 게이트(intake·bid_assist·customer_summary)·consult 정상, anon 차단 확인. 적용 뒤 PR #18 병합 |
+| 2026-11-06 | `20261105133519_consult_instagram.sql`, `20261105141851_consult_inbox.sql`, `20261105145008_consult_retention.sql`, `20261105151914_consult_admin_metrics.sql` | 사장님 승인 (P22-4~7). 06:27 KST 적용(`db push --linked --yes`, dry-run에서 정확히 4개 확인). 백업 생략(사장님 지시: 실사용자 0명, 4개 모두 함수·색인·열 추가·권한 변경뿐, 최상위 데이터 변경 문장 없음). 적용 직전 실사용자 0·샵 2(모두 테스트)·conversations/messages/inquiries/ai_feedback/shop_channels 0행, 새 열·RPC 없음, 인스타 채널 행 0(고유 색인 위반 0) 재확인. 적용 뒤 원격 목록 65개 짝 맞음, `conversations.reply_to_enc`·새 RPC 7개 확인, 두 샵의 AI 게이트(note_tidy·intake·bid_assist·consult) ok. 적용 뒤 #24(P22-3) 다음으로 #36·#37·#38·#39 병합 |
