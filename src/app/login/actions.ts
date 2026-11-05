@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { authErrorMessage, parseLogin, parseResetRequest, parseSignup, safeNext } from "@/lib/auth/validate";
+import { authErrorMessage, parseLogin, passwordProblem, parseResetRequest, parseSignup, safeNext } from "@/lib/auth/validate";
 import { clientIp, countFailure, overLimit } from "@/lib/ops/rate-limit";
 import { limitMessage } from "@/lib/ops/limits";
 
@@ -73,7 +73,8 @@ export async function requestPasswordReset(_prev: FormState | undefined, formDat
 // 재설정 링크로 들어온 뒤(세션 있음) 새 비밀번호 저장
 export async function updatePassword(_prev: FormState | undefined, formData: FormData): Promise<FormState> {
   const password = String(formData.get("password") ?? "");
-  if (password.length < 8) return { errors: { password: "비밀번호는 8자 이상이어야 합니다." } };
+  const weak = passwordProblem(password);
+  if (weak) return { errors: { password: weak } };
   if (password !== String(formData.get("confirm") ?? "")) return { errors: { confirm: "두 비밀번호가 다릅니다." } };
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
@@ -94,6 +95,12 @@ export async function signOut() {
 export async function signOutSession() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+}
+
+// 유휴 자동 로그아웃 (components/idle-logout.tsx): 이 기기 세션만 끊는다. 다른 기기(휴대폰 등)는 그대로 둔다.
+export async function signOutIdle() {
+  const supabase = await createClient();
+  await supabase.auth.signOut({ scope: "local" });
 }
 
 // 약관·개인정보 처리방침 동의 (가입 때 동의하지 않은 기존 회원)

@@ -39,7 +39,7 @@ export function ResetForm() {
   return (
     <form action={action} className="flex flex-col gap-4">
       <label className={label}>
-        새 비밀번호 <span className="font-normal text-ink-muted">(8자 이상)</span>
+        새 비밀번호 <span className="font-normal text-ink-muted">(8자 이상, 영문·숫자 포함)</span>
         <input name="password" type="password" autoComplete="new-password" minLength={8} required className={input} />
         {state?.errors?.password && <p className="mt-1 text-xs text-danger">{state.errors.password}</p>}
       </label>

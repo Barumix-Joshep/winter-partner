@@ -17,6 +17,7 @@ export function LoginForm() {
   const params = useSearchParams();
   const next = params.get("next") ?? "/";
   const confirmFailed = params.get("error") === "confirm";
+  const idle = params.get("reason") === "idle";
 
   return (
     <div className="rounded-[14px] border border-line bg-white p-5">
@@ -37,6 +38,11 @@ export function LoginForm() {
       {confirmFailed && (
         <p role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-danger">
           인증 링크가 만료됐거나 잘못됐습니다. 다시 로그인하거나 가입해 주세요.
+        </p>
+      )}
+      {idle && (
+        <p role="status" className="mb-4 rounded-lg bg-surface p-3 text-sm text-ink">
+          오래 사용하지 않아 로그아웃했습니다. 다시 로그인해 주세요.
         </p>
       )}
       {mode === "login" ? <SignInForm next={next} /> : <SignUpForm />}
@@ -114,7 +120,7 @@ function SignUpForm() {
         <FieldError message={state?.errors?.email} />
       </label>
       <label className={label}>
-        비밀번호 <span className="font-normal text-ink-muted">(8자 이상)</span>
+        비밀번호 <span className="font-normal text-ink-muted">(8자 이상, 영문·숫자 포함)</span>
         <input name="password" type="password" autoComplete="new-password" minLength={8} required className={input} />
         <FieldError message={state?.errors?.password} />
       </label>
