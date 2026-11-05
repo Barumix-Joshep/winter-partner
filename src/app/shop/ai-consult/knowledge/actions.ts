@@ -69,3 +69,12 @@ export async function saveDisclosure(_prev: KbState | undefined, formData: FormD
   revalidatePath(PATH);
   return { ok: true, message: "저장했습니다." };
 }
+
+// 인스타그램 연결 해제 (P22-4). 토큰·계정 id를 지우고 끈다. 감사 기록은 RPC가 남긴다. 대화 기록은 남는다.
+export async function disconnectInstagram() {
+  const shopId = await myShopId();
+  if (!shopId) return;
+  const supabase = await createClient();
+  await supabase.rpc("consult_disconnect_channel", { p_shop_id: shopId, p_channel: "instagram" });
+  revalidatePath(PATH);
+}
