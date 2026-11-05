@@ -64,9 +64,16 @@ export async function addAvailability(instructorId: string, date: string, from =
 // 같은 강사의 강습끼리 겹치면 DB가 막으므로 테스트마다 다른 hoursAgo를 쓴다.
 export async function moveJobToPast(jobId: string, hoursAgo = 3) {
   const now = Date.now();
+  let start = now - hoursAgo * 3600_000;
+  // 기본값(3시간 전)은 "오늘 강습"(한국 날짜)에 보여야 하는 시험용이다. 한국 자정~3시에 돌면 어제가 되므로 오늘 0시로 당긴다
+  // (시작이 지금보다 앞서기만 하면 완료 보고할 수 있다)
+  if (hoursAgo <= 3) {
+    const kstMidnight = Date.parse(`${new Date(now + 9 * 3600_000).toISOString().slice(0, 10)}T00:00:00+09:00`);
+    start = Math.min(Math.max(start, kstMidnight), now - 1_000);
+  }
   const { error } = await admin()
     .from("jobs")
-    .update({ starts_at: new Date(now - hoursAgo * 3600_000).toISOString(), ends_at: new Date(now - (hoursAgo - 2) * 3600_000).toISOString() })
+    .update({ starts_at: new Date(start).toISOString(), ends_at: new Date(start + 2 * 3600_000).toISOString() })
     .eq("id", jobId);
   if (error) throw error;
 }
