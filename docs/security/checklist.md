@@ -15,7 +15,7 @@
 ## 점검 항목
 - [!] 1. 세션 관리 — JWT 만료, 리프레시 회전·재사용 감지, Time-box, 비활성 타임아웃, signOut scope, 앱 유휴 자동 로그아웃(관리자는 더 짧게)
 - [x] 2. RLS — public 모든 표 RLS, 역할별 정책, 다른 샵·다른 강사 차단, 전속 강사에게 입찰 공고 숨김
-- [ ] 3. 서버 측 권한 검사 — API·서버 액션의 역할·소유권 검사, IDOR
+- [x] 3. 서버 측 권한 검사 — API·서버 액션의 역할·소유권 검사, IDOR
 - [ ] 4. 비밀값 — 번들·공개 env·로그·히스토리, .gitignore, gitleaks 히스토리 스캔
 - [ ] 5. 인증 설정 — 비밀번호 정책, 유출 비밀번호 차단, 이메일 인증, OTP 만료, 로그인 rate limit, Redirect URL, 관리자 MFA
 - [ ] 6. Storage — 비공개 버킷, signed URL 짧은 만료, 형식·크기 제한, 버킷 정책
@@ -63,3 +63,25 @@
 | 날짜 | 항목 | 발견 | 조치 | 커밋 |
 |---|---|---|---|---|
 | 2026-11-05 | 2. RLS | 정책 문제 없음. 행렬 테스트에 빠진 표 다수 | 역할별 차단 테스트 12개 추가 | c999c24 (security/rls-role-tests) |
+
+### 3. 서버 측 권한 검사 — [x] (1건 고침)
+근거(2026-11-05):
+- 구조: 서버 액션 32개 파일·라우트 6개. 쓰기·읽기는 거의 모두 사용자 세션 클라이언트(`src/lib/supabase/server.ts`)라 RLS·RPC 검사가 그대로 걸린다(UI 숨김에 기대지 않음). 폼에서 받은 shop_id를 그대로 쓰는 곳 없음(`formData.get("shop_id")` 검색 0건) — 샵은 서버가 `getMyShop(user.id)`로 정한다.
+- 서비스 키(RLS 우회) 사용처 12곳을 하나씩 확인:
+  - `shop/customers/summary-action.ts`: 손님을 세션 클라이언트로 `eq("shop_id", shop.id)` 조회해 확인한 뒤에만 `save_customer_summary`.
+  - `instructor/actions.ts` `jobCustomerNames`: 손님 이름을 AI 보내기 전 가리는 데만 쓰고 돌려주지 않음.
+  - `instructor/profile/cert-actions.ts` → `lib/ai/cert-read.ts`: 방금 세션 클라이언트로 만든 자기 자격증 행 id만.
+  - `components/feedback-actions.ts`: 로그인 없이 의견, IP 요청 제한, user_id는 서버가 세션에서.
+  - `join/[token]`, `consent/[token]`: 공개 토큰 흐름, IP·토큰 요청 제한 뒤 토큰 범위 RPC(`public_*`, anon 실행 권한 없음).
+  - `api/maintenance/daily`, `api/notify/dispatch`: `Authorization: Bearer CRON_SECRET` 없으면 401.
+  - `lib/notify/dispatch.ts`, `lib/ai/client.ts`, `lib/ops/rate-limit.ts`, `lib/ops/record.ts`: 서버 내부 기록·발송.
+- 라우트: `settlements/[id]/pdf`는 로그인 확인 + 세션 클라이언트로 조회(RLS로 남의 정산서는 없음 → 404) + 접속 기록. `shop/settlements/export`는 로그인 401·샵 관리자 아니면 403, 자기 샵만. `shop/import/template`는 정적 양식. `auth/confirm`은 토큰 교환.
+- RLS를 우회하는 security definer 함수: 로그인 사용자가 실행할 수 있는 50개 모두 본문에서 호출자를 확인(`auth.uid()`·`private.my_*`·멤버 확인 함수), anon 실행 가능 0개(`pg_proc` 조회). 함수별 상세는 항목 7.
+- IDOR: 다른 샵의 강습·정산·입찰을 ID로 조회·수정 → 항목 2 테스트(`rls_roles.test.sql` 7~11: 0행)와 기존 `rls.test.sql`·`settlements.test.sql`·`bids.test.sql`.
+
+발견·조치: `src/app/instructor/actions.ts` `tidyNote`(수업 메모 AI 정리)가 강사 역할만 보고, 강습이 RLS로 **보이기만 하면**(다른 샵 입찰 공고 포함) 그 샵 이름으로 AI를 불렀다 → 강사가 다른 샵 공고 id로 반복 호출하면 그 샵의 하루 AI 상한(200)과 사용 기록을 소진. 손님 정보 노출은 없음. 자기 배정(`instructor_assignments`)을 먼저 확인하게 고침. 브랜치 `security/server-authz` 커밋 `edfd78b`(푸시, 병합 안 함). 재현 테스트 `src/app/instructor/tidy-note.test.ts`(수정 전 1개 실패 → 수정 뒤 통과). 단위 269, pgTAP 583, E2E 핵심 55(메모 정리 E2E 포함), 린트·타입·빌드 통과. 기능 영향: 배정된 강습에서 쓰는 정상 흐름은 그대로.
+- 참고(고치지 않음): 크론 비밀값 비교가 일반 문자열 비교(`!==`)다. 네트워크 너머 시간 차 공격은 현실적이지 않아 낮음 — 남김.
+
+| 날짜 | 항목 | 발견 | 조치 | 커밋 |
+|---|---|---|---|---|
+| 2026-11-05 | 3. 서버 측 권한 검사 | tidyNote가 배정 확인 없이 다른 샵 AI 상한 사용 가능 | 자기 배정 확인 추가 + 재현 테스트 | edfd78b (security/server-authz) |
