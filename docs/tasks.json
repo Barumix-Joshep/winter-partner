@@ -813,7 +813,7 @@
   "title": "Supabase 세션 Time-box·비활성 타임아웃 켜기 (Pro 전환 때)",
   "status": "todo",
   "due": "2026-12-20",
-  "note": "체크리스트 1. 세션 관리. 지금 원격 timebox·inactivity_timeout 0(꺼짐, Pro 기능). Pro 전환 시 Authentication → Sessions에서 Time-box 7일·Inactivity timeout 24시간 권장. 앱 쪽 유휴 로그아웃(security/session-idle-logout, 25df620) 병합 검토도 함께"
+  "note": "체크리스트 1. 세션 관리. 지금 원격 timebox·inactivity_timeout 0(꺼짐, Pro 기능). Pro 전환 시 Authentication → Sessions에서 Time-box 7일·Inactivity timeout 24시간 권장. 앱 쪽 유휴 로그아웃(security/session-idle-logout, 25df620) 병합 검토도 함께 → 2026-11-05 밤: 앱 쪽 유휴 자동 로그아웃 병합(PR #25, 본사 30분·샵 2시간·강사 7일). 남은 것(사장님): Supabase Pro 전환 때 Time-box·Inactivity timeout 켜기"
  },
  {
   "id": "P21-2",
@@ -821,7 +821,7 @@
   "title": "Supabase 인증 설정 강화 (비밀번호 규칙·비밀번호 변경 재인증·OTP 만료·유출 비밀번호 차단)",
   "status": "todo",
   "due": "2026-12-20",
-  "note": "체크리스트 5. 인증 설정. Authentication → Providers → Email(또는 Policies): 최소 길이 8·Letters and digits, Secure password change 켜기, Email OTP 만료 3600→900초. 유출 비밀번호 차단(HaveIBeenPwned)은 Pro 기능(확인 필요). 코드 쪽(security/password-policy, f20ef38) 병합과 같이"
+  "note": "체크리스트 5. 인증 설정. Authentication → Providers → Email(또는 Policies): 최소 길이 8·Letters and digits, Secure password change 켜기, Email OTP 만료 3600→900초. 유출 비밀번호 차단(HaveIBeenPwned)은 Pro 기능(확인 필요). 코드 쪽(security/password-policy, f20ef38) 병합과 같이 → 2026-11-05 밤: 앱·로컬 규칙(8자+영문·숫자) 병합(PR #23, 기존 비밀번호 로그인은 그대로). 남은 것(사장님): 운영 Supabase 대시보드에서 최소 길이 8·Letters and digits, Secure password change, OTP 900초, 유출 비밀번호 차단(Pro)"
  },
  {
   "id": "P21-3",
@@ -861,7 +861,7 @@
   "title": "CSP 강제 전환 결정 (Report-Only → 강제)",
   "status": "todo",
   "due": "2026-12-20",
-  "note": "체크리스트 9. 웹 보안 헤더와 쿠키. 운영 CSP는 Report-Only. 시범 샵 실제 기기에서 위반 보고가 없으면 next.config.ts CSP_ENFORCE=true로 전환(코드 1줄 + E2E). 쿠키 HttpOnly 브랜치(security/auth-cookies, 98c1dd2) 병합 검토와 함께"
+  "note": "체크리스트 9. 웹 보안 헤더와 쿠키. 운영 CSP는 Report-Only. 시범 샵 실제 기기에서 위반 보고가 없으면 next.config.ts CSP_ENFORCE=true로 전환(코드 1줄 + E2E). 쿠키 HttpOnly 브랜치(security/auth-cookies, 98c1dd2) 병합 검토와 함께 → 2026-11-05 밤: 쿠키 HttpOnly·Secure·Lax 병합(PR #26, 운영 확인: JS로 못 읽음·로그아웃 정상). 남은 것(사장님): CSP 강제 전환 결정(시범 기기에서 위반 보고 확인 뒤)"
  },
  {
   "id": "P21-8",
@@ -907,9 +907,9 @@
   "id": "P22-3",
   "phase": "22 AI 상담",
   "title": "카카오 어댑터·웹훅(즉답/콜백 1회), 상담톡 껍데기, kakao-setup.md",
-  "status": "todo",
+  "status": "blocked",
   "due": "2026-12-31",
-  "note": "사장님 할 일: 카카오 비즈니스 채널·챗봇 관리자센터(스킬 서버 주소 등록, 블록 콜백 켜기). 실제 콜백은 배포 채널에서만 확인 가능 → P22-8 시범에서 (목표일은 임시 — 사장님 조정)"
+  "note": "PR #24 CI 통과, 병합 대기(사장님 승인, 마이그레이션 없음). 운영 사용 전 Vercel CONSULT_HASH_KEY 필요. 카카오 콜백 도메인·봇 id·콜백 켜기는 P22-8 시범에서 확인(docs/kakao-setup.md). 채널 연결 화면 전까지는 본사가 shop_channels 행을 만든다"
  },
  {
   "id": "P22-4",
@@ -917,7 +917,7 @@
   "title": "인스타 어댑터·웹훅(verify·서명)·Instagram 로그인 OAuth·토큰 갱신, 24시간·7일 강제",
   "status": "todo",
   "due": "2026-12-31",
-  "note": "사장님 할 일: 메타 개발자 앱·비즈니스 인증·앱 심사(Advanced Access, Human Agent — 수 주 걸릴 수 있어 일찍), Vercel에 META_APP_ID·META_APP_SECRET·META_VERIFY_TOKEN. 착수 전 Human Agent·장기 토큰 공식 문서 재확인 (목표일은 임시 — 사장님 조정)"
+  "note": "2026-11-05 밤 작업 중(task/P22-4, P22-3 위). 사장님 할 일: 메타 개발자 앱·비즈니스 인증·앱 심사(Advanced Access, Human Agent — 수 주 걸릴 수 있어 일찍), Vercel에 META_APP_ID·META_APP_SECRET·META_VERIFY_TOKEN. 착수 전 Human Agent·장기 토큰 공식 문서 재확인 (목표일은 임시 — 사장님 조정)"
  },
  {
   "id": "P22-5",
