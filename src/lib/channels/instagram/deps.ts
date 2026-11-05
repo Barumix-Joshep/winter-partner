@@ -37,6 +37,7 @@ export function instagramDeps(defer: InstagramWebhookDeps["defer"]): InstagramWe
     hasOpenInquiry: store.hasOpenInquiry,
     openInquiry: store.openInquiry,
     markDisclosed: store.markDisclosed,
+    saveReplyTarget: (conversationId, senderId) => store.saveReplyTarget(conversationId, encryptSecret(senderId)),
     sender(ch) {
       const cfg = instagramConfig();
       if (!cfg || !ch.credentials_enc || !ch.external_id) return null;

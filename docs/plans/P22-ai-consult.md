@@ -29,5 +29,11 @@
 5. E2E `e2e/ai-consult-instagram.spec.ts`: 시험용 메타 값·암호화 키(playwright 설정에만), localhost 가짜 Graph 서버(포트 3198, `META_GRAPH_BASE`).
 6. 사장님 준비 안내 `docs/meta-setup.md`.
 
-## 다음 (P22-5~8)
+## P22-5 사장님 인박스 (브랜치 `task/P22-5`, `task/P22-4` 위)
+1. 단위 먼저: `src/lib/channels/inbox.test.ts`(목록 순서·한국 날짜 범위·인스타 1000바이트·틀림/고침·KB 미리 채우기·갱신 값), `owner-reply.test.ts`(실제 어댑터 + 가짜 fetch: 24시간 RESPONSE, 24시간~7일 Human Agent 꺼짐 거부·켜짐 HUMAN_AGENT, 7일 초과 거부, 실패 기록·재시도 없음, 연결 끊김·손님 id 없음), 인스타 `webhook.test.ts`에 손님 id 저장(중복은 저장 안 함).
+2. 마이그레이션 `20261105141851_consult_inbox.sql` + pgTAP `supabase/tests/consult_inbox.test.sql`(다른 샵·강습팀·강사·본사·anon 거부, 카카오 sent 거부, replied/owner, 새 문의 → 다시 대기, 암호화 열 읽기 금지).
+3. 화면: `/shop/ai-consult/inbox`(목록·자동응답 기록 탭), `/shop/ai-consult/inbox/[id]`(상세·버튼 5개), 10초 서버 확인 갱신(Realtime 대신 — HttpOnly 쿠키), 샵 메뉴 대기 수.
+4. E2E `e2e/ai-consult-inbox.spec.ts`(390px): 가짜 인스타·카카오 웹훅 → 새로고침 없이 목록 → 상세 → 수정·틀림·KB 추가·승인 발송(가짜 Graph)·창 밖 거부 → 카카오 복사 → 자동응답 기록 → 다른 샵 차단.
+
+## 다음 (P22-6~8)
 설계 문서 "구현 단계" 표. 각 단계 브랜치 → PR → CI → 사장님 보고 → 병합. 마이그레이션은 원격 적용 승인 뒤.

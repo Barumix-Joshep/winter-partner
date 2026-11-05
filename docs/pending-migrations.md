@@ -12,6 +12,7 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 | 마이그레이션 | 작업 | 데이터 변경 | 적용 순서 |
 |---|---|---|---|
 | `20261105133519_consult_instagram.sql` | P22-4 인스타 연결 | 없음(함수 교체·추가, 부분 고유 색인 — 인스타 채널 행 0이면 바로 생성) | **원격 적용 후 병합.** 기존 `consult_record_reply` 7개 인자 호출(카카오)은 적용 뒤에도 그대로 동작하므로 먼저 적용해도 안전 |
+| `20261105141851_consult_inbox.sql` | P22-5 사장님 인박스 | 없음(`conversations.reply_to_enc` 열 추가는 null, 사장님 답장·닫기 RPC 추가, `consult_open_inquiry` 교체, conversations 읽기 권한을 열 단위로) | **원격 적용 후 병합.** P22-4(`20261105133519_consult_instagram.sql`)를 먼저 적용한 뒤 적용한다. 인박스 목록·상세는 기존 열만 읽어 적용 전에도 열리지만, 답장 버튼(RPC)·인스타 손님 id 저장은 적용 뒤에만 동작 |
 
 ## 적용 기록
 
