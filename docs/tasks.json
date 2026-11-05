@@ -888,6 +888,14 @@
   "note": "체크리스트 12. 감사 로그. 20261105052447_audit_events.sql은 2026-11-05 사장님 승인(P21)으로 원격 적용(적용 직전 위반 0 재확인, 사전 백업은 사장님), PR #9 병합, 배포 뒤 check:prod 17/17·운영 스모크 통과. 남은 것: 보존 기간 결정(지금은 삭제 불가, 열람 기록은 2년). 정하면 정리 작업을 연다. 본사 화면에 감사 기록 보기는 후속"
  },
  {
+  "id": "P21-11",
+  "phase": "21 보안",
+  "title": "뷰 쓰기 권한 회수 (instructor_assignments 등, 긴급 P1)",
+  "status": "blocked",
+  "due": "2026-11-06",
+  "note": "2026-11-06 발견(P21-5 작업 중): Supabase 기본 권한 때문에 authenticated가 instructor_assignments 뷰에 쓰기 권한 → 강사가 뷰로 미승인 배정 삭제 가능(로컬). 운영도 같은 상태(읽기 전용 덤프). 마이그레이션 20261105230951_view_write_revoke.sql + view_grants.test.sql. 사장님 승인 대기: 20261105214254(comment)와 함께 원격 적용 → 병합"
+ },
+ {
   "id": "P22-1",
   "phase": "22 AI 상담",
   "title": "스키마·RLS·웹훅 RPC, 암호화·해시 유틸, 안내 정보 화면",

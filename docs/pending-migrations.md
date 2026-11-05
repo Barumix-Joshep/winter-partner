@@ -11,7 +11,8 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 
 | 마이그레이션 | 작업 | 데이터 변경 | 적용 순서 |
 |---|---|---|---|
-| `20261105214254_instructor_assignments_comment.sql` | P21-5 Security Advisor 예외 기록 | 없음(`instructor_assignments` 뷰에 설명 comment만, 정의·권한 그대로) | 순서 무관(화면이 읽는 표·열 변화 없음). 백업 생략 가능(실사용자 0명, 설명만) |
+| `20261105214254_instructor_assignments_comment.sql` | P21-5 Security Advisor 예외 기록 | 없음(`instructor_assignments` 뷰에 설명 comment만, 정의·권한 그대로) | **1번째**(같은 승인으로 `20261105230951_view_write_revoke.sql`과 함께). 화면이 읽는 표·열 변화 없음. 백업 생략 가능(실사용자 0명, 설명만) |
+| `20261105230951_view_write_revoke.sql` | P21-11 긴급 P1 뷰 쓰기 권한 회수 | 없음(권한만: public 모든 뷰에서 anon·authenticated·PUBLIC의 INSERT·UPDATE·DELETE·TRUNCATE·REFERENCES·TRIGGER 회수, select 그대로) | **2번째**(`20261105214254` 다음, 같은 승인). 앱은 두 뷰를 읽기만 해서 병합 전후 어느 쪽이 먼저여도 화면 영향 없음 — 그래도 원격 적용 뒤 병합. 백업 생략 가능(실사용자 0명, 권한만) |
 
 ## 적용 기록
 
