@@ -9,9 +9,7 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 
 ## 대기 중
 
-| 마이그레이션 | 작업 | 화면이 새 열·표를 읽나 | 사전 백업 |
-|---|---|---|---|
-| `20261105114656_consult_schema.sql` | P22-1 AI 상담: 새 표 6개(shop_channels·shop_consult_settings·shop_knowledge·conversations·messages·ai_feedback), inquiries 열 추가, 웹훅 RPC, ai_gate 상담 전용 상한 | **예** (`/shop/ai-consult/knowledge`가 새 표를 읽음) → **원격 적용 뒤 병합** | **필수** (데이터 변경: 기존 샵마다 기본 안내 템플릿 8행 비활성 추가, app_settings 3개 키) |
+없음.
 
 ## 적용 기록
 
@@ -24,3 +22,4 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 | 2026-11-05 | `20261105044233_input_ranges.sql` | 사장님 승인 (P21, P21-6). 사전 백업: 사장님이 적용 직전에 직접. 영향: 데이터 변경 0, 제약·한도 위반 0. 원격 적용 뒤 병합 |
 | 2026-11-05 | `20261105052447_audit_events.sql` | 사장님 승인 (P21, P21-10). 사전 백업: 사장님이 적용 직전에 직접. 영향: 데이터 변경 0, 제약·한도 위반 0. 원격 적용 뒤 병합 |
 | 2026-11-05 | `20261105050316_write_limits.sql` | 사장님 승인 (P21, P21-8). 사전 백업: 사장님이 적용 직전에 직접. 영향: 데이터 변경 0, 제약·한도 위반 0. 원격 적용 뒤 병합 |
+| 2026-11-05 | `20261105114656_consult_schema.sql` | 사장님 승인 (P22-1). 백업 생략(사장님 지시: 실사용자 0명, 삽입은 테스트 샵의 꺼진 기본값). 적용 직전 실사용자 0·샵 2·문의 0 재확인. 영향: 안내 템플릿 16행(모두 비활성)·상담 설정 2행(자동응답 꺼짐)·app_settings 키 3개. 적용 뒤 기존 AI 게이트(intake·bid_assist·customer_summary)·consult 정상, anon 차단 확인. 적용 뒤 PR #18 병합 |
