@@ -115,8 +115,12 @@ export async function tidyNote(jobId: string, raw: string): Promise<TidyState> {
   const text = raw.slice(0, 1000).trim();
   if (text.length < 5) return { message: "메모를 조금 더 적어 주세요." };
   const supabase = await createClient();
-  const { data: job } = await supabase.from("jobs").select("shop_id").eq("id", jobId).maybeSingle();
-  const shopId = (job?.shop_id as string) ?? null;
+  // 자기가 배정된 강습만 (입찰 공고처럼 보이기만 하는 강습으로 그 샵의 AI 상한을 쓰지 못하게)
+  const [{ data: mine }, { data: job }] = await Promise.all([
+    supabase.from("instructor_assignments").select("job_id").eq("job_id", jobId).maybeSingle(),
+    supabase.from("jobs").select("shop_id").eq("id", jobId).maybeSingle(),
+  ]);
+  const shopId = mine ? ((job?.shop_id as string) ?? null) : null;
   if (!shopId || !(await isAiEnabled(shopId, "note_tidy"))) return { message: "지금은 정리 기능을 쓸 수 없습니다." };
   const r = await callStructured({
     feature: "note_tidy",
