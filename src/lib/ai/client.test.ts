@@ -85,6 +85,25 @@ describe("callStructured", () => {
     vi.useRealTimers();
   });
 
+  it("호출별 timeoutMs·retries: 3.5초에 끊고 다시 부르지 않는다 (AI 상담 카카오 경로)", async () => {
+    vi.useFakeTimers();
+    const t = vi.fn<AiTransport>((_req, signal) => new Promise((_, reject) => signal.addEventListener("abort", () => reject(new Error("aborted")))));
+    const { d, record } = deps(t);
+    const p = callStructured({ ...base, timeoutMs: 3_500, retries: 0 }, d);
+    await vi.advanceTimersByTimeAsync(3_500);
+    expect(await p).toBeNull();
+    expect(t).toHaveBeenCalledTimes(1);
+    expect(record).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it("rateSubject로 짧은 시간 제한 단위를 바꾼다 (손님 대화별)", async () => {
+    const { d } = deps(async () => ({ input: { ok: true }, usage: { input_tokens: 1, output_tokens: 1 } }));
+    const rateOk = vi.fn(async () => true);
+    await callStructured({ ...base, userId: null, rateSubject: "consult:c1" }, { ...d, rateOk });
+    expect(rateOk).toHaveBeenCalledWith("consult:c1");
+  });
+
   it("도구 이름·스키마·모델을 그대로 넘긴다", async () => {
     const t = vi.fn<AiTransport>(async () => ({ input: { ok: true }, usage: { input_tokens: 1, output_tokens: 1 } }));
     const { d } = deps(t);
