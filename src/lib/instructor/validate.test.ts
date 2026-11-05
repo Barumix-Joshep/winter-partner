@@ -31,6 +31,13 @@ describe("parseInstructorProfile", () => {
     }
   });
 
+  it("강습료는 1원~1,000만 원 (DB 제약 instructors_base_rate_range와 같음)", () => {
+    expect(parseInstructorProfile(form({ ...base, base_rate: "0" })).ok).toBe(false);
+    expect(parseInstructorProfile(form({ ...base, base_rate: "10000001" })).ok).toBe(false);
+    expect(parseInstructorProfile(form({ ...base, base_rate: "99999999999" })).ok).toBe(false);
+    expect(parseInstructorProfile(form({ ...base, base_rate: "10,000,000" })).ok).toBe(true);
+  });
+
   it("강습료는 0 이상 정수, 소개는 500자까지", () => {
     expect(parseInstructorProfile(form({ ...base, base_rate: "-1" })).ok).toBe(false);
     expect(parseInstructorProfile(form({ ...base, base_rate: "8만" })).ok).toBe(false);
