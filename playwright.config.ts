@@ -49,7 +49,7 @@ export default defineConfig({
       META_APP_ID: "e2e-app",
       META_APP_SECRET: "e2e-only-meta-app-secret-not-a-secret",
       META_VERIFY_TOKEN: "e2e-verify-token",
-      CONSULT_ENCRYPTION_KEY: "ZTJlLW9ubHktY29uc3VsdC1lbmMta2V5LTMyYnl0ZXM=",
+      CONSULT_ENCRYPTION_KEY: Buffer.from("e2e-only-consult-enc-key-32bytes").toString("base64"), // 시험용 32바이트(비밀 아님)
       META_GRAPH_BASE: `http://127.0.0.1:${IG_FAKE_GRAPH_PORT}`,
     },
   },
