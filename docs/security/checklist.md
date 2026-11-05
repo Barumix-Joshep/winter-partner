@@ -179,6 +179,24 @@
 
 사람 조치: `docs/tasks.json` P21-5 — 병합·원격 적용 승인. Supabase 대시보드 → **Advisors → Security Advisor** 결과(항목 이름·대상)를 알려 주시면 체크리스트에 반영합니다(제가 대시보드에 접근하지 않음).
 
+**Security Advisor 결과 (2026-11-06, 사장님 공유)**: 경고 1건 — `security_definer_view` / `public.instructor_assignments`. 사장님 결정으로 아래 "허용된 예외"로 남긴다.
+
+#### 허용된 예외
+| 대상 | 경고 | 검토일 |
+|---|---|---|
+| `public.instructor_assignments` (뷰) | `security_definer_view` | 2026-11-06 |
+
+- **이유**: 팀원에게 팀 확정 금액(`assignments.final_rate`)을 숨기면서 자기 일정은 보이게 한다(P18-3 A1, P0). 팀원은 `assignments`의 팀 강습 행을 RLS로 못 읽고(`assignee_read`: 자기 직접 배정 `via_shop_id is null`이거나 그 팀 멤버만), 강사 화면(`src/app/instructor/` 오늘·일정·보고할 강습·수입)은 이 뷰로만 본다. 뷰가 소유자 권한이라 RLS를 거치지 않고 아래 장치로 범위를 좁힌다.
+- **로컬 확인 (2026-11-06, 되돌린 트랜잭션)**: 팀원(박스키)에게 팀 강습 배정 1건(금액 185,000)을 두고 — 지금 뷰: 1행(팀 강습 1, 금액 보이는 행 0). `alter view … set (security_invoker = true)` 뒤 같은 사용자: **0행** → 팀원 일정이 비어 버린다. 그래서 invoker로 바꾸지 않는다(바꾸려면 금액 열을 뺀 별도 정책·표 설계가 필요).
+- **안전장치 5개** (모두 `supabase/migrations/20261102151000_access_hardening.sql`, 로컬 DB에서 확인):
+  1. 자기 배정 필터 — `where a.instructor_id = private.my_instructor_id()`(21행). 로그인하지 않았거나 강사가 아니면 0행.
+  2. `security_barrier` — `with (security_barrier = true)`(16행), `pg_class.reloptions = {security_barrier=true}`. 사용자 조건이 필터보다 먼저 돌아 남의 행을 엿보지 못한다.
+  3. anon 회수 — `revoke all … from public, anon`(22행). 권한 조회 결과 anon 행 없음, 읽기는 `grant select … to authenticated`(23행).
+  4. 팀 강습 금액 null — `case when a.via_shop_id is null then a.final_rate end as final_rate`(18행).
+  5. 테스트 — `supabase/tests/access_hardening.test.sql`(팀원 표 직접 0행·뷰 금액 null·자기 강습 보임·프리랜서 금액 보임·남의 강습 0행), `supabase/tests/instructor_assignments_view.test.sql`(열 목록 고정·anon 거부·팀 행 전부 금액 null·다른 강사 배정 0행).
+- 뷰에 설명(comment)을 달았다(`20261105214254_instructor_assignments_comment.sql`): 열·where를 바꾸면 이 항목과 테스트를 같이 고친다.
+- **추가 발견 (사장님 결정 필요, 코드는 그대로 둠)**: Supabase 기본 권한 때문에 authenticated가 이 뷰에 SELECT 말고도 INSERT·UPDATE·DELETE(·TRUNCATE·REFERENCES·TRIGGER) 권한을 갖고, 뷰가 자동 갱신 가능(`is_updatable = YES`)하다. 소유자 권한으로 쓰기가 되어 RLS를 거치지 않는다. 로컬(되돌린 트랜잭션)에서 강사가 **뷰로 자기 미승인 배정을 지울 수 있었다**(DELETE 1행 — 표에는 강사 삭제 정책이 없고, 취소·벌점·알림 흐름을 건너뛰며 감사 기록도 삭제는 남기지 않는다). 팀원이 표에서는 못 보는 팀 강습 행의 `lesson_note`도 고쳐졌다(완료 시각·노트 말고는 `guard_assignment_columns`가 막음, 승인된 배정 삭제는 `guard_approved_assignment`가 막음). INSERT는 `final_rate` not null로 실패. 앱은 이 뷰를 읽기만 한다. 제안: `revoke insert, update, delete, truncate, references, trigger on public.instructor_assignments from authenticated`(+ 회귀 테스트) — 별도 작업으로.
+
 | 날짜 | 항목 | 발견 | 조치 | 커밋 |
 |---|---|---|---|---|
 | 2026-11-05 | 7. DB 함수 | search_path 미고정 invoker 함수 4개(낮음). definer·권한·동적 SQL 문제 없음 | search_path 고정 + 회귀 테스트, 적용·Advisor 확인은 P21-5 | ddd4b43 (security/db-functions) |
