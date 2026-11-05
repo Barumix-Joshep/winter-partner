@@ -57,6 +57,8 @@
   - [승인·발송(인스타)]: 손님 인스타 id는 해시만 있어 보낼 수 없으므로, 웹훅이 손님 id를 암호화해 `conversations.reply_to_enc`에 둔다(샵 관리자도 못 읽는 열). 발송 때만 서버가 서비스 키로 읽어 풀고 어댑터 `send(approvedByOwner=true)` — 24시간 안 RESPONSE, 24시간~7일은 `META_HUMAN_AGENT=1`일 때만 HUMAN_AGENT, 7일 초과 거부(거부는 기록하지 않고 이유만 표시). 대화가 우리 샵인지는 먼저 세션(RLS)으로 확인한다. 이 열이 생기기 전에 온 대화는 "인스타그램 앱에서 직접 답해 주세요".
   - [복사(카카오)]: 클립보드 쓰기만(읽지 않음) → `skipped`로 기록·문의 replied. 연락처는 서버에서 풀어 `maskContact`한 값만 화면에 보낸다.
 - 본사 `/admin/ai`에 지표 카드(자동응답률·에스컬레이션률·평균 첫 응답시간·틀림 건수·샵별 LLM 비용).
+  - **P22-7 구현**: 본사는 상담 표를 RLS로 못 읽으므로 숫자만 돌려주는 security definer RPC `consult_admin_metrics(p_from, p_to)`·`consult_admin_shop_costs(p_from, p_to)`(본사만, 출력은 숫자·uuid만, 기간 1~400일)로 집계한다. 마이그레이션 `20261105151914_consult_admin_metrics.sql`. 기간은 한국 시간 달(기본 이번 달, `?month=YYYY-MM`, 최근 12개월 선택).
+  - 자동응답률 = 손님 메시지 중 같은 대화의 바로 다음 메시지가 보낸 AI 답(role `ai`, `sent`)인 비율. 에스컬레이션률 = 손님 메시지가 있었던 대화 중 그 달 문의(`inquiries.conversation_id`)가 열린 대화 비율(대화당 1번). 첫 응답 시간 = 대화마다 그 달 첫 손님 메시지 → 첫 보낸 AI 답 또는 사장님 답장(`failed` 제외), 평균·중앙값. 틀림 = `ai_feedback` wrong·edited 수. 샵별 비용 = `ai_usage` feature `consult`의 호출·실패·비용, 한국 하루 최대 호출 ÷ 상한(300)·상한 닿은 날 수. 분모가 0이면 "—"(`src/lib/ai/consult/metrics.ts`).
 
 ## 채널 흐름
 **카카오** `POST /api/webhooks/kakao/[token]`
