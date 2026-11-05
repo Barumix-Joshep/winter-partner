@@ -10,7 +10,7 @@ import { admin, login } from "./helpers";
 const SHOP3 = "b0000000-0000-0000-0000-000000000003";
 const ACCOUNT = "17841400000000077";
 const SECRET = "e2e-only-meta-app-secret-not-a-secret"; // playwright.config.ts와 같은 시험용 값
-const ENC_KEY = Buffer.from("ZTJlLW9ubHktY29uc3VsdC1lbmMta2V5LTMyYnl0ZXM=", "base64");
+const ENC_KEY = Buffer.from("e2e-only-consult-enc-key-32bytes"); // playwright.config.ts와 같은 시험용 32바이트
 const GRAPH_PORT = 3198; // playwright.config.ts IG_FAKE_GRAPH_PORT
 
 type Hit = { url: string; auth: string | undefined; body: Record<string, unknown> };
