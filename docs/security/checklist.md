@@ -20,7 +20,7 @@
 - [!] 5. 인증 설정 — 비밀번호 정책, 유출 비밀번호 차단, 이메일 인증, OTP 만료, 로그인 rate limit, Redirect URL, 관리자 MFA
 - [!] 6. Storage — 비공개 버킷, signed URL 짧은 만료, 형식·크기 제한, 버킷 정책
 - [!] 7. DB 함수 — SECURITY DEFINER search_path, anon/authenticated 실행 권한, 동적 SQL, `supabase db lint`·Security Advisor
-- [ ] 8. 입력 검증·오류 처리 — 서버 검증, 금액·정산 범위, 오류 메시지 누출
+- [!] 8. 입력 검증·오류 처리 — 서버 검증, 금액·정산 범위, 오류 메시지 누출
 - [ ] 9. 웹 보안 헤더·쿠키 — CSP, HSTS, frame-ancestors, Referrer-Policy, 쿠키 속성, CORS
 - [ ] 10. 남용 방지 — 쓰기 API rate limit, 중복 입찰
 - [ ] 11. 개인정보 — 수집 최소화, 암호화, 마스킹, 주민번호 미수집, 로그
@@ -158,3 +158,18 @@
 | 날짜 | 항목 | 발견 | 조치 | 커밋 |
 |---|---|---|---|---|
 | 2026-11-05 | 7. DB 함수 | search_path 미고정 invoker 함수 4개(낮음). definer·권한·동적 SQL 문제 없음 | search_path 고정 + 회귀 테스트, 적용·Advisor 확인은 P21-5 | ddd4b43 (security/db-functions) |
+
+### 8. 입력 검증·오류 처리 — [!] (DB 범위 제약 추가, 운영 적용은 승인 필요)
+근거(2026-11-05):
+- **서버 검증**: zod는 쓰지 않고 서버 쪽 전용 파서로 검증한다 — `src/lib/auth/validate.ts`(로그인·가입), `src/lib/shop/job.ts` `parseJob`(시간·인원·금액, 지난 시간·12시간 초과 차단), `src/lib/instructor/validate.ts`(프로필), `src/lib/instructor/cert.ts`(파일), `src/lib/feedback/parse.ts`, `src/lib/form.ts`. 서버 액션은 FormData를 이 파서에 먼저 통과시킨다. 화면의 `required`·`minLength`에 기대지 않는다.
+- **금액·정산**: P19에서 `jobs.instructor_rate`·`assignments.final_rate`·`bids.amount` 1원~1,000만 원, `job_prices.customer_price` 0~1,000만 원 CHECK, RPC는 `private.check_won`으로 한국어 안내. 정산서(`settlements` gross·withholding·net, `settlement_items.amount`)는 `generate_settlements`(definer)가 위 값으로만 계산하고, 샵·강사가 직접 고치는 경로는 RLS로 0행(직접 시도 확인).
+- **문제**: DB 제약이 없어 API로 바로 쓰면 범위를 벗어나던 값 — 강사가 `instructors.base_rate`를 -1·20억으로(강사 찾기 화면에 표시), 샵이 `exclusive_invites.exclusive_rate`를 -1로, 샵이 `jobs.student_count`를 -5로(진행 중 강습) 저장할 수 있었다(직접 시도로 확인). 앱의 강습료 검사도 숫자만 보고 상한이 없었다.
+- **오류 누출**: 서버 액션은 DB 오류를 고정 한국어 문구로 바꿔 돌려준다(`error.message.includes(...)`로 골라 우리 문구만). 원문을 그대로 넘기는 곳은 `src/app/shop/jobs/[id]/actions.ts:129` 하나로, 우리가 RPC에서 던진 한국어 문구 4종일 때만. 오류 화면(`src/components/error-screen.tsx`)은 오류 번호(digest)만 보이고 내용·스택은 운영 기록(ops_events)으로. 라우트는 고정 문구(401·403·404). Next 운영 빌드는 서버 오류 메시지를 화면에 보내지 않는다.
+
+조치: 브랜치 `security/input-ranges` 커밋 `3418041`(푸시, 병합 안 함). 마이그레이션 `20261105044233_input_ranges.sql` — `instructors_base_rate_range`·`exclusive_invites_rate_range`·`shop_instructors_rate_range`(null 또는 1~1,000만 원), `jobs_student_count_by_type`(1:1=1, 1:2=2, 그룹=3~10). **적용 전 운영 위반 0건**(읽기 조회). 앱 강습료 검사에 같은 범위. 테스트 `supabase/tests/input_ranges.test.sql` 8개(**수정 전 7개 실패 확인** → 통과), 단위 1개. pgTAP 전체, 단위 268, 전체 E2E 69, 린트·타입·빌드 통과. 기능 영향: 정상 화면 흐름은 같다(화면이 이미 같은 범위로 막고 있음).
+
+사람 조치: `docs/tasks.json` P21-6 — 병합·원격 적용 승인(적용 직전 위반 수를 다시 세어 보고).
+
+| 날짜 | 항목 | 발견 | 조치 | 커밋 |
+|---|---|---|---|---|
+| 2026-11-05 | 8. 입력 검증·오류 처리 | 강사 단가·전속 단가·수강 인원 DB 제약 없음(API로 음수·과대값 저장). 오류 누출 없음 | CHECK 제약 4개 + 앱 상한, 적용은 P21-6 | 3418041 (security/input-ranges) |

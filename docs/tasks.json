@@ -846,5 +846,13 @@
   "status": "todo",
   "due": "2026-12-20",
   "note": "체크리스트 7. DB 함수. security/db-functions(ddd4b43) 20261105043347_fn_search_path.sql(설정만, 데이터 변경 없음) 병합·원격 적용 승인. 대시보드 Advisors → Security Advisor 결과를 알려 주시면 반영(예상: instructor_assignments 뷰 security_definer_view는 의도된 설계)"
+ },
+ {
+  "id": "P21-6",
+  "phase": "21 보안",
+  "title": "금액·인원 범위 제약 마이그레이션 병합·원격 적용 승인",
+  "status": "todo",
+  "due": "2026-12-20",
+  "note": "체크리스트 8. 입력 검증과 오류 처리. security/input-ranges(3418041) 20261105044233_input_ranges.sql — CHECK 제약 4개, 데이터 변경 없음, 운영 위반 0건(11/5). 적용 직전 위반 수 다시 확인"
  }
 ]
