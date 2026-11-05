@@ -891,9 +891,9 @@
   "id": "P21-11",
   "phase": "21 보안",
   "title": "뷰 쓰기 권한 회수 (instructor_assignments 등, 긴급 P1)",
-  "status": "blocked",
+  "status": "done",
   "due": "2026-11-06",
-  "note": "2026-11-06 발견(P21-5 작업 중): Supabase 기본 권한 때문에 authenticated가 instructor_assignments 뷰에 쓰기 권한 → 강사가 뷰로 미승인 배정 삭제 가능(로컬). 운영도 같은 상태(읽기 전용 덤프). 마이그레이션 20261105230951_view_write_revoke.sql + view_grants.test.sql. 사장님 승인 대기: 20261105214254(comment)와 함께 원격 적용 → 병합"
+  "note": "2026-11-06 발견(P21-5 작업 중): Supabase 기본 권한 때문에 authenticated가 instructor_assignments 뷰에 쓰기 권한 → 강사가 뷰로 미승인 배정 삭제, 팀원이 팀 강습 행 삭제·노트 변경 가능(로컬). 운영도 같은 상태(읽기 전용 덤프). 사장님 승인으로 08:28 KST 원격 적용(20261105214254 comment → 20261105230951_view_write_revoke, 백업 생략: 실사용자 0·권한만) → 운영 뷰 권한 SELECT·MAINTAIN만, 테스트 강사 뷰 쓰기 42501, check:prod·스모크 통과 → PR #41 병합. 회귀: view_grants.test.sql(모든 public 뷰)"
  },
  {
   "id": "P22-1",

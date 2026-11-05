@@ -43,7 +43,7 @@
 - [x] 4. 비밀값 — 번들·공개 env·로그·히스토리, .gitignore, gitleaks 히스토리 스캔
 - [!] 5. 인증 설정 — 비밀번호 정책, 유출 비밀번호 차단, 이메일 인증, OTP 만료, 로그인 rate limit, Redirect URL, 관리자 MFA
 - [x] 6. Storage — 비공개 버킷, signed URL 짧은 만료, 형식·크기 제한, 버킷 정책
-- [!] 7. DB 함수 — SECURITY DEFINER search_path, anon/authenticated 실행 권한, 동적 SQL, `supabase db lint`·Security Advisor
+- [x] 7. DB 함수 — SECURITY DEFINER search_path, anon/authenticated 실행 권한, 동적 SQL, `supabase db lint`·Security Advisor
 - [x] 8. 입력 검증·오류 처리 — 서버 검증, 금액·정산 범위, 오류 메시지 누출
 - [!] 9. 웹 보안 헤더·쿠키 — CSP, HSTS, frame-ancestors, Referrer-Policy, 쿠키 속성, CORS
 - [x] 10. 남용 방지 — 쓰기 API rate limit, 중복 입찰
@@ -166,7 +166,7 @@
 |---|---|---|---|---|
 | 2026-11-05 | 6. Storage | 승인된 자격증 파일을 강사가 지우고 바꿔치기 가능 | 삭제 정책에 승인 파일 잠금, 운영 적용은 P21-4 | f6c813e (security/storage-cert-guard) |
 
-### 7. DB 함수 — [!] (search_path 4개 고침, 2026-11-05 운영 적용·PR #7 병합. Security Advisor 확인은 사람)
+### 7. DB 함수 — [x] (search_path 4개 고침 2026-11-05·PR #7. Security Advisor 경고 1건은 허용된 예외(2026-11-06, P21-5). 뷰 쓰기 권한 회수 2026-11-06 운영 적용·PR #41(P21-11))
 근거(로컬 DB, main 마이그레이션 전부, 2026-11-05):
 - security definer 함수: public 65개·private 44개, **모두 `search_path` 고정**(`proconfig` 조회, 대부분 `set search_path = ''`).
 - 실행 권한: anon이 실행할 수 있는 **public** 함수 0개(definer·invoker 모두). 로그인 사용자가 부를 수 있는 public definer 50개는 본문에서 호출자 확인(항목 3). private 함수는 PUBLIC 기본 실행 권한이 남아 anon도 실행 권한은 있지만, `private` 스키마는 API에 노출되지 않아(`config.toml [api] schemas = ["public","graphql_public"]`, 원격도 같음) REST로 부르면 `PGRST106 Invalid schema: private` — 직접 호출 불가. RLS 정책이 anon 요청에서도 private 판단 함수를 쓰므로 회수하지 않는다(회수하면 anon 조회가 권한 오류).
@@ -200,7 +200,7 @@
 | 날짜 | 항목 | 발견 | 조치 | 커밋 |
 |---|---|---|---|---|
 | 2026-11-05 | 7. DB 함수 | search_path 미고정 invoker 함수 4개(낮음). definer·권한·동적 SQL 문제 없음 | search_path 고정 + 회귀 테스트, 적용·Advisor 확인은 P21-5 | ddd4b43 (security/db-functions) |
-| 2026-11-06 | 7. DB 함수 | `instructor_assignments` 뷰에 authenticated 쓰기 권한이 남아 강사가 뷰로 미승인 배정 삭제 가능(P1). `customer_consent_state`도 anon·authenticated 쓰기 권한(뷰가 자동 갱신 불가라 실제 쓰기는 안 됨) | public 모든 뷰 쓰기 권한 회수 + 일반 회귀 테스트 (원격 적용은 사장님 승인 뒤) | P21-11 |
+| 2026-11-06 | 7. DB 함수 | `instructor_assignments` 뷰에 authenticated 쓰기 권한이 남아 강사가 뷰로 미승인 배정 삭제 가능(P1). `customer_consent_state`도 anon·authenticated 쓰기 권한(뷰가 자동 갱신 불가라 실제 쓰기는 안 됨) | public 모든 뷰 쓰기 권한 회수 + 일반 회귀 테스트 (2026-11-06 08:28 KST 사장님 승인으로 원격 적용, 운영 뷰 권한 SELECT만 확인) | P21-11 · PR #41 |
 
 ### 8. 입력 검증·오류 처리 — [x] (DB 범위 제약 추가, 2026-11-05 운영 적용·PR #8 병합)
 근거(2026-11-05):
