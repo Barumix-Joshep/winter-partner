@@ -21,7 +21,7 @@
 - [!] 6. Storage — 비공개 버킷, signed URL 짧은 만료, 형식·크기 제한, 버킷 정책
 - [!] 7. DB 함수 — SECURITY DEFINER search_path, anon/authenticated 실행 권한, 동적 SQL, `supabase db lint`·Security Advisor
 - [!] 8. 입력 검증·오류 처리 — 서버 검증, 금액·정산 범위, 오류 메시지 누출
-- [ ] 9. 웹 보안 헤더·쿠키 — CSP, HSTS, frame-ancestors, Referrer-Policy, 쿠키 속성, CORS
+- [!] 9. 웹 보안 헤더·쿠키 — CSP, HSTS, frame-ancestors, Referrer-Policy, 쿠키 속성, CORS
 - [ ] 10. 남용 방지 — 쓰기 API rate limit, 중복 입찰
 - [ ] 11. 개인정보 — 수집 최소화, 암호화, 마스킹, 주민번호 미수집, 로그
 - [ ] 12. 감사 로그 — 배정·선정·정산 금액·취소·벌점 기록, 수정 불가
@@ -173,3 +173,18 @@
 | 날짜 | 항목 | 발견 | 조치 | 커밋 |
 |---|---|---|---|---|
 | 2026-11-05 | 8. 입력 검증·오류 처리 | 강사 단가·전속 단가·수강 인원 DB 제약 없음(API로 음수·과대값 저장). 오류 누출 없음 | CHECK 제약 4개 + 앱 상한, 적용은 P21-6 | 3418041 (security/input-ranges) |
+
+### 9. 웹 보안 헤더·쿠키 — [!] (쿠키 고침, CSP 강제 전환은 결정 필요)
+근거(운영 `https://winter-partner.vercel.app` 응답 헤더, 2026-11-05):
+- `strict-transport-security: max-age=63072000; includeSubDomains`(2년), `x-frame-options: DENY` + CSP `frame-ancestors 'none'`, `x-content-type-options: nosniff`, `referrer-policy: strict-origin-when-cross-origin`, `permissions-policy: camera=(), geolocation=(), payment=(), usb=(), microphone=(self)` — 설정 `next.config.ts`, 테스트 `e2e/security-headers.spec.ts`. 적정.
+- CSP: **Report-Only**(`CSP_ENFORCE = false`, `next.config.ts:5`). `default-src 'self'`, 외부 연결은 Supabase만, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`. 다만 부분 사전 렌더링 때문에 nonce 없이 `script-src 'unsafe-inline'`. 주요 화면 16개 CSP 위반 0(E2E). 강제 전환은 시범 기기 확인 뒤 결정(P19부터 남은 결정).
+- CORS: `access-control-allow-origin: *`는 Vercel이 캐시한 정적 셸(`x-vercel-cache: HIT`, 로그인 정보 없는 화면 틀)과 `manifest.webmanifest`에만 붙는다(Vercel 기본). 로그인이 필요한 동적 응답(`/settlements/[id]/pdf`, `/api/*`)에는 없음. `*`일 때 브라우저는 쿠키를 실은 교차 출처 응답을 읽게 해 주지 않으므로 위험 낮음 — 기록만. 서버 액션은 Next가 Origin과 Host를 대조(CSRF 방지).
+- **문제: 세션 쿠키** — `@supabase/ssr` 기본값 `httpOnly: false`·Secure 없음(`node_modules/@supabase/ssr/dist/module/utils/constants.js`)이라 `document.cookie`로 `sb-…-auth-token`(액세스·리프레시 토큰)을 읽을 수 있었다. CSP가 Report-Only + `unsafe-inline`이라 XSS가 생기면 토큰 탈취로 이어진다.
+
+조치: 브랜치 `security/auth-cookies` 커밋 `98c1dd2`(푸시, 병합 안 함). `src/lib/supabase/cookie-options.ts`(`httpOnly: true`, 운영 빌드 `secure: true`, `sameSite: "lax"`)를 `src/proxy.ts`·`src/lib/supabase/server.ts`의 `createServerClient`에 적용. 이 앱은 브라우저용 Supabase 클라이언트가 없어(`createBrowserClient` 0건) 동작이 같다. 테스트 `e2e/auth-cookies.spec.ts`(**수정 전 실패 확인** → 통과: HttpOnly·Lax·운영 빌드 Secure, `document.cookie`에 토큰 없음). 전체 E2E(운영 빌드) 70, 단위 267, pgTAP, 린트·타입·빌드 통과. 기능 영향: 기존 쿠키는 다음 세션 갱신 때 새 속성으로 다시 쓰인다(로그아웃 없음). 나중에 브라우저에서 Supabase Realtime을 직접 쓰면(AI 상담 인박스 등) 이 결정을 다시 봐야 한다.
+
+사람 조치: `docs/tasks.json` P21-7 — CSP 강제 전환 결정(시범 샵 실제 기기에서 위반 없으면 `CSP_ENFORCE = true`). (선택) HSTS `preload` 등록은 도메인을 정한 뒤.
+
+| 날짜 | 항목 | 발견 | 조치 | 커밋 |
+|---|---|---|---|---|
+| 2026-11-05 | 9. 웹 보안 헤더·쿠키 | 세션 쿠키 HttpOnly·Secure 없음, CSP Report-Only | 쿠키 HttpOnly·Secure, CSP 강제는 P21-7 | 98c1dd2 (security/auth-cookies) |

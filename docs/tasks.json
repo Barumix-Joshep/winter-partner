@@ -854,5 +854,13 @@
   "status": "todo",
   "due": "2026-12-20",
   "note": "체크리스트 8. 입력 검증과 오류 처리. security/input-ranges(3418041) 20261105044233_input_ranges.sql — CHECK 제약 4개, 데이터 변경 없음, 운영 위반 0건(11/5). 적용 직전 위반 수 다시 확인"
+ },
+ {
+  "id": "P21-7",
+  "phase": "21 보안",
+  "title": "CSP 강제 전환 결정 (Report-Only → 강제)",
+  "status": "todo",
+  "due": "2026-12-20",
+  "note": "체크리스트 9. 웹 보안 헤더와 쿠키. 운영 CSP는 Report-Only. 시범 샵 실제 기기에서 위반 보고가 없으면 next.config.ts CSP_ENFORCE=true로 전환(코드 1줄 + E2E). 쿠키 HttpOnly 브랜치(security/auth-cookies, 98c1dd2) 병합 검토와 함께"
  }
 ]
