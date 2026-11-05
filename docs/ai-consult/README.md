@@ -25,7 +25,7 @@
 | 인스타 글자 수 | 텍스트 **UTF-8 1000바이트 이하** → 한글은 약 330자. 요청서의 "500자 이내"로는 넘칠 수 있어 **채널별 바이트 상한**으로 자른다 | 같은 곳 |
 | 인스타 권한 | `instagram_business_basic`, `instagram_business_manage_messages`. 우리가 소유하지 않은 샵 계정에 쓰려면 **Advanced Access(앱 심사·비즈니스 인증)** 필요. 심사 전에는 앱 역할이 있는 테스트 계정만 | 같은 곳 |
 | 메타 웹훅 | GET `hub.mode=subscribe`·`hub.verify_token`·`hub.challenge`, POST `X-Hub-Signature-256: sha256=<앱 시크릿으로 만든 SHA256 HMAC>`. 실패하면 36시간 동안 재전송 → **중복 제거 필수**, 200을 빨리 돌려준다 | [Webhooks](https://developers.facebook.com/docs/graph-api/webhooks/getting-started) |
-| 인스타 장기 토큰 | 60일 유효·갱신(문서 재확인 필요 — 4단계 착수 전에 확인) | — |
+| 인스타 장기 토큰 | 60일 유효·갱신(문서 재확인 필요 — P22-4는 오프라인이라 확인 못 함, 첫 테스터 연결 때 확인. 코드는 `expires_in`을 따르고 없으면 60일) | — |
 
 ## 아키텍처
 ```
@@ -67,6 +67,8 @@
 2. `mid`로 중복 제거(36시간 재전송 대비). 에코(우리가 보낸 것)·스토리 답장·스토리 멘션·리액션은 자동응답 제외(저장만).
 3. `canSend`: 마지막 손님 메시지 후 24시간 이내 → 자동 발송 가능. 24시간~7일 → **사장님이 인박스에서 승인 버튼을 누른 경우에만** `HUMAN_AGENT` 태그로 발송(자동 경로에서는 코드가 거부). 7일 초과 → 발송 불가. 첫 자동응답에는 고지 문구(기본 켬).
 4. 연결: Instagram 로그인 OAuth로 샵 계정 연결(아래 결정 1), 토큰 암호화 저장, 매일 정리 작업이 만료 7일 전 갱신.
+5. 구현(P22-4): `src/lib/channels/instagram/`(`config.ts` 환경변수 — 하나라도 없으면 기능 꺼짐·404·화면 "준비 중", `adapter.ts` 서명·해석·`canSend`·Send API, `webhook.ts` 흐름, `oauth.ts`·`connect.ts` 연결, `tokens.ts` 갱신, `deps.ts` DB). 라우트 `GET/POST /api/webhooks/instagram`, `GET /api/channels/instagram/connect`·`/callback`. 저장은 공통 `src/lib/channels/store.ts`(카카오와 같이 씀). mid가 200자를 넘으면 HMAC으로 줄여 중복 제거. escalate 안내("사장님께 전달했어요")는 대화에 열린 문의가 없을 때 한 번만 보낸다. 요청 제한은 카카오와 같은 `consult_shop`·`consult_conversation`(넘으면 답하지 않음). 마이그레이션 `20261105133519_consult_instagram.sql`: `consult_record_reply`에 `p_tag`, 인스타 계정 하나 = 샵 하나, 연결(서버 전용)·해제(샵 멤버) RPC. Human Agent는 `META_HUMAN_AGENT=1`(심사 통과 뒤)일 때만 사장님 승인 경로에서 쓴다. 사장님 준비 순서는 **[docs/meta-setup.md](../meta-setup.md)**.
+   - 확인 필요(오프라인이라 공식 문서 재확인 못 함): Human Agent가 Instagram 로그인 방식에서도 같은 이름·규칙인지, 장기 토큰 교환(`ig_exchange_token`)·갱신(`ig_refresh_token`) 주소와 만료(60일)·갱신 조건, `me?fields=user_id`가 웹훅 `recipient.id`와 같은 값인지, `me/subscribed_apps` 구독, Graph API 버전(기본 v24.0, `META_GRAPH_API_VERSION`으로 바꿈). 모두 설정·한 곳 코드로 두어 첫 테스터 연결 때 고친다.
 
 ## 보안·개인정보
 - 웹훅 검증(위), 샵별·대화별 요청 제한(기존 `public_rate_limit`), `channel_message_id` 고유 제약으로 replay 방지.
@@ -109,7 +111,7 @@
 
 ## 사장님이 처리할 것 (외부 계정·설정)
 1. **인스타 연결 방식**: 요청서는 Facebook 로그인. 메타에는 "Instagram 로그인" 방식(페이스북 페이지 연결 불필요, 같은 메시지 권한)도 있다. **추천: Instagram 로그인** — 렌탈샵 사장님이 페이스북 페이지를 따로 만들 필요가 없다. (확인 필요: Human Agent 태그가 이 방식에서도 같은지 4단계 착수 전에 확인)
-2. **외부 계정(새 서비스 가입)**: 카카오 채널·오픈빌더 설정 순서는 [docs/kakao-setup.md](../kakao-setup.md). 메타 개발자 앱 만들기·비즈니스 인증·앱 심사(Advanced Access, Human Agent) — 심사에 수 주가 걸릴 수 있어 일찍 시작해야 한다. 카카오는 샵마다 채널·챗봇 관리자센터 설정(무료). 제가 대신 가입하지 않는다.
+2. **외부 계정(새 서비스 가입)**: 카카오 채널·오픈빌더 설정 순서는 [docs/kakao-setup.md](../kakao-setup.md), 메타 앱·심사 순서는 [docs/meta-setup.md](../meta-setup.md). 메타 개발자 앱 만들기·비즈니스 인증·앱 심사(Advanced Access, Human Agent) — 심사에 수 주가 걸릴 수 있어 일찍 시작해야 한다. 카카오는 샵마다 채널·챗봇 관리자센터 설정(무료). 제가 대신 가입하지 않는다.
 3. **새 비밀값**(Vercel 환경변수, 사장님이 넣음): `CONSULT_ENCRYPTION_KEY`(32바이트), `CONSULT_HASH_KEY`, `META_APP_ID`·`META_APP_SECRET`·`META_VERIFY_TOKEN`. 값은 문서·대화에 쓰지 않는다.
 4. **AI 원칙 예외**(위)와 **개인정보 처리방침 갱신·법률 검토**.
 5. **문의 보존**: 90일 뒤 대화 삭제 때 "강습으로 넘긴 문의"를 남길지(연락처는 삭제).
