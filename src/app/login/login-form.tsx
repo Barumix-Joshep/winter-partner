@@ -114,7 +114,7 @@ function SignUpForm() {
         <FieldError message={state?.errors?.email} />
       </label>
       <label className={label}>
-        비밀번호 <span className="font-normal text-ink-muted">(8자 이상)</span>
+        비밀번호 <span className="font-normal text-ink-muted">(8자 이상, 영문·숫자 포함)</span>
         <input name="password" type="password" autoComplete="new-password" minLength={8} required className={input} />
         <FieldError message={state?.errors?.password} />
       </label>
