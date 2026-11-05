@@ -3,6 +3,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  # 매주 월 04:00 KST: 커밋 이력 전체 비밀값 검사 (PR·푸시 때는 그 변경의 커밋만 본다)
+  schedule:
+    - cron: "0 19 * * 0"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -31,7 +35,12 @@ jobs:
         run: npm run lint
       - name: 타입 검사
         run: npx tsc --noEmit
-      - name: 커밋 이력 전체 비밀값 검사 (gitleaks)
+      # PR은 PR의 커밋, main 푸시는 마지막 커밋만 검사한다(gitleaks-action 기본 동작)
+      - name: 이번 변경의 커밋 비밀값 검사 (gitleaks)
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 커밋 이력 전체 비밀값 검사 (gitleaks, 매주·수동)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.24.3 git /repo --redact --log-opts="--all" --exit-code 2

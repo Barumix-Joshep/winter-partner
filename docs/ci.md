@@ -6,7 +6,7 @@
 
 | 파일 | 언제 | 작업(상태 점검 이름) | 하는 일 |
 |---|---|---|---|
-| `security.yml` | PR, main 푸시 | **security** | 보안 점검(비밀값·RLS·service role·npm audit), 린트, 타입, gitleaks |
+| `security.yml` | PR, main 푸시, 매주 월 04:00 KST, 수동 | **security** | 보안 점검(비밀값·RLS·service role·npm audit), 린트, 타입, gitleaks(PR·푸시는 그 변경의 커밋만, 매주·수동은 커밋 이력 전체) |
 | `ci.yml` | PR, main 푸시 | **unit** | `npm ci` → `npm test` (vitest) |
 | | | **db** | Supabase CLI → `supabase start`(DB에 필요한 것만) → `supabase db reset`(빈 DB에 마이그레이션 전부 + 시드) → `supabase test db`(pgTAP 전체). 마이그레이션이 처음부터 깨끗이 적용되는지 검증을 겸한다 |
 | | | **e2e-core** | 로컬 Supabase + `next build` → `next start` → Playwright 핵심 세트(리허설·시즌 제외). 실패하면 리포트·스크린샷·trace를 artifact `e2e-core-report`로 14일 보관 |
@@ -25,6 +25,7 @@ npm test                                         # unit
 npx supabase db reset --local && npx supabase test db   # db
 E2E_SERVER=start E2E_SET=core npx playwright test       # e2e-core (운영 빌드)
 E2E_SERVER=start npx playwright test                    # e2e-full
+docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.24.3 git /repo --redact --log-opts="--all"   # 커밋 이력 전체 비밀값 검사
 ```
 기본 `npx playwright test`는 개발 서버(`next dev`)로 돈다(경로 예열 포함, 약 15분).
 
