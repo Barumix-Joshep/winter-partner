@@ -18,7 +18,7 @@
 - [x] 3. 서버 측 권한 검사 — API·서버 액션의 역할·소유권 검사, IDOR
 - [x] 4. 비밀값 — 번들·공개 env·로그·히스토리, .gitignore, gitleaks 히스토리 스캔
 - [!] 5. 인증 설정 — 비밀번호 정책, 유출 비밀번호 차단, 이메일 인증, OTP 만료, 로그인 rate limit, Redirect URL, 관리자 MFA
-- [ ] 6. Storage — 비공개 버킷, signed URL 짧은 만료, 형식·크기 제한, 버킷 정책
+- [!] 6. Storage — 비공개 버킷, signed URL 짧은 만료, 형식·크기 제한, 버킷 정책
 - [ ] 7. DB 함수 — SECURITY DEFINER search_path, anon/authenticated 실행 권한, 동적 SQL, `supabase db lint`·Security Advisor
 - [ ] 8. 입력 검증·오류 처리 — 서버 검증, 금액·정산 범위, 오류 메시지 누출
 - [ ] 9. 웹 보안 헤더·쿠키 — CSP, HSTS, frame-ancestors, Referrer-Policy, 쿠키 속성, CORS
@@ -124,3 +124,20 @@
 | 날짜 | 항목 | 발견 | 조치 | 커밋 |
 |---|---|---|---|---|
 | 2026-11-05 | 5. 인증 설정 | 서버 비밀번호 6자·조합 없음(앱 검사 우회 가능), MFA 미사용, OTP 1시간 | 앱·로컬 서버 규칙 8자+영문·숫자, 대시보드는 P21-2, MFA는 P21-3 | f20ef38 (security/password-policy) |
+
+### 6. Storage — [!] (구멍 1건 고침, 운영 적용은 승인 필요)
+근거(로컬 DB, 2026-11-05):
+- 버킷은 `certs` 하나: `public = false`, `file_size_limit = 4194304`(4MB), `allowed_mime_types = {image/jpeg, image/png, image/webp, application/pdf}`(`20261101150600_certs.sql:4-6`) — Storage 서버가 크기·형식을 강제. SVG·HTML 불가. 앱도 `src/lib/instructor/cert.ts` `parseCert`로 4MB·형식 검사, 경로는 서버가 `<instructor_id>/<무작위 uuid>.<확장자>`로 정함(`cert.ts:32-34`).
+- 정책(`storage.objects`): 올리기·읽기·지우기 모두 자기 폴더(`private.my_instructor_id()`), 읽기는 본사도. 덮어쓰기(update) 정책 없음 → 덮어쓰기 불가. 샵·다른 강사는 파일 0건(`certs.test.sql:27-29`).
+- signed URL: 본사 검증 화면만 `createSignedUrls(paths, 600)`(10분, `src/app/admin/page.tsx:103`). 공개 URL(`getPublicUrl`) 사용 0건. 적정.
+- **문제**: 삭제 정책이 자기 폴더면 무엇이든 허용 → 강사가 Storage API로 **승인된 자격증 파일**만 지우고 같은 경로에 다른 파일을 올리면 행은 "승인" 그대로 증빙이 바뀐다(공개 프로필은 발급처·등급 글자만 보여 손님 쪽 노출은 없음, 본사 감사 증빙 훼손).
+
+조치: 브랜치 `security/storage-cert-guard` 커밋 `f6c813e`(푸시, 병합 안 함). 마이그레이션 `20261105041909_storage_cert_guard.sql` — `private.cert_file_locked(name)`(승인된 행이 가리키는 파일인가) 추가, 삭제 정책에 `and not private.cert_file_locked(name)`. 승인 전 파일·행 없는 파일(`cert-actions.ts`의 저장 실패 정리, 자격증 행 삭제 뒤 정리)은 그대로 지운다. 테스트 `supabase/tests/storage_certs.test.sql` 5개(**수정 전 2개 실패 확인** → 통과). pgTAP 전체, 단위 267, 전체 E2E 69(자격증 업로드·삭제 포함), 린트·타입·빌드 통과. `docs/pending-migrations.md` 등록, migration-check 통과.
+- 기능 영향: 강사가 승인된 자격증을 "삭제"하면 행은 지워지고(프로필에서 빠짐) 그 뒤 파일 정리는 행이 없으므로 그대로 된다. 행을 남긴 채 파일만 지우는 경로만 막힌다.
+- 참고(항목 10으로): 자기 폴더에 올리는 파일 개수 제한은 없다(4MB씩 반복 업로드 가능).
+
+사람 조치: `docs/tasks.json` P21-4 — 병합과 운영 DB 적용 승인. 정책·함수만이라 데이터 변경 없음(`migration-preflight`로 확인 후 보고).
+
+| 날짜 | 항목 | 발견 | 조치 | 커밋 |
+|---|---|---|---|---|
+| 2026-11-05 | 6. Storage | 승인된 자격증 파일을 강사가 지우고 바꿔치기 가능 | 삭제 정책에 승인 파일 잠금, 운영 적용은 P21-4 | f6c813e (security/storage-cert-guard) |
