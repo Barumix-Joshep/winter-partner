@@ -7,7 +7,7 @@ import { LIMITS, limitKey } from "@/lib/ops/limits";
 
 // AI 호출은 이 함수 하나로 한다. 결과는 제안일 뿐이고(DB에 바로 쓰지 않는다), 실패·꺼짐·상한 초과는 null → 호출부가 수동 흐름.
 // - 도구 호출(tool use)로 JSON 스키마를 강제하고, parse로 한 번 더 검증한다.
-// - 15초 타임아웃, 실패 시 1회 재시도, 사용량은 성공·실패 모두 ai_usage에 남긴다.
+// - 기본 15초 타임아웃, 실패 시 1회 재시도(호출별로 timeoutMs·retries를 바꿀 수 있다 — AI 상담 카카오 경로는 짧게), 사용량은 성공·실패 모두 ai_usage에 남긴다.
 
 const TIMEOUT_MS = 15_000;
 
@@ -107,12 +107,16 @@ export type StructuredCall<T> = {
   schema: Record<string, unknown>;
   parse: (input: unknown) => T | null;
   maxTokens?: number;
+  timeoutMs?: number; // 기본 15초
+  retries?: number; // 실패 뒤 다시 부르는 횟수, 기본 1
+  // 짧은 시간 호출 제한을 셀 단위. 기본은 userId ?? shopId. AI 상담은 손님이 로그인하지 않으므로 대화 단위("consult:<대화 id>")로 센다.
+  rateSubject?: string | null;
 };
 
 export async function callStructured<T>(call: StructuredCall<T>, deps: AiDeps = defaultDeps): Promise<T | null> {
   const transport = deps.transport();
   if (!transport) return null;
-  const subject = call.userId ?? call.shopId;
+  const subject = call.rateSubject !== undefined ? call.rateSubject : (call.userId ?? call.shopId);
   if (subject && deps.rateOk && !(await deps.rateOk(subject))) return null; // 수동 흐름
   const gate = await deps.gate(call.shopId, call.feature);
   if (!gate?.allowed) return null;
@@ -125,9 +129,10 @@ export async function callStructured<T>(call: StructuredCall<T>, deps: AiDeps = 
     schema: call.schema,
     maxTokens: call.maxTokens ?? 1024,
   };
-  for (let attempt = 0; attempt < 2; attempt++) {
+  const attempts = 1 + Math.max(0, call.retries ?? 1);
+  for (let attempt = 0; attempt < attempts; attempt++) {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    const timer = setTimeout(() => ctrl.abort(), call.timeoutMs ?? TIMEOUT_MS);
     try {
       const res = await transport(req, ctrl.signal);
       const parsed = call.parse(res.input);
