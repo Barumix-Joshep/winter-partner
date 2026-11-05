@@ -43,7 +43,7 @@
 - [x] 4. 비밀값 — 번들·공개 env·로그·히스토리, .gitignore, gitleaks 히스토리 스캔
 - [!] 5. 인증 설정 — 비밀번호 정책, 유출 비밀번호 차단, 이메일 인증, OTP 만료, 로그인 rate limit, Redirect URL, 관리자 MFA
 - [x] 6. Storage — 비공개 버킷, signed URL 짧은 만료, 형식·크기 제한, 버킷 정책
-- [!] 7. DB 함수 — SECURITY DEFINER search_path, anon/authenticated 실행 권한, 동적 SQL, `supabase db lint`·Security Advisor
+- [x] 7. DB 함수 — SECURITY DEFINER search_path, anon/authenticated 실행 권한, 동적 SQL, `supabase db lint`·Security Advisor
 - [x] 8. 입력 검증·오류 처리 — 서버 검증, 금액·정산 범위, 오류 메시지 누출
 - [!] 9. 웹 보안 헤더·쿠키 — CSP, HSTS, frame-ancestors, Referrer-Policy, 쿠키 속성, CORS
 - [x] 10. 남용 방지 — 쓰기 API rate limit, 중복 입찰
@@ -166,7 +166,7 @@
 |---|---|---|---|---|
 | 2026-11-05 | 6. Storage | 승인된 자격증 파일을 강사가 지우고 바꿔치기 가능 | 삭제 정책에 승인 파일 잠금, 운영 적용은 P21-4 | f6c813e (security/storage-cert-guard) |
 
-### 7. DB 함수 — [!] (search_path 4개 고침, 2026-11-05 운영 적용·PR #7 병합. Security Advisor 확인은 사람)
+### 7. DB 함수 — [x] (search_path 4개 고침 2026-11-05·PR #7. Security Advisor 경고 1건은 허용된 예외(2026-11-06, P21-5). 뷰 쓰기 권한 회수 2026-11-06 운영 적용·PR #41(P21-11))
 근거(로컬 DB, main 마이그레이션 전부, 2026-11-05):
 - security definer 함수: public 65개·private 44개, **모두 `search_path` 고정**(`proconfig` 조회, 대부분 `set search_path = ''`).
 - 실행 권한: anon이 실행할 수 있는 **public** 함수 0개(definer·invoker 모두). 로그인 사용자가 부를 수 있는 public definer 50개는 본문에서 호출자 확인(항목 3). private 함수는 PUBLIC 기본 실행 권한이 남아 anon도 실행 권한은 있지만, `private` 스키마는 API에 노출되지 않아(`config.toml [api] schemas = ["public","graphql_public"]`, 원격도 같음) REST로 부르면 `PGRST106 Invalid schema: private` — 직접 호출 불가. RLS 정책이 anon 요청에서도 private 판단 함수를 쓰므로 회수하지 않는다(회수하면 anon 조회가 권한 오류).
@@ -191,15 +191,16 @@
 - **안전장치 5개** (모두 `supabase/migrations/20261102151000_access_hardening.sql`, 로컬 DB에서 확인):
   1. 자기 배정 필터 — `where a.instructor_id = private.my_instructor_id()`(21행). 로그인하지 않았거나 강사가 아니면 0행.
   2. `security_barrier` — `with (security_barrier = true)`(16행), `pg_class.reloptions = {security_barrier=true}`. 사용자 조건이 필터보다 먼저 돌아 남의 행을 엿보지 못한다.
-  3. anon 회수 — `revoke all … from public, anon`(22행). 권한 조회 결과 anon 행 없음, 읽기는 `grant select … to authenticated`(23행).
+  3. anon 회수·쓰기 회수 — `revoke all … from public, anon`(access_hardening 22행), 읽기는 `grant select … to authenticated`(23행). **정정(2026-11-06)**: 처음 기록한 "authenticated에는 조회 권한만"은 사실과 달랐다. Supabase 기본 권한이 authenticated에 직접 준 INSERT·UPDATE·DELETE·TRUNCATE·REFERENCES·TRIGGER가 남아 있었다(운영도 같음, 읽기 전용 덤프로 확인). `20261105230951_view_write_revoke.sql`로 public의 모든 뷰에서 anon·authenticated·PUBLIC 쓰기 권한을 회수했다(읽기는 그대로).
   4. 팀 강습 금액 null — `case when a.via_shop_id is null then a.final_rate end as final_rate`(18행).
-  5. 테스트 — `supabase/tests/access_hardening.test.sql`(팀원 표 직접 0행·뷰 금액 null·자기 강습 보임·프리랜서 금액 보임·남의 강습 0행), `supabase/tests/instructor_assignments_view.test.sql`(열 목록 고정·anon 거부·팀 행 전부 금액 null·다른 강사 배정 0행).
+  5. 테스트 — `supabase/tests/access_hardening.test.sql`(팀원 표 직접 0행·뷰 금액 null·자기 강습 보임·프리랜서 금액 보임·남의 강습 0행), `supabase/tests/instructor_assignments_view.test.sql`(열 목록 고정·anon 거부·팀 행 전부 금액 null·다른 강사 배정 0행), `supabase/tests/view_grants.test.sql`(모든 public 뷰에 anon·authenticated·PUBLIC 쓰기 권한 없음 — 새 뷰도 잡는다, 강사·팀원의 뷰 INSERT·UPDATE·DELETE는 42501).
 - 뷰에 설명(comment)을 달았다(`20261105214254_instructor_assignments_comment.sql`): 열·where를 바꾸면 이 항목과 테스트를 같이 고친다.
-- **추가 발견 (사장님 결정 필요, 코드는 그대로 둠)**: Supabase 기본 권한 때문에 authenticated가 이 뷰에 SELECT 말고도 INSERT·UPDATE·DELETE(·TRUNCATE·REFERENCES·TRIGGER) 권한을 갖고, 뷰가 자동 갱신 가능(`is_updatable = YES`)하다. 소유자 권한으로 쓰기가 되어 RLS를 거치지 않는다. 로컬(되돌린 트랜잭션)에서 강사가 **뷰로 자기 미승인 배정을 지울 수 있었다**(DELETE 1행 — 표에는 강사 삭제 정책이 없고, 취소·벌점·알림 흐름을 건너뛰며 감사 기록도 삭제는 남기지 않는다). 팀원이 표에서는 못 보는 팀 강습 행의 `lesson_note`도 고쳐졌다(완료 시각·노트 말고는 `guard_assignment_columns`가 막음, 승인된 배정 삭제는 `guard_approved_assignment`가 막음). INSERT는 `final_rate` not null로 실패. 앱은 이 뷰를 읽기만 한다. 제안: `revoke insert, update, delete, truncate, references, trigger on public.instructor_assignments from authenticated`(+ 회귀 테스트) — 별도 작업으로.
+- **쓰기 권한 회수 (2026-11-06 검토, P21-11 긴급 P1, 사장님 결정: 권한 회수)**: 뷰가 소유자 권한이라 뷰를 통한 쓰기는 `assignments` RLS를 건너뛴다. 로컬(되돌린 트랜잭션)에서 회수 전에는 강사가 뷰로 자기 미승인 배정 DELETE, 팀원이 팀 강습 행 DELETE·`completed_at`·`lesson_note` 변경에 성공했다(승인된 배정 삭제·다른 열 변경은 트리거, 금액 열·INSERT는 뷰 정의·not null 제약이 막음). 회수 뒤에는 모두 42501(권한 없음). 앱은 두 뷰를 읽기만 한다. 새 뷰를 만들 때는 같은 마이그레이션에서 쓰기 권한을 회수한다(`view_grants.test.sql`의 허용 목록은 비어 있다).
 
 | 날짜 | 항목 | 발견 | 조치 | 커밋 |
 |---|---|---|---|---|
 | 2026-11-05 | 7. DB 함수 | search_path 미고정 invoker 함수 4개(낮음). definer·권한·동적 SQL 문제 없음 | search_path 고정 + 회귀 테스트, 적용·Advisor 확인은 P21-5 | ddd4b43 (security/db-functions) |
+| 2026-11-06 | 7. DB 함수 | `instructor_assignments` 뷰에 authenticated 쓰기 권한이 남아 강사가 뷰로 미승인 배정 삭제 가능(P1). `customer_consent_state`도 anon·authenticated 쓰기 권한(뷰가 자동 갱신 불가라 실제 쓰기는 안 됨) | public 모든 뷰 쓰기 권한 회수 + 일반 회귀 테스트 (2026-11-06 08:28 KST 사장님 승인으로 원격 적용, 운영 뷰 권한 SELECT만 확인) | P21-11 · PR #41 |
 
 ### 8. 입력 검증·오류 처리 — [x] (DB 범위 제약 추가, 2026-11-05 운영 적용·PR #8 병합)
 근거(2026-11-05):

@@ -11,7 +11,6 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 
 | 마이그레이션 | 작업 | 데이터 변경 | 적용 순서 |
 |---|---|---|---|
-| `20261105214254_instructor_assignments_comment.sql` | P21-5 Security Advisor 예외 기록 | 없음(`instructor_assignments` 뷰에 설명 comment만, 정의·권한 그대로) | 순서 무관(화면이 읽는 표·열 변화 없음). 백업 생략 가능(실사용자 0명, 설명만) |
 
 ## 적용 기록
 
@@ -26,3 +25,4 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 | 2026-11-05 | `20261105050316_write_limits.sql` | 사장님 승인 (P21, P21-8). 사전 백업: 사장님이 적용 직전에 직접. 영향: 데이터 변경 0, 제약·한도 위반 0. 원격 적용 뒤 병합 |
 | 2026-11-05 | `20261105114656_consult_schema.sql` | 사장님 승인 (P22-1). 백업 생략(사장님 지시: 실사용자 0명, 삽입은 테스트 샵의 꺼진 기본값). 적용 직전 실사용자 0·샵 2·문의 0 재확인. 영향: 안내 템플릿 16행(모두 비활성)·상담 설정 2행(자동응답 꺼짐)·app_settings 키 3개. 적용 뒤 기존 AI 게이트(intake·bid_assist·customer_summary)·consult 정상, anon 차단 확인. 적용 뒤 PR #18 병합 |
 | 2026-11-06 | `20261105133519_consult_instagram.sql`, `20261105141851_consult_inbox.sql`, `20261105145008_consult_retention.sql`, `20261105151914_consult_admin_metrics.sql` | 사장님 승인 (P22-4~7). 06:27 KST 적용(`db push --linked --yes`, dry-run에서 정확히 4개 확인). 백업 생략(사장님 지시: 실사용자 0명, 4개 모두 함수·색인·열 추가·권한 변경뿐, 최상위 데이터 변경 문장 없음). 적용 직전 실사용자 0·샵 2(모두 테스트)·conversations/messages/inquiries/ai_feedback/shop_channels 0행, 새 열·RPC 없음, 인스타 채널 행 0(고유 색인 위반 0) 재확인. 적용 뒤 원격 목록 65개 짝 맞음, `conversations.reply_to_enc`·새 RPC 7개 확인, 두 샵의 AI 게이트(note_tidy·intake·bid_assist·consult) ok. 적용 뒤 #24(P22-3) 다음으로 #36·#37·#38·#39 병합 |
+| 2026-11-06 | `20261105214254_instructor_assignments_comment.sql`, `20261105230951_view_write_revoke.sql` | 사장님 승인 (P21-11 긴급 P1). 08:28 KST 적용(`db push --linked --yes`, dry-run에서 정확히 2개). 백업 생략(사장님 지시: 실사용자 0명, 권한 회수와 설명 주석뿐). 영향: 데이터 변경 0, 권한만 회수. 적용 전 운영 덤프: `instructor_assignments` authenticated ALL, `customer_consent_state` anon·authenticated ALL → 적용 뒤 SELECT·MAINTAIN만, 두 뷰 정의 그대로, 원격 목록 67개 짝 맞음. 테스트 강사의 뷰 DELETE·UPDATE → 42501(없는 id 조건이라 데이터 변경 없음), check:prod 17/17·스모크 21/21. 적용 뒤 PR #41 병합 |
