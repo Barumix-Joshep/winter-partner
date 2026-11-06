@@ -43,3 +43,102 @@
 SMTP를 연결하면 Supabase의 시간당 메일 한도(`email_sent`)를 30 정도로 올린다(기본 2는 내장 메일용 값).
 
 출처: [Supabase SMTP 문서](https://supabase.com/docs/guides/auth/auth-smtp) · [Resend 무료 한도](https://resend.com/blog/new-free-tier) · [Resend 요금](https://resend.com/pricing) · [Amazon SES 요금](https://aws.amazon.com/ses/pricing/) · [SES FAQ](https://aws.amazon.com/ses/faqs/)
+
+---
+
+## 매일 정리 작업 점검 — 90일 보존 정리 (P22-6, 2026-11-06 추가)
+
+`/api/maintenance/daily`는 Vercel Cron으로 **매일 03:00 KST**(18:00 UTC)에 돈다. 하는 일은 네 가지다.
+1. 보존 기간(마지막 강습 후 3시즌)이 지난 손님 익명화 — `purge_expired_customers()` → `anonymizedCustomers`
+2. 2년 지난 접속 기록 삭제 — `purge_access_logs()` → `purgedAccessLogs`
+3. **AI 상담 90일 정리** — `purge_consult_data()` → `purgedConsult` (90일 지난 대화·메시지·피드백 삭제, 그 대화의 문의는 삭제하되 **강습 등록으로 넘긴 문의(`converted`)만 연락처·대화 연결·AI 초안을 비워 남김**)
+4. 인스타 장기 토큰 갱신(만료 7일 전) → `instagramTokens` (메타 환경변수가 없으면 건너뜀)
+
+결과는 `ops_events`에 한 줄 남는다(`kind = 'cron_run'`, `source = '/api/maintenance/daily'`). 성공이면 `ok = true`이고 `detail`에 건수 JSON, 실패면 `ok = false`이고 `detail`이 `실패: …`다. 개인정보는 남기지 않고 건수만 남긴다.
+
+**P22-6 코드로 도는 첫 실행: 2026-11-07 03:00 KST.**
+
+### 점검 방법 (복사해서 쓰기)
+Supabase 대시보드 → 프로젝트 winter-partner → **SQL Editor**에서 아래를 붙여 넣고 Run. 모두 `select`(읽기)뿐이라 데이터를 바꾸지 않는다. 다섯 개를 한 번에 붙여 넣으면 마지막 결과만 보이므로 **하나씩** 실행한다.
+
+**① 최근 실행 3회 — 돌았는지, 성공했는지, 건수**
+```sql
+select created_at at time zone 'Asia/Seoul' as kst, ok,
+       case when ok then detail::jsonb -> 'anonymizedCustomers' end as anonymized_customers,
+       case when ok then detail::jsonb -> 'purgedAccessLogs' end as purged_access_logs,
+       case when ok then detail::jsonb -> 'purgedConsult' end as purged_consult,
+       case when ok then detail::jsonb -> 'instagramTokens' end as instagram_tokens,
+       case when not ok then detail end as error
+from ops_events
+where kind = 'cron_run' and source = '/api/maintenance/daily'
+order by created_at desc
+limit 3;
+```
+
+**② 정리 뒤에도 남은 90일 지난 상담 (정리가 제대로 됐다면 모두 0)**
+```sql
+select
+  (select count(*) from conversations c
+    where greatest(c.created_at, coalesce(c.last_customer_message_at, c.created_at),
+                   coalesce((select max(m.sent_at) from messages m where m.conversation_id = c.id), c.created_at))
+          < now() - interval '90 days')                                   as old_conversations,
+  (select count(*) from messages where sent_at < now() - interval '90 days') as old_messages;
+```
+
+**③ 강습 등록으로 넘긴 문의는 연락처가 지워졌는지 (대화 연결이 끊긴 converted 문의에 연락처·초안이 남아 있으면 안 됨 → 0)**
+```sql
+select count(*) as kept_inquiries_with_contact
+from inquiries
+where status = 'converted' and conversation_id is null
+  and (contact_enc is not null or ai_draft is not null);
+```
+
+**④ 손님 익명화·접속 기록 (참고용 숫자)**
+```sql
+select
+  (select count(*) from customers where anonymized_at >= now() - interval '1 day') as anonymized_last_24h,
+  (select count(*) from access_logs where created_at < now() - interval '2 years')  as access_logs_over_2y;
+```
+
+**⑤ 정리 시각 앞뒤 서버 오류**
+```sql
+select created_at at time zone 'Asia/Seoul' as kst, source, left(detail, 200) as detail
+from ops_events
+where kind = 'server_error' and created_at > now() - interval '1 day'
+order by created_at desc;
+```
+Vercel 쪽도 한 번: Vercel 대시보드 → winter-partner → **Logs**에서 시간을 03:00 전후로 두고 `daily maintenance failed`를 검색한다(없어야 정상). Settings → Cron Jobs에서 `/api/maintenance/daily`의 마지막 실행이 성공인지도 본다.
+
+### 정상 기준
+**지금(실사용자 0명, 2026-11-07 첫 실행)** — 아래가 모두 맞으면 정상이다.
+| 확인 | 정상 |
+|---|---|
+| ① 11-07 03:00 KST 무렵 줄이 있다 | 있음, `ok = true` |
+| ① `anonymized_customers`·`purged_access_logs` | `0` |
+| ① `purged_consult` | `{"conversations": 0, "messages": 0, "feedback": 0, "inquiries_deleted": 0, "inquiries_kept": 0}` |
+| ① `instagram_tokens` | `skipped: true`(메타 환경변수 없음) 또는 `refreshed: 0, failed: 0` |
+| ② `old_conversations`·`old_messages` | `0`, `0` |
+| ③ `kept_inquiries_with_contact` | `0` |
+| ⑤ 서버 오류 | 0건, Vercel 로그에 `daily maintenance failed` 없음 |
+
+즉 **대상 0건, 오류 0건이면 정상**이다(운영 상담 표는 2026-11-05에 만들어져 실제로 지울 대상은 2027-02 이후에 처음 생긴다).
+
+**실사용자가 생긴 뒤** — 매주 한 번(또는 숫자가 튈 때) 본다.
+| 확인 | 정상 |
+|---|---|
+| ① 매일 03:00 무렵 줄이 하루 1개씩, 모두 `ok = true` | 빠진 날·실패 0 |
+| ① `purged_consult` 숫자 | 90일 전 그날 들어온 상담 양과 비슷한 수준. 갑자기 평소의 몇 배면 의심(시계·기준 오류) |
+| ① `inquiries_kept` | 90일 전 강습 등록으로 넘긴 문의 수와 비슷. `inquiries_deleted`보다 크면 이상 |
+| ② 실행 직후 | 언제나 `0`, `0` (매일 지우므로 하루치 이상 쌓이면 안 됨) |
+| ③ | 언제나 `0` |
+| ④ `anonymized_last_24h` | 시즌이 바뀌는 시점(보존 3시즌이 끝나는 손님)에만 몰려서 생긴다. 시즌 중 매일 큰 숫자면 이상 |
+| ⑤ | 정리 작업 관련 오류 0 |
+
+### 이상할 때
+| 증상 | 할 일 |
+|---|---|
+| ①에 그날 줄이 없음 | 크론이 안 돌았다. Vercel → Settings → Cron Jobs에서 실행 이력·오류 확인, `CRON_SECRET` 환경변수가 있는지(이름만) 확인. 직접 다시 돌리지 말고(다른 정리까지 같이 돈다) Claude Code에 "정리 작업 안 돎"으로 알린다 |
+| ① `ok = false` | `error` 칸 문장 그대로 Claude Code에 전달. 예: `function public.purge_consult_data() does not exist` → 마이그레이션 미적용(`docs/pending-migrations.md` 확인). 다음 날 03:00에 자동으로 다시 돈다 |
+| ② 0이 아님 | 정리가 덜 됐다. 다음 실행 뒤에도 남아 있으면 Claude Code에 숫자와 함께 알린다(행 내용은 보내지 않는다) |
+| ③ 0이 아님 | **개인정보 사고 후보.** 연락처가 남은 문의가 있다는 뜻이므로 바로 Claude Code에 알리고, 그 사이 손님에게 새 연락은 하지 않는다 |
+| ① 숫자가 비정상적으로 큼 | 잘못 지웠을 수 있다. 정리는 되돌릴 수 없으므로 **다음 03:00 전에** Claude Code에 알려 크론을 멈출지 정한다(크론 끄기는 Vercel 설정이라 사장님이 한다). Pro 요금제라면 백업 시점도 함께 확인 |
