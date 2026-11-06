@@ -909,7 +909,7 @@
   "title": "기본 권한 심층 방어: 새 함수 anon 실행 검사, private 함수 PUBLIC 실행 회수, 시퀀스 anon UPDATE 회수",
   "status": "todo",
   "due": "2027-01-31",
-  "note": "위험도 P3. 2026-11-06 점검: public 함수 84개는 모두 PUBLIC 실행 회수·anon 직접 부여 0(정상)이나 기본 권한이 새 함수에 anon 실행을 준다 → 새 public 함수의 anon 실행 0을 보는 일반 테스트. private 함수 75개 중 65개는 PUBLIC 경유로 anon도 실행 가능(스키마 USAGE도 anon·authenticated), REST 노출 스키마는 public·graphql_public뿐이라 직접 호출 불가 → PUBLIC 실행 회수 후 RLS 정책이 쓰는 함수만 authenticated에 다시 부여(정책 회귀 테스트 필수). public 시퀀스 7개 anon·authenticated ALL → anon UPDATE 회수. 근본 원인(ALTER DEFAULT PRIVILEGES)은 Supabase 설정에 가까워 사장님 결정"
+  "note": "위험도 P3. 2026-11-06 점검: public 함수 84개는 모두 PUBLIC 실행 회수·anon 직접 부여 0(정상)이나 기본 권한이 새 함수에 anon 실행을 준다 → 새 public 함수의 anon 실행 0을 보는 일반 테스트. private 함수 75개 중 65개는 PUBLIC 경유로 anon도 실행 가능(스키마 USAGE도 anon·authenticated), REST 노출 스키마는 public·graphql_public뿐이라 직접 호출 불가 → PUBLIC 실행 회수 후 RLS 정책이 쓰는 함수만 authenticated에 다시 부여(정책 회귀 테스트 필수). public 시퀀스 7개 anon·authenticated ALL → anon UPDATE 회수. 근본 원인(ALTER DEFAULT PRIVILEGES)은 Supabase 설정에 가까워 사장님 결정 → 2026-11-06 일반 함수 검사 테스트 추가(PR #46), private·시퀀스 회수는 마이그레이션 필요로 남음"
  },
  {
   "id": "P22-1",

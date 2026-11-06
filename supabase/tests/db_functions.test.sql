@@ -1,4 +1,5 @@
 -- 보안 7(DB 함수): public·private 함수는 모두 search_path를 고정하고, RLS를 우회하는 public 함수는 anon이 실행하지 못한다 (pgTAP).
+-- public 모든 함수(invoker 포함)의 anon·PUBLIC 실행 권한 0 일반 검사는 function_grants.test.sql(P21-13).
 begin;
 create extension if not exists pgtap with schema extensions;
 select plan(3);
