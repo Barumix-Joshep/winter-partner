@@ -4,6 +4,8 @@
 
 상태: **설계 승인, 구현 중** (2026-11-05 사장님 결정 6개 반영 — 맨 아래 "사장님 결정"). P22-1(스키마·안내 정보 화면)·P22-2(상담 엔진)부터.
 
+유료 서비스 분리(사용권·사용량·본사 화면, P23): **[paid-service-design.md](paid-service-design.md)** (설계 초안, 2026-11-06).
+
 ## 스택 요약 (0단계 파악, 2026-11-05)
 - **웹·서버**: Next.js 16.4 App Router(`src/app`), React 19, cacheComponents. 서버 코드는 **서버 액션**(`src/app/**/actions.ts`)과 **라우트 핸들러**(`src/app/**/route.ts`). Supabase Edge Functions는 쓰지 않는다(`supabase/functions` 없음) → 웹훅도 라우트 핸들러로 만든다. Vercel 배포(main 병합 = 운영 배포), 크론은 Vercel Cron + `CRON_SECRET`(`src/app/api/maintenance/daily`, `src/app/api/notify/dispatch`).
 - **DB**: Supabase Postgres. 스키마는 `supabase/migrations/`만(`npx supabase migration new <이름>`). 원격 적용은 사장님 승인 뒤 `npx supabase db push --linked`, 대기 목록 `docs/pending-migrations.md`.
