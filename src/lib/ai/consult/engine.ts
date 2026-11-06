@@ -55,6 +55,8 @@ export async function runConsult(input: ConsultInput, deps: EngineDeps = default
   const kb = rankKnowledge(pre.text, ctx.kb);
 
   // 3. AI (연락처·이메일은 가린 뒤). 카카오는 5초 안에 답해야 해서 3.5초·재시도 없음(넘으면 어댑터가 콜백으로, P22-3)
+  // 게이트가 사용권 이유(no_license·monthly_quota, P23-2)로 막으면 그 이유를 남긴다. 그 밖의 막힘은 지금처럼 ai_unavailable.
+  let blocked: EscalateReason = "ai_unavailable";
   const out = await callStructured(
     {
       feature: "consult",
@@ -69,10 +71,13 @@ export async function runConsult(input: ConsultInput, deps: EngineDeps = default
       maxTokens: 600,
       timeoutMs: input.channel === "kakao" ? 3_500 : 10_000,
       retries: input.channel === "kakao" ? 0 : 1,
+      onGate: (g) => {
+        if (g && !g.allowed && (g.reason === "no_license" || g.reason === "monthly_quota")) blocked = g.reason;
+      },
     },
     deps.ai,
   );
-  if (!out) return escalate("ai_unavailable");
+  if (!out) return escalate(blocked);
 
   const base = { confidence: out.confidence, intent: out.intent, extracted: Object.keys(out.extracted).length ? out.extracted : undefined };
   const draft = (out.draft || out.reply).slice(0, 2000) || undefined;

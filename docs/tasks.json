@@ -909,7 +909,7 @@
   "title": "기본 권한 심층 방어: 새 함수 anon 실행 검사, private 함수 PUBLIC 실행 회수, 시퀀스 anon UPDATE 회수",
   "status": "todo",
   "due": "2027-01-31",
-  "note": "위험도 P3. 2026-11-06 점검: public 함수 84개는 모두 PUBLIC 실행 회수·anon 직접 부여 0(정상)이나 기본 권한이 새 함수에 anon 실행을 준다 → 새 public 함수의 anon 실행 0을 보는 일반 테스트. private 함수 75개 중 65개는 PUBLIC 경유로 anon도 실행 가능(스키마 USAGE도 anon·authenticated), REST 노출 스키마는 public·graphql_public뿐이라 직접 호출 불가 → PUBLIC 실행 회수 후 RLS 정책이 쓰는 함수만 authenticated에 다시 부여(정책 회귀 테스트 필수). public 시퀀스 7개 anon·authenticated ALL → anon UPDATE 회수. 근본 원인(ALTER DEFAULT PRIVILEGES)은 Supabase 설정에 가까워 사장님 결정"
+  "note": "위험도 P3. 2026-11-06 점검: public 함수 84개는 모두 PUBLIC 실행 회수·anon 직접 부여 0(정상)이나 기본 권한이 새 함수에 anon 실행을 준다 → 새 public 함수의 anon 실행 0을 보는 일반 테스트. private 함수 75개 중 65개는 PUBLIC 경유로 anon도 실행 가능(스키마 USAGE도 anon·authenticated), REST 노출 스키마는 public·graphql_public뿐이라 직접 호출 불가 → PUBLIC 실행 회수 후 RLS 정책이 쓰는 함수만 authenticated에 다시 부여(정책 회귀 테스트 필수). public 시퀀스 7개 anon·authenticated ALL → anon UPDATE 회수. 근본 원인(ALTER DEFAULT PRIVILEGES)은 Supabase 설정에 가까워 사장님 결정 → 2026-11-06 일반 함수 검사 테스트 추가(PR #46), private·시퀀스 회수는 마이그레이션 필요로 남음"
  },
  {
   "id": "P22-1",
@@ -987,9 +987,9 @@
   "id": "P23-2",
   "phase": "23 AI 상담 유료화",
   "title": "사용권 스키마(요금제·사용권·팩 표, RLS, 본사 RPC, 켜짐 스위치)와 차단 로직(ai_gate·set_consult_settings DB 강제, 웹훅 AI 없이 넘김, 화면 안내, 만료 정리·알림)",
-  "status": "todo",
+  "status": "done",
   "due": "2026-12-31",
-  "note": "설계 8절 1·2·4번. 마이그레이션 1개 → pending-migrations 등록 → 사장님 승인 뒤 원격 적용 먼저, 병합 나중. 스위치 consult_license_required는 시범 샵 부여 뒤 true. 열린 질문 Q1·Q2·Q3·Q5·Q6·Q9 결정 필요 (목표일은 임시 — 사장님 조정)"
+  "note": "2026-11-06 PR #45. 마이그레이션 20261106015911_consult_license.sql 12:18 KST 원격 적용(사장님 조건부 사전 승인, 백업 생략: 실사용자 0·추가뿐). 스위치 consult_license_required=false(지금 동작 그대로), 요금제 standard_v1 1행, 사용권 0행. 표 3개·판정·체험 트리거·게이트·차단(웹훅·설정·인박스·인스타)·본사 RPC 7개·정리 작업 sweep. pgTAP 829·단위 581·E2E core 98. 스위치를 켜는 것은 P23-5(사장님)"
  },
  {
   "id": "P23-3",

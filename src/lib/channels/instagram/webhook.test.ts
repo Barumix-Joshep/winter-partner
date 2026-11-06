@@ -220,6 +220,35 @@ describe("이벤트 처리", () => {
     expect(shop.sends).toHaveLength(0);
     expect(shop.logs.at(-1)?.outcome).toBe("rate_shop");
   });
+  it.each(["no_license", "monthly_quota"] as const)("사용권 확인이 %s면 AI 없이 escalate: 저장 + 사장님께 전달 안내 한 번 + 문의 (P23-2)", async (state) => {
+    const licenseState = vi.fn(async () => state);
+    const lic = makeDeps({ licenseState });
+    await handleInstagramEvent(ev(igText("강습료 얼마예요?")), lic.deps);
+    expect(licenseState).toHaveBeenCalledWith("shop-1");
+    expect(lic.deps.recordCustomerMessage).toHaveBeenCalled();
+    expect(lic.deps.runConsult).not.toHaveBeenCalled();
+    expect(lic.sends).toHaveLength(1);
+    expect(lic.sends[0].text).toBe(ESCALATE_REPLY);
+    expect(lic.sends[0].opts).toMatchObject({ approvedByOwner: false, escalate: true });
+    expect(lic.deps.recordReply).toHaveBeenCalledWith(expect.objectContaining({ role: "system", intent: "unknown", confidence: 0 }));
+    expect(lic.deps.openInquiry).toHaveBeenCalledWith(expect.objectContaining({ conversationId: "conv-1", type: "other", draft: undefined }));
+    expect(lic.logs.find((l) => l.outcome === "reply")?.reason).toBe(state);
+
+    // 이미 열린 문의가 있으면 안내를 되풀이하지 않는다
+    const again = makeDeps({ licenseState, hasOpenInquiry: async () => true });
+    await handleInstagramEvent(ev(igText("또 물어요")), again.deps);
+    expect(again.deps.runConsult).not.toHaveBeenCalled();
+    expect(again.sends).toHaveLength(0);
+    expect(again.deps.openInquiry).toHaveBeenCalled();
+  });
+  it("사용권 확인이 ok이거나 실패하면(DB 오류) 지금처럼 엔진을 부른다", async () => {
+    for (const licenseState of [vi.fn(async () => "ok" as const), vi.fn(async () => Promise.reject(new Error("db")))]) {
+      const { deps, sends } = makeDeps({ licenseState });
+      await handleInstagramEvent(ev(igText("강습료 얼마예요?")), deps);
+      expect(deps.runConsult).toHaveBeenCalled();
+      expect(sends[0].text).toContain(AUTO.reply);
+    }
+  });
   it("대화 요청 제한을 넘으면 AI 없이 escalate: 저장 + 사장님께 전달 안내 한 번 + 문의 (P22-6)", async () => {
     const conv = makeDeps({ rateOk: vi.fn(async (name) => name !== "consult_conversation") });
     await handleInstagramEvent(ev(igText("강습료 얼마예요?")), conv.deps);

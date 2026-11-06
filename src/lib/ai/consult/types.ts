@@ -22,7 +22,12 @@ export type EscalateReason =
   | "amount_not_in_kb"
   | "no_kb"
   | "contact_in_reply"
-  | "rate_limited"; // 대화 요청 제한(consult_conversation)을 넘어 AI를 부르지 않음 (P22-6)
+  | "rate_limited" // 대화 요청 제한(consult_conversation)을 넘어 AI를 부르지 않음 (P22-6)
+  | "no_license" // AI 상담 사용권이 없음·중지·만료·시작 전 (P23-2, 켜짐 스위치가 켜져 있을 때만)
+  | "monthly_quota"; // 이번 달 포함 응답을 다 씀 (P23-2)
+
+// 웹훅이 엔진 전에 보는 사용권 판정 (DB consult_license_check, 스위치가 꺼져 있으면 언제나 ok)
+export type LicenseState = "ok" | "no_license" | "monthly_quota";
 
 export type ConsultResult = {
   mode: "auto" | "escalate";

@@ -1,7 +1,7 @@
 import "server-only";
 import type { createAdminClient } from "@/lib/supabase/admin";
 import { encryptSecret } from "@/lib/ai/consult/crypto";
-import type { Extracted } from "@/lib/ai/consult/types";
+import type { Extracted, LicenseState } from "@/lib/ai/consult/types";
 import type { DeliveryStatus } from "./types";
 
 // 채널 웹훅(카카오·인스타)이 같이 쓰는 상담 저장: 서비스 키 클라이언트 + security definer RPC
@@ -68,6 +68,12 @@ export function consultStore(db: Db) {
         ...(r.tag ? { p_tag: r.tag } : {}),
       });
       if (error) throw error;
+    },
+    // AI 상담 사용권 (P23-2): 쿼리 1개. 스위치가 꺼져 있으면 DB가 언제나 ok. 오류면 ok로 보고 DB 게이트(ai_gate)가 다시 막는다
+    async licenseState(shopId: string): Promise<LicenseState> {
+      const { data, error } = await db.rpc("consult_license_check", { p_shop_id: shopId });
+      if (error) return "ok";
+      return data === "no_license" || data === "monthly_quota" ? data : "ok";
     },
     async hasOpenInquiry(conversationId: string) {
       const { count, error } = await db.from("inquiries").select("id", { count: "exact", head: true }).eq("conversation_id", conversationId).eq("status", "open");

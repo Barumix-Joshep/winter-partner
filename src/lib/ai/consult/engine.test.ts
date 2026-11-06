@@ -115,6 +115,19 @@ describe("꺼짐·상한·실패·신뢰도", () => {
     expect(await run("강습료 얼마예요?")).toMatchObject({ mode: "escalate", reason: "ai_unavailable" });
     expect(gate).toHaveBeenCalledWith("s1", "consult");
   });
+  it.each(["no_license", "monthly_quota"])("AI 상담 사용권 게이트(%s)가 막으면 AI 없이 escalate, 이유를 그대로 남긴다 (P23-2)", async (reason) => {
+    const { run, seen, logs } = setup({ allowed: false, reason });
+    const r = await run("강습료 얼마예요?");
+    expect(r).toMatchObject({ mode: "escalate", reason });
+    expect(r.draft).toBeUndefined();
+    expect(seen).toHaveLength(0);
+    expect(logs.at(-1)).toMatchObject({ reason });
+  });
+  it("다른 게이트 이유(꺼짐·월 비용 상한)는 지금처럼 ai_unavailable", async () => {
+    for (const reason of ["platform_off", "shop_off", "monthly_cap"]) {
+      expect(await setup({ allowed: false, reason }).run("강습료 얼마예요?")).toMatchObject({ mode: "escalate", reason: "ai_unavailable" });
+    }
+  });
   it("샵이 자동 응대를 껐으면 사실 질문도 escalate(초안은 만든다)", async () => {
     const r = await setup({ autoReply: false }).run("강습료 얼마예요?");
     expect(r).toMatchObject({ mode: "escalate", reason: "auto_off" });

@@ -187,7 +187,7 @@
 |---|---|---|---|
 | public 뷰 2개 | 쓰기 권한 회수 완료, SELECT·MAINTAIN만 | — | P21-11 done |
 | public 표 49개 | 모두 RLS 켜짐, anon·PUBLIC 쓰기 정책 0. 기본 권한으로 anon 45개·authenticated 51개 표에 쓰기 권한(TRUNCATE·REFERENCES·TRIGGER 포함, TRUNCATE는 RLS 무시 — REST로는 못 보냄) | P2 | P21-12 todo |
-| public 함수 84개 | 모두 PUBLIC 실행 회수, anon 직접 부여 0, authenticated 64개(의도된 RPC) | P3(새 함수 검사 테스트) | P21-13 todo |
+| public 함수 84개 | 모두 PUBLIC 실행 회수, anon 직접 부여 0, authenticated 64개(의도된 RPC) | P3(새 함수 검사 테스트) | 일반 테스트 추가 2026-11-06(PR #46, `function_grants.test.sql`) — 새 함수는 같은 마이그레이션에서 `revoke execute … from public, anon`. 허용 목록 비어 있음 |
 | public 시퀀스 7개 | anon·authenticated ALL(REST로 못 부름, 번호 소모 정도) | P3 | P21-13 todo |
 | private 스키마 | 표 2개 anon·authenticated 권한 없음. 함수 75개 중 65개 PUBLIC 경유 anon 실행 가능, 스키마 USAGE anon·authenticated(REST 노출 안 됨) | P3 | P21-13 todo |
 | 근본 원인 | `ALTER DEFAULT PRIVILEGES`가 public 새 표·뷰·함수·시퀀스에 anon·authenticated ALL | — | 사장님 결정(Supabase 설정) |

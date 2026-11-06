@@ -4,7 +4,7 @@
 import type { InstagramConfig } from "./config";
 import { InstagramApiError, verifyState } from "./oauth";
 
-export type ConnectOutcome = "connected" | "denied" | "expired" | "taken" | "error";
+export type ConnectOutcome = "connected" | "denied" | "expired" | "taken" | "no_license" | "error";
 export const KNOWLEDGE_PATH = "/shop/ai-consult/knowledge";
 
 export type CallbackDeps = {
@@ -16,8 +16,8 @@ export type CallbackDeps = {
   now: () => number;
   completeLogin: (code: string) => Promise<{ accountId: string; token: string; expiresAt: Date }>;
   encrypt: (plain: string) => string;
-  // consult_connect_instagram (서버 전용 RPC). 다른 샵에 이미 연결된 계정이면 "taken"
-  save: (r: { shopId: string; userId: string; accountId: string; credentialsEnc: string; expiresAt: Date }) => Promise<"ok" | "taken">;
+  // consult_connect_instagram (서버 전용 RPC). 다른 샵에 이미 연결된 계정이면 "taken", AI 상담 사용권이 없으면 "no_license"(P23-2)
+  save: (r: { shopId: string; userId: string; accountId: string; credentialsEnc: string; expiresAt: Date }) => Promise<"ok" | "taken" | "no_license">;
   log: (e: Record<string, unknown>) => void;
 };
 
@@ -32,8 +32,9 @@ export async function handleInstagramCallback(params: URLSearchParams, deps: Cal
   try {
     const r = await deps.completeLogin(code);
     const saved = await deps.save({ shopId: deps.shopId, userId: deps.userId, accountId: r.accountId, credentialsEnc: deps.encrypt(r.token), expiresAt: r.expiresAt });
-    deps.log({ channel: "instagram", outcome: saved === "ok" ? "connected" : "taken" });
-    return saved === "ok" ? "connected" : "taken";
+    const outcome: ConnectOutcome = saved === "ok" ? "connected" : saved;
+    deps.log({ channel: "instagram", outcome });
+    return outcome;
   } catch (e) {
     deps.log({ channel: "instagram", outcome: "connect_failed", step: e instanceof InstagramApiError ? e.step : "save", status: e instanceof InstagramApiError ? e.status : 0 });
     return "error";
