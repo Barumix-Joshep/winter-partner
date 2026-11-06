@@ -896,6 +896,22 @@
   "note": "2026-11-06 발견(P21-5 작업 중): Supabase 기본 권한 때문에 authenticated가 instructor_assignments 뷰에 쓰기 권한 → 강사가 뷰로 미승인 배정 삭제, 팀원이 팀 강습 행 삭제·노트 변경 가능(로컬). 운영도 같은 상태(읽기 전용 덤프). 사장님 승인으로 08:28 KST 원격 적용(20261105214254 comment → 20261105230951_view_write_revoke, 백업 생략: 실사용자 0·권한만) → 운영 뷰 권한 SELECT·MAINTAIN만, 테스트 강사 뷰 쓰기 42501, check:prod·스모크 통과 → PR #41 병합. 회귀: view_grants.test.sql(모든 public 뷰)"
  },
  {
+  "id": "P21-12",
+  "phase": "21 보안",
+  "title": "public 표의 anon·authenticated 과한 직접 권한 회수 (TRUNCATE·REFERENCES·TRIGGER, anon 쓰기)",
+  "status": "todo",
+  "due": "2026-12-20",
+  "note": "위험도 P2. 2026-11-06 운영 읽기 전용 덤프 점검(P21-11 후속): public 표 49개 모두 RLS 켜짐, anon·authenticated 쓰기 정책 0이지만 Supabase 기본 권한으로 anon은 45개·authenticated는 51개 표에 ALL 등 쓰기 권한. TRUNCATE는 RLS를 거치지 않는다(지금은 REST로 보낼 수 없어 바로 악용 불가). 제안: 모든 public 표에서 anon·authenticated의 TRUNCATE·REFERENCES·TRIGGER 회수 + anon의 INSERT·UPDATE·DELETE 회수(anon 쓰기가 필요한 표가 있는지 먼저 확인 — 손님 셀프 등록·동의 링크는 RPC 경로) + view_grants처럼 모든 표를 보는 일반 테스트. 사장님 승인 뒤 착수"
+ },
+ {
+  "id": "P21-13",
+  "phase": "21 보안",
+  "title": "기본 권한 심층 방어: 새 함수 anon 실행 검사, private 함수 PUBLIC 실행 회수, 시퀀스 anon UPDATE 회수",
+  "status": "todo",
+  "due": "2027-01-31",
+  "note": "위험도 P3. 2026-11-06 점검: public 함수 84개는 모두 PUBLIC 실행 회수·anon 직접 부여 0(정상)이나 기본 권한이 새 함수에 anon 실행을 준다 → 새 public 함수의 anon 실행 0을 보는 일반 테스트. private 함수 75개 중 65개는 PUBLIC 경유로 anon도 실행 가능(스키마 USAGE도 anon·authenticated), REST 노출 스키마는 public·graphql_public뿐이라 직접 호출 불가 → PUBLIC 실행 회수 후 RLS 정책이 쓰는 함수만 authenticated에 다시 부여(정책 회귀 테스트 필수). public 시퀀스 7개 anon·authenticated ALL → anon UPDATE 회수. 근본 원인(ALTER DEFAULT PRIVILEGES)은 Supabase 설정에 가까워 사장님 결정"
+ },
+ {
   "id": "P22-1",
   "phase": "22 AI 상담",
   "title": "스키마·RLS·웹훅 RPC, 암호화·해시 유틸, 안내 정보 화면",
