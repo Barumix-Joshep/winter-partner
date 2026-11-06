@@ -11,6 +11,7 @@ const count = (v: unknown) => (typeof v === "number" ? v.toLocaleString("ko-KR")
 const lastDay = (v: unknown) => (typeof v === "string" && !Number.isNaN(Date.parse(v)) ? lastDayLabel(v) : "종료일");
 const shopName = (p: Payload) => (typeof p.shop_name === "string" ? p.shop_name : "");
 const CONSULT_SETTINGS = "/shop/ai-consult/knowledge";
+const ADMIN_CONSULT = "/admin/ai/consult"; // 본사 AI 상담 사용권 화면 (P23-3)
 const SUSPEND_REASON: Record<string, string> = { trial_ended: "체험 끝", expired: "기간 끝", admin: "본사 중지", unpaid: "미납", terminated: "해지" };
 
 export function notificationMessage(kind: string, payload: Payload, job: JobInfo): Message {
@@ -66,7 +67,7 @@ export function notificationMessage(kind: string, payload: Payload, job: JobInfo
       };
     case "consult_license_suspended":
       return payload.admin
-        ? { title: "AI 상담 사용권이 중지됐습니다", body: [shopName(payload), SUSPEND_REASON[String(payload.reason)] ?? ""].filter(Boolean).join(" · "), url: "/admin/ai" }
+        ? { title: "AI 상담 사용권이 중지됐습니다", body: [shopName(payload), SUSPEND_REASON[String(payload.reason)] ?? ""].filter(Boolean).join(" · "), url: ADMIN_CONSULT }
         : {
             title: "AI 상담 자동 답변을 멈췄어요",
             body: "손님 문의는 계속 인박스로 들어와요. 직접 답해 주세요. 다시 쓰시려면 본사에 요청해 주세요.",
@@ -78,7 +79,7 @@ export function notificationMessage(kind: string, payload: Payload, job: JobInfo
     case "consult_quota_reached": {
       const usedOf = `${count(payload.used)}/${count(payload.limit)}건`;
       const full = kind === "consult_quota_reached";
-      if (payload.admin) return { title: full ? "AI 상담 월 포함 응답 소진" : "AI 상담 월 포함 응답 80%", body: [shopName(payload), usedOf].filter(Boolean).join(" · "), url: "/admin/ai" };
+      if (payload.admin) return { title: full ? "AI 상담 월 포함 응답 소진" : "AI 상담 월 포함 응답 80%", body: [shopName(payload), usedOf].filter(Boolean).join(" · "), url: ADMIN_CONSULT };
       return full
         ? {
             title: "이번 달 포함 AI 응답을 모두 썼어요",
