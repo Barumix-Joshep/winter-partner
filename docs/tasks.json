@@ -907,9 +907,17 @@
   "id": "P21-13",
   "phase": "21 보안",
   "title": "기본 권한 심층 방어: 새 함수 anon 실행 검사, private 함수 PUBLIC 실행 회수, 시퀀스 anon UPDATE 회수",
+  "status": "blocked",
+  "due": "2027-01-31",
+  "note": "위험도 P3. 2026-11-06 점검: public 함수 84개는 모두 PUBLIC 실행 회수·anon 직접 부여 0(정상)이나 기본 권한이 새 함수에 anon 실행을 준다 → 새 public 함수의 anon 실행 0을 보는 일반 테스트. private 함수 75개 중 65개는 PUBLIC 경유로 anon도 실행 가능(스키마 USAGE도 anon·authenticated), REST 노출 스키마는 public·graphql_public뿐이라 직접 호출 불가 → PUBLIC 실행 회수 후 RLS 정책이 쓰는 함수만 authenticated에 다시 부여(정책 회귀 테스트 필수). public 시퀀스 7개 anon·authenticated ALL → anon UPDATE 회수. 근본 원인(ALTER DEFAULT PRIVILEGES)은 Supabase 설정에 가까워 사장님 결정 → 2026-11-06 일반 함수 검사 테스트 추가(PR #46), private·시퀀스 회수는 마이그레이션 필요로 남음 → 2026-11-06 저녁 준비 완료(승인 대기): 마이그레이션 20261106055522_private_fn_revoke.sql(private 함수 PUBLIC 실행 65개 회수, service_role 65개·authenticated 24개 다시 부여 — 근거는 pg_depend 정책 20개·검사 제약 2개·뷰 2개·invoker 함수 2개, 운영 덤프와 이름 목록 같음 확인), 시퀀스 anon UPDATE 회수, 테스트 private_function_grants.test.sql(10개), 분석 docs/security/p21-13-analysis.md. 원격 적용·병합은 사장님 승인 대기"
+ },
+ {
+  "id": "P21-14",
+  "phase": "21 보안",
+  "title": "남은 기본 권한 정리: 표 MAINTAIN(PG17), anon의 private 스키마 USAGE·시퀀스 USAGE",
   "status": "todo",
   "due": "2027-01-31",
-  "note": "위험도 P3. 2026-11-06 점검: public 함수 84개는 모두 PUBLIC 실행 회수·anon 직접 부여 0(정상)이나 기본 권한이 새 함수에 anon 실행을 준다 → 새 public 함수의 anon 실행 0을 보는 일반 테스트. private 함수 75개 중 65개는 PUBLIC 경유로 anon도 실행 가능(스키마 USAGE도 anon·authenticated), REST 노출 스키마는 public·graphql_public뿐이라 직접 호출 불가 → PUBLIC 실행 회수 후 RLS 정책이 쓰는 함수만 authenticated에 다시 부여(정책 회귀 테스트 필수). public 시퀀스 7개 anon·authenticated ALL → anon UPDATE 회수. 근본 원인(ALTER DEFAULT PRIVILEGES)은 Supabase 설정에 가까워 사장님 결정 → 2026-11-06 일반 함수 검사 테스트 추가(PR #46), private·시퀀스 회수는 마이그레이션 필요로 남음"
+  "note": "위험도 P3. 2026-11-06 저녁 P21-12 적용 전후 운영 덤프에서 확인: public 표·뷰에 anon·authenticated MAINTAIN(VACUUM·ANALYZE·REINDEX·REFRESH·LOCK TABLE) 권한이 Supabase 기본 권한으로 남아 있다(P21-12 범위 밖). REST로는 보낼 수 없어 바로 악용 불가. 함께 정리할 것: anon의 private 스키마 USAGE, public 시퀀스 anon USAGE·SELECT(anon은 표 INSERT가 없다). P21-13 나머지(#52) 적용 뒤에 착수. docs/evening-report.md"
  },
  {
   "id": "P22-1",

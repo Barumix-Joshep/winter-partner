@@ -129,6 +129,29 @@ select
 ```
 정리 작업이 실패하면 ①의 `error` 칸에 `consult_license_sweep` 관련 문장이 나온다(이 작업은 사용권 정리가 실패해도 전체를 실패로 남긴다).
 
+**⑦ public 표 권한(P21-12, 2026-11-06 14:44 적용) — 표별 anon·authenticated 권한 재조회** (SQL 편집기, 읽기 전용)
+```sql
+with t as (
+  select c.relname as tbl,
+    concat_ws(',', case when has_table_privilege('anon', c.oid, 'INSERT') then 'I' end,
+                   case when has_table_privilege('anon', c.oid, 'UPDATE') then 'U' end,
+                   case when has_table_privilege('anon', c.oid, 'DELETE') then 'D' end,
+                   case when has_table_privilege('anon', c.oid, 'TRUNCATE') then 'T' end,
+                   case when has_table_privilege('anon', c.oid, 'REFERENCES') then 'R' end,
+                   case when has_table_privilege('anon', c.oid, 'TRIGGER') then 'G' end) as anon_write,
+    concat_ws(',', case when has_table_privilege('authenticated', c.oid, 'TRUNCATE') then 'T' end,
+                   case when has_table_privilege('authenticated', c.oid, 'REFERENCES') then 'R' end,
+                   case when has_table_privilege('authenticated', c.oid, 'TRIGGER') then 'G' end) as auth_trt,
+    concat_ws(',', case when has_table_privilege('authenticated', c.oid, 'SELECT') then 'S' end,
+                   case when has_table_privilege('authenticated', c.oid, 'INSERT') then 'I' end,
+                   case when has_table_privilege('authenticated', c.oid, 'UPDATE') then 'U' end,
+                   case when has_table_privilege('authenticated', c.oid, 'DELETE') then 'D' end) as auth_rw
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public' and c.relkind in ('r', 'p')
+)
+select * from t order by (anon_write = '' and auth_trt = ''), tbl;
+```
+
 ### 정상 기준
 **지금(실사용자 0명, 2026-11-07 첫 실행)** — 아래가 모두 맞으면 정상이다.
 | 확인 | 정상 |
@@ -142,6 +165,7 @@ select
 | ⑤ 서버 오류 | 0건, Vercel 로그에 `daily maintenance failed` 없음 |
 | ⑥ `consult_licenses_sweep` | `{"required": false, "trial_started": 0, "suspended": 0, "expiry_notices": 0, "quota_warnings": 0, "quota_reached": 0}` (스위치 꺼짐) |
 | ⑥ 사용권 표 | `plans` 1, `standard_v1_active` 1, `licenses` 0, `suspended` 0, `packs` 0, `license_required` `false` (본사가 사용권을 부여하기 전) |
+| ⑦ 표 권한 | 52줄(표 수). **모든 줄의 `anon_write`·`auth_trt`가 빈칸**. `auth_rw`는 2026-11-06 적용 직후와 같다(전체 표 기준 SELECT 49·INSERT 45·UPDATE 43·DELETE 44. `auth_rw`가 빈칸인 3줄 consult_licenses·conversations·shop_channels는 열 단위 권한이거나 서버 전용이라 정상). 빈칸이 아닌 줄이 있으면 맨 위에 모여 보인다 |
 
 즉 **대상 0건, 오류 0건이면 정상**이다(운영 상담 표는 2026-11-05에 만들어져 실제로 지울 대상은 2027-02 이후에 처음 생긴다).
 
@@ -165,4 +189,5 @@ select
 | ② 0이 아님 | 정리가 덜 됐다. 다음 실행 뒤에도 남아 있으면 Claude Code에 숫자와 함께 알린다(행 내용은 보내지 않는다) |
 | ③ 0이 아님 | **개인정보 사고 후보.** 연락처가 남은 문의가 있다는 뜻이므로 바로 Claude Code에 알리고, 그 사이 손님에게 새 연락은 하지 않는다 |
 | ⑥ `license_required`가 `true`인데 켠 적이 없음 | 누가 바꿨는지 Claude Code에 알린다(되돌리기: `docs/ai-consult/pilot-license-runbook.md`의 false SQL). 사용권 없는 샵은 모두 AI 상담이 꺼진다 |
+| ⑦ `anon_write`나 `auth_trt`가 빈칸이 아닌 표가 있음 | 그 표 이름만 Claude Code에 알린다. 새 마이그레이션이 회수 문장을 빠뜨렸거나(CI `table_grants` 테스트가 원래 막는다) 누가 대시보드에서 권한을 줬다는 뜻이다. 되돌리지 말고 기다린다(데이터는 RLS가 계속 막는다) |
 | ① 숫자가 비정상적으로 큼 | 잘못 지웠을 수 있다. 정리는 되돌릴 수 없으므로 **다음 03:00 전에** Claude Code에 알려 크론을 멈출지 정한다(크론 끄기는 Vercel 설정이라 사장님이 한다). Pro 요금제라면 백업 시점도 함께 확인 |
