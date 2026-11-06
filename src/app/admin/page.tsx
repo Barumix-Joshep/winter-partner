@@ -16,6 +16,9 @@ export default function AdminHome() {
       <Link href="/admin/ai" className="flex min-h-11 items-center self-start text-sm text-brand underline">
         AI 사용량·설정
       </Link>
+      <Link href="/admin/ai/consult" className="flex min-h-11 items-center self-start text-sm text-brand underline">
+        AI 상담 사용권
+      </Link>
       <Link href="/admin/pilot" className="flex min-h-11 items-center self-start text-sm text-brand underline">
         시범 운영 지표
       </Link>

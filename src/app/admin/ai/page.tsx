@@ -16,6 +16,9 @@ export default function AdminAiPage({ searchParams }: { searchParams: Promise<Re
         ‹ 본사 관리
       </Link>
       <h1 className="text-lg font-bold">AI 사용량</h1>
+      <Link href="/admin/ai/consult" className="flex min-h-11 items-center self-start text-sm text-brand underline">
+        AI 상담 사용권 관리
+      </Link>
       <Suspense fallback={<p className="text-sm text-ink-muted">불러오는 중…</p>}>
         <Usage />
       </Suspense>

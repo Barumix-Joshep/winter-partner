@@ -69,7 +69,7 @@ describe("notificationMessage", () => {
       expect(m.url).toBe(KNOW);
       expect(notificationMessage("consult_license_expiring", { status: "paid", ends_at: "2026-12-31T15:00:00Z" }, null).title).toBe("AI 상담 이용 기간이 곧 끝나요");
     });
-    it("중지됨: 샵은 인박스로, 본사는 샵 이름과 함께 본사 AI 화면으로", () => {
+    it("중지됨: 샵은 인박스로, 본사는 샵 이름과 함께 본사 사용권 화면으로", () => {
       expect(notificationMessage("consult_license_suspended", { reason: "trial_ended" }, null)).toMatchObject({
         title: "AI 상담 자동 답변을 멈췄어요",
         url: "/shop/ai-consult/inbox",
@@ -77,7 +77,7 @@ describe("notificationMessage", () => {
       expect(notificationMessage("consult_license_suspended", { reason: "expired", admin: true, shop_name: "[테스트] 하이원" }, null)).toEqual({
         title: "AI 상담 사용권이 중지됐습니다",
         body: "[테스트] 하이원 · 기간 끝",
-        url: "/admin/ai",
+        url: "/admin/ai/consult",
       });
     });
     it("80%·100%: 사용 건수/한도", () => {
@@ -90,7 +90,7 @@ describe("notificationMessage", () => {
       expect(full.body).toContain("12월 1일까지");
       expect(notificationMessage("consult_quota_reached", { used: 2000, limit: 2000, month: "2026-12", admin: true, shop_name: "A샵" }, null)).toMatchObject({
         body: "A샵 · 2,000/2,000건",
-        url: "/admin/ai",
+        url: "/admin/ai/consult",
       });
     });
     it("부여·연장", () => {
