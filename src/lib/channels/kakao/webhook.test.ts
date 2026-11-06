@@ -364,3 +364,64 @@ describe("라우트 (Request → Response)", () => {
     expect(deps.findChannel).not.toHaveBeenCalled();
   });
 });
+
+describe("AI 상담 사용권 (P23-2)", () => {
+  it.each([
+    ["no_license", "license_off"],
+    ["monthly_quota", "monthly_quota"],
+  ] as const)("사용권 확인이 %s면 엔진(AI)을 부르지 않고 사장님께 넘긴다: 상담 연결 + 문의(초안 없음) + 안내 기록", async (state, outcome) => {
+    const licenseState = vi.fn(async () => state);
+    const { deps, logs, flush } = makeDeps({ licenseState });
+    expect(await run(deps, skillPayload({ utterance: "강습료 얼마예요? 010-0000-1234" }))).toEqual(escalateResponse());
+    await flush();
+    expect(licenseState).toHaveBeenCalledWith("shop-1");
+    expect(deps.runConsult).not.toHaveBeenCalled();
+    expect(deps.recordCustomerMessage).toHaveBeenCalled(); // 손님 글(가린 글)은 남는다
+    expect(deps.openInquiry).toHaveBeenCalledWith({ conversationId: "conv-1", type: "other", extracted: undefined, draft: undefined, contact: "010-0000-1234" });
+    expect(deps.recordReply).toHaveBeenCalledWith(expect.objectContaining({ role: "system", text: ESCALATE_TEXT, delivery: "sent" }));
+    expect(logs.map((l) => l.outcome)).toContain(outcome);
+  });
+
+  it("사용권 확인은 채널을 찾은 뒤 바로 시작해 손님 저장과 함께 돈다(3.5초 예산 안, 쿼리 1개)", async () => {
+    let started = -1;
+    const licenseState = vi.fn(() => {
+      started = Date.now();
+      return new Promise<"no_license">((r) => setTimeout(() => r("no_license"), 300));
+    });
+    let recordedAt = -1;
+    const recordCustomerMessage = vi.fn(async () => {
+      recordedAt = Date.now();
+      return { conversationId: "conv-1", duplicate: false };
+    });
+    const { deps, flush } = makeDeps({ licenseState, recordCustomerMessage });
+    const t0 = Date.now();
+    expect(await run(deps, skillPayload(), 400)).toEqual(escalateResponse());
+    await flush();
+    expect(licenseState).toHaveBeenCalledTimes(1);
+    expect(started).toBe(t0);
+    expect(recordedAt).toBe(t0); // 사용권 확인을 기다리지 않고 저장했다
+  });
+
+  it("사용권 확인이 실패하면(DB 오류) 지금처럼 엔진을 부른다 — DB 게이트(ai_gate)가 다시 막는다", async () => {
+    const { deps, flush } = makeDeps({ licenseState: vi.fn(async () => Promise.reject(new Error("db"))) });
+    expect(await run(deps)).toEqual(simpleTextResponse(AUTO.reply));
+    await flush();
+    expect(deps.runConsult).toHaveBeenCalled();
+  });
+
+  it("사용권이 있으면(ok) 지금과 같다", async () => {
+    const { deps, flush } = makeDeps({ licenseState: vi.fn(async () => "ok" as const) });
+    expect(await run(deps)).toEqual(simpleTextResponse(AUTO.reply));
+    await flush();
+    expect(deps.openInquiry).not.toHaveBeenCalled();
+  });
+
+  it("중복 발화면 사용권과 상관없이 다시 처리하지 않는다", async () => {
+    const { deps } = makeDeps({
+      licenseState: vi.fn(async () => "no_license" as const),
+      recordCustomerMessage: vi.fn(async () => ({ conversationId: "conv-1", duplicate: true })),
+    });
+    expect(await run(deps)).toEqual(duplicateResponse());
+    expect(deps.openInquiry).not.toHaveBeenCalled();
+  });
+});

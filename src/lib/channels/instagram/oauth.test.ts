@@ -135,6 +135,9 @@ describe("콜백 판단", () => {
   it("이미 다른 샵에 연결된 계정은 taken", async () => {
     expect(await handleInstagramCallback(q({ code: "c", state: state() }), deps({ save: async () => "taken" }))).toBe("taken");
   });
+  it("AI 상담 사용권이 없으면(DB가 거부, P23-2) no_license", async () => {
+    expect(await handleInstagramCallback(q({ code: "c", state: state() }), deps({ save: async () => "no_license" }))).toBe("no_license");
+  });
   it("메타 오류는 error (토큰·코드는 로그에 없다)", async () => {
     const logs: Record<string, unknown>[] = [];
     const d = deps({ completeLogin: async () => Promise.reject(new Error("x")), log: (e) => logs.push(e) });

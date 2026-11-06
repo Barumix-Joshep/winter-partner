@@ -31,6 +31,7 @@ export function instagramDeps(defer: InstagramWebhookDeps["defer"]): InstagramWe
     },
     recordCustomerMessage: store.recordCustomerMessage,
     rateOk: async (name, subject) => (await overLimit([[name, subject]])) === null,
+    licenseState: store.licenseState,
     runConsult: (input) => runConsult(input),
     replyContext: store.replyContext,
     recordReply: store.recordReply,

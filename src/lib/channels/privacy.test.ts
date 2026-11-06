@@ -18,6 +18,7 @@ const db = vi.hoisted(() => ({
   gate: { allowed: true, reason: "ok", model: "claude-haiku-5-5" },
   openInquiry: false,
   channel: null as Record<string, unknown> | null,
+  license: null as string | null, // consult_license_check 결과(null = 함수 없음·스위치 꺼짐과 같게 null을 돌려준다)
 }));
 
 vi.mock("@/lib/supabase/admin", () => {
@@ -67,6 +68,8 @@ vi.mock("@/lib/supabase/admin", () => {
           return { data: !db.limited.has(String(args.p_key)), error: null };
         case "ai_gate":
           return { data: [db.gate], error: null };
+        case "consult_license_check":
+          return { data: db.license, error: null };
         case "consult_record_customer_message":
           return { data: [{ conversation_id: "c0000000-0000-0000-0000-000000000001", message_id: "m1", duplicate: false }], error: null };
         default:
@@ -117,6 +120,7 @@ beforeEach(() => {
   db.limited = new Set();
   db.gate = { allowed: true, reason: "ok", model: "claude-haiku-5-5" };
   db.openInquiry = false;
+  db.license = null;
   opsEvents.length = 0;
   consoleCalls.length = 0;
   graphHits.length = 0;
@@ -334,5 +338,39 @@ describe("요청 제한·하루 상한 → AI 없이 escalate", () => {
     expect(JSON.stringify(res)).toContain("120,000원");
     expect(rpc("record_ai_usage")).toHaveLength(1);
     expect(rpc("consult_open_inquiry")).toHaveLength(0);
+  });
+});
+
+describe("AI 상담 사용권 (P23-2) → AI 없이 사장님께", () => {
+  it.each(["no_license", "monthly_quota"])("카카오 %s: 상담 연결 + 문의(초안 없음), AI 게이트·모델 호출 0", async (state) => {
+    kakaoChannel();
+    db.license = state;
+    expect(await kakao("[테스트] 강습료 얼마예요?")).toEqual(escalateResponse());
+    expect(rpc("consult_license_check")[0].args).toEqual({ p_shop_id: "shop-1" });
+    expect(rpc("ai_gate")).toHaveLength(0);
+    expect(rpc("record_ai_usage")).toHaveLength(0);
+    expect(rpc("consult_record_customer_message")).toHaveLength(1);
+    expect(rpc("consult_open_inquiry")).toHaveLength(1);
+    expect(rpc("consult_open_inquiry")[0].args.p_ai_draft).toBeNull();
+  });
+
+  it.each(["no_license", "monthly_quota"])("인스타 %s: AI 없이 '사장님께 전달' 한 번 + 문의", async (state) => {
+    await igChannelWithToken();
+    db.license = state;
+    await instagram("[테스트] 강습료 얼마예요?");
+    expect(rpc("ai_gate")).toHaveLength(0);
+    expect(rpc("record_ai_usage")).toHaveLength(0);
+    expect(rpc("consult_open_inquiry")).toHaveLength(1);
+    const sent = graphHits.filter((h) => h.url.includes("graph.unit.example"));
+    expect(sent).toHaveLength(1);
+    expect(sent[0].body).toContain("사장님께 전달했어요");
+    expect(sent[0].body).not.toContain("120,000원");
+  });
+
+  it("사용권 확인이 ok면(스위치 꺼짐 포함) 지금처럼 자동 답변", async () => {
+    kakaoChannel();
+    db.license = "ok";
+    expect(JSON.stringify(await kakao("[테스트] 강습료 얼마예요?"))).toContain("120,000원");
+    expect(rpc("record_ai_usage")).toHaveLength(1);
   });
 });

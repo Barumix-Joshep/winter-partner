@@ -5,6 +5,7 @@
 상태: **설계 승인, 구현 중** (2026-11-05 사장님 결정 6개 반영 — 맨 아래 "사장님 결정"). P22-1(스키마·안내 정보 화면)·P22-2(상담 엔진)부터.
 
 유료 서비스 분리(사용권·사용량·본사 화면, P23): **[paid-service-design.md](paid-service-design.md)** (설계 초안, 2026-11-06).
+- P23-2 구현(`20261106015911_consult_license.sql`): 사용권 표·판정·게이트·차단. 켜짐 스위치 `private.app_settings.consult_license_required`가 **false(기본)면 지금 동작 그대로**, true면 사용권 없는 샵은 AI를 부르지 않고 모든 문의를 사장님께 넘긴다. E2E에서 스위치를 켜는 곳은 `e2e/ai-consult-license.spec.ts` 하나(`e2e/local-sql.ts`, 로컬 DB 컨테이너만)이고 끝나면 되돌린다.
 
 ## 스택 요약 (0단계 파악, 2026-11-05)
 - **웹·서버**: Next.js 16.4 App Router(`src/app`), React 19, cacheComponents. 서버 코드는 **서버 액션**(`src/app/**/actions.ts`)과 **라우트 핸들러**(`src/app/**/route.ts`). Supabase Edge Functions는 쓰지 않는다(`supabase/functions` 없음) → 웹훅도 라우트 핸들러로 만든다. Vercel 배포(main 병합 = 운영 배포), 크론은 Vercel Cron + `CRON_SECRET`(`src/app/api/maintenance/daily`, `src/app/api/notify/dispatch`).

@@ -11,6 +11,7 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 
 | 마이그레이션 | 작업 | 데이터 변경 | 적용 순서 |
 |---|---|---|---|
+| `20261106015911_consult_license.sql` | P23-2 AI 상담 사용권 (표 3개·판정·체험 시작 트리거·게이트·본사 RPC·정리 작업, 켜짐 스위치 false) | 요금제 `consult_plans` 1행(`standard_v1` 임시안), `private.app_settings` 키 1개(`consult_license_required` = false), 자동 이행: `shop_consult_settings.auto_reply_enabled = true` 이거나 `shop_channels.enabled = true` 인 샵마다 `consult_licenses` 체험 1행(첫 자동응답 기준, 감사 `consult_license_granted` {"migration": true}). 2026-11-06 문서 기준 대상 0곳 — 적용 직전 읽기 조회로 다시 센다. 기존 표의 행은 바꾸지 않는다 | **원격 적용 먼저, 병합 나중**(새 화면·웹훅·매일 정리 작업이 새 함수 `consult_my_usage`·`consult_license_check`·`consult_license_sweep`을 부른다). 스위치가 false라 적용해도 지금 동작 그대로. 스위치는 시범 샵 사용권 확인(P23-3·P23-5) 뒤 사장님이 SQL Editor에서 true로 |
 
 ## 적용 기록
 
