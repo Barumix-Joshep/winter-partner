@@ -58,4 +58,45 @@ describe("notificationMessage", () => {
     });
     expect(notificationMessage("ai_fail_rate", { calls: 10, fails: 3 }, null).body).toContain("10회 중 3회 실패");
   });
+
+  describe("AI 상담 사용권 (P23-2, 문구는 설계 6-2 초안)", () => {
+    const KNOW = "/shop/ai-consult/knowledge";
+    it("만료 3일 전: 종료일(한국 날짜)과 연장 안내, 샵 설정 화면으로", () => {
+      const m = notificationMessage("consult_license_expiring", { status: "trial", ends_at: "2026-11-19T15:00:00Z" }, null);
+      expect(m.title).toBe("AI 상담 체험 기간이 곧 끝나요");
+      expect(m.body).toContain("11월 19일까지");
+      expect(m.body).toContain("본사에 연장을 요청");
+      expect(m.url).toBe(KNOW);
+      expect(notificationMessage("consult_license_expiring", { status: "paid", ends_at: "2026-12-31T15:00:00Z" }, null).title).toBe("AI 상담 이용 기간이 곧 끝나요");
+    });
+    it("중지됨: 샵은 인박스로, 본사는 샵 이름과 함께 본사 AI 화면으로", () => {
+      expect(notificationMessage("consult_license_suspended", { reason: "trial_ended" }, null)).toMatchObject({
+        title: "AI 상담 자동 답변을 멈췄어요",
+        url: "/shop/ai-consult/inbox",
+      });
+      expect(notificationMessage("consult_license_suspended", { reason: "expired", admin: true, shop_name: "[테스트] 하이원" }, null)).toEqual({
+        title: "AI 상담 사용권이 중지됐습니다",
+        body: "[테스트] 하이원 · 기간 끝",
+        url: "/admin/ai",
+      });
+    });
+    it("80%·100%: 사용 건수/한도", () => {
+      const warn = notificationMessage("consult_quota_warning", { used: 1600, limit: 2000, month: "2026-11" }, null);
+      expect(warn.title).toBe("이번 달 AI 응답 80%를 썼어요");
+      expect(warn.body).toContain("1,600/2,000건");
+      expect(warn.url).toBe(KNOW);
+      const full = notificationMessage("consult_quota_reached", { used: 2000, limit: 2000, month: "2026-11" }, null);
+      expect(full.title).toBe("이번 달 포함 AI 응답을 모두 썼어요");
+      expect(full.body).toContain("12월 1일까지");
+      expect(notificationMessage("consult_quota_reached", { used: 2000, limit: 2000, month: "2026-12", admin: true, shop_name: "A샵" }, null)).toMatchObject({
+        body: "A샵 · 2,000/2,000건",
+        url: "/admin/ai",
+      });
+    });
+    it("부여·연장", () => {
+      expect(notificationMessage("consult_license_granted", { trial_days: 10 }, null)).toMatchObject({ title: "AI 상담 무료 체험이 열렸어요", url: KNOW });
+      expect(notificationMessage("consult_license_granted", { trial_days: 10 }, null).body).toContain("10일");
+      expect(notificationMessage("consult_license_extended", { ends_at: "2026-12-31T15:00:00Z" }, null).body).toContain("12월 31일까지");
+    });
+  });
 });

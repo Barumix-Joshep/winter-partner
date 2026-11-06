@@ -1,7 +1,7 @@
 // 카카오 스킬 웹훅 흐름 (P22-3, docs/ai-consult/README.md "채널 흐름 — 카카오"). DB·AI·시간·HTTP는 모두 deps로 받는다(테스트에서 바꿔 끼움).
 // 1. 토큰으로 채널 찾기 → 꺼짐·없음·봇 id 불일치·해시 키 없음이면 기본 안내(HTTP 200, 카카오는 올바른 스킬 JSON을 기대한다)
 // 2. 손님 id 해시 → 손님 메시지 저장(발화 id로 중복 제거, 중복이면 엔진을 다시 돌리지 않는다)
-// 3. 샵·대화 요청 제한 → 넘으면 AI 없이 상담 연결 안내
+// 3. 샵·대화 요청 제한 → 넘으면 AI 없이 상담 연결 안내. AI 상담 사용권이 없거나 이번 달 포함 응답을 다 썼으면(P23-2) AI 없이 상담 연결 + 문의
 // 4. 엔진이 요청을 받은 때부터 약 3.5초 안에 끝나면 바로 답하고, 넘기면 useCallback으로 답한 뒤 after()에서 callbackUrl로 한 번만 보낸다
 // 5. escalate면 상담 연결 버튼 + 문의 열기. 첫 자동 답변에는 샵 고지 문구를 붙인다.
 // 6. 손님 글 속 전화·이메일은 서버 규칙으로 뽑아(P22-6) 문의에 넘기고(저장하는 쪽이 암호화), 메시지에는 가린 글만 저장한다.
@@ -10,7 +10,7 @@
 import { extractContact } from "@/lib/ai/consult/contact";
 import { hashExternalId } from "@/lib/ai/consult/crypto";
 import { CONSULT_PROMPT_VERSION } from "@/lib/ai/consult/prompt";
-import type { ConsultInput, ConsultIntent, ConsultResult, Extracted } from "@/lib/ai/consult/types";
+import type { ConsultInput, ConsultIntent, ConsultResult, Extracted, LicenseState } from "@/lib/ai/consult/types";
 import type { LimitName } from "@/lib/ops/limits";
 import type { DeliveryStatus } from "../types";
 import { botMatches, callbackUrlAllowed, parseSkillRequest } from "./adapter";
@@ -39,6 +39,8 @@ export type KakaoWebhookDeps = {
   findChannel: (token: string) => Promise<KakaoChannelRow | null>;
   recordCustomerMessage: (m: { channelId: string; userHash: string; messageId: string; text: string }) => Promise<{ conversationId: string; duplicate: boolean } | null>;
   rateOk: (name: LimitName, subject: string) => Promise<boolean>;
+  // AI 상담 사용권 (P23-2, DB consult_license_check 쿼리 1개). 없으면 확인하지 않는다(지금 동작). 실패하면 ok로 보고 DB 게이트가 다시 막는다
+  licenseState?: (shopId: string) => Promise<LicenseState>;
   runConsult: (input: ConsultInput) => Promise<ConsultResult>;
   replyContext: (shopId: string, conversationId: string) => Promise<ReplyContext>;
   recordReply: (r: {
@@ -96,6 +98,8 @@ export async function handleKakaoSkill(token: string, raw: unknown, deps: KakaoW
   const ch = await deps.findChannel(token).catch(() => null);
   if (!ch || !ch.enabled || ch.channel !== "kakao") return (log("channel_off", { len }), guidanceResponse());
   if (!botMatches(ch.external_id, msg.accountId)) return (log("bot_mismatch", { len }), guidanceResponse());
+  // 사용권 확인은 지금 시작해 요청 제한·저장과 함께 돈다(3.5초 예산을 늘리지 않게)
+  const licenseP: Promise<LicenseState> = deps.licenseState ? deps.licenseState(ch.shop_id).catch((): LicenseState => "ok") : Promise.resolve("ok");
 
   // 3-1. 샵 요청 제한 (넘으면 저장도 하지 않는다 — 도배 방지)
   if (!(await deps.rateOk("consult_shop", ch.shop_id))) return (log("rate_shop", { len }), busyResponse());
@@ -121,6 +125,17 @@ export async function handleKakaoSkill(token: string, raw: unknown, deps: KakaoW
         log("after_failed", { len, path, error: (e as Error)?.name ?? "error" });
       }
     });
+
+  // 3-0. 사용권이 없거나(no_license) 이번 달 포함 응답을 다 썼으면(monthly_quota) 엔진(AI)을 부르지 않고 사장님께 넘긴다(초안 없음)
+  const license = await licenseP;
+  if (license !== "ok") {
+    log(license === "monthly_quota" ? "monthly_quota" : "license_off", { len });
+    safely("license", async () => {
+      await deps.recordReply({ conversationId, role: "system", text: ESCALATE_TEXT, intent: "unknown", confidence: 0, promptVersion: CONSULT_PROMPT_VERSION, delivery: "sent" });
+      await deps.openInquiry({ conversationId, type: "other", extracted: undefined, draft: undefined, contact });
+    });
+    return escalateResponse();
+  }
 
   // 3-2. 대화 요청 제한: AI를 부르지 않고 상담 연결 안내 + 사장님께 문의로 넘긴다(열린 문의가 있으면 그 문의에 합친다)
   if (!(await deps.rateOk("consult_conversation", conversationId))) {

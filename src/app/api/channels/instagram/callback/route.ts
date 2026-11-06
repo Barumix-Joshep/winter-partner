@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
         p_token_expires_at: r.expiresAt.toISOString(),
       });
       if (error?.code === "23505") return "taken";
+      if (error?.code === "42501" && error.hint === "consult_license") return "no_license"; // AI 상담 사용권 없음(P23-2, 스위치가 켜져 있을 때)
       if (error) throw error;
       return "ok";
     },

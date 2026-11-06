@@ -6,13 +6,14 @@
 // 손님 글 속 전화·이메일은 서버 규칙으로 뽑아(P22-6) 문의에 넘기고(저장하는 쪽이 암호화), 메시지에는 가린 글만 저장한다.
 // 연락처를 남긴 손님은 사장님이 연락해야 하므로 자동 답변을 했더라도 문의를 연다.
 // 대화 요청 제한을 넘으면 AI 없이 escalate(열린 문의가 없을 때만 "사장님께 전달했어요" 한 번 + 문의).
+// AI 상담 사용권이 없거나 이번 달 포함 응답을 다 쓴 샵(P23-2)도 같은 자리에서 AI 없이 escalate.
 // 환경변수가 없으면 기능 꺼짐(404). 로그에는 손님 글·손님 id·연락처를 쓰지 않는다(종류·길이·결과만).
 import { extractContact } from "@/lib/ai/consult/contact";
 import { hashExternalId } from "@/lib/ai/consult/crypto";
 import { ESCALATE_REPLY } from "@/lib/ai/consult/engine";
 import { CONSULT_PROMPT_VERSION } from "@/lib/ai/consult/prompt";
 import { fitChannel } from "@/lib/ai/consult/rules";
-import type { ConsultInput, ConsultResult } from "@/lib/ai/consult/types";
+import type { ConsultInput, ConsultResult, LicenseState } from "@/lib/ai/consult/types";
 import type { LimitName } from "@/lib/ops/limits";
 import type { InquiryType, ReplyContext, ReplyRecord } from "../store";
 import type { ChannelAdapter } from "../types";
@@ -29,6 +30,8 @@ export type InstagramWebhookDeps = {
   findChannelByAccount: (accountId: string) => Promise<InstagramChannelRow | null>;
   recordCustomerMessage: (m: { channelId: string; userHash: string; messageId: string; text: string }) => Promise<{ conversationId: string; duplicate: boolean } | null>;
   rateOk: (name: LimitName, subject: string) => Promise<boolean>;
+  // AI 상담 사용권 (P23-2, DB consult_license_check). 없으면 확인하지 않는다(지금 동작). 실패하면 ok로 보고 DB 게이트가 다시 막는다
+  licenseState?: (shopId: string) => Promise<LicenseState>;
   runConsult: (input: ConsultInput) => Promise<ConsultResult>;
   replyContext: (shopId: string, conversationId: string) => Promise<ReplyContext>;
   recordReply: (r: ReplyRecord) => Promise<void>;
@@ -117,6 +120,9 @@ export async function handleInstagramEvent(e: InstagramEvent, deps: InstagramWeb
   const ch = await deps.findChannelByAccount(e.accountId).catch(() => null);
   if (!ch || !ch.enabled || ch.channel !== "instagram") return log("channel_off");
 
+  // 사용권 확인은 지금 시작해 요청 제한·저장과 함께 돈다
+  const licenseP: Promise<LicenseState> = deps.licenseState ? deps.licenseState(ch.shop_id).catch((): LicenseState => "ok") : Promise.resolve("ok");
+
   // 샵 요청 제한 (넘으면 저장도 하지 않는다 — 도배 방지)
   if (!(await deps.rateOk("consult_shop", ch.shop_id))) return log("rate_shop");
 
@@ -134,12 +140,15 @@ export async function handleInstagramEvent(e: InstagramEvent, deps: InstagramWeb
     return log("stored_only");
   }
 
+  // 사용권 없음·이번 달 소진이면 AI를 부르지 않고 escalate (대화 요청 제한과 같은 자리)
+  const license = await licenseP;
+  if (license !== "ok") log(license === "monthly_quota" ? "monthly_quota" : "license_off");
   // 대화 요청 제한 (넘으면 AI를 부르지 않고 escalate — 메시지는 저장됨, 안내는 열린 문의가 없을 때 한 번만)
-  const limited = !(await deps.rateOk("consult_conversation", conversationId));
+  const limited = license === "ok" && !(await deps.rateOk("consult_conversation", conversationId));
   if (limited) log("rate_conversation");
 
   const [r, ctx] = await Promise.all([
-    limited ? RATE_LIMITED : deps.runConsult({ shopId: ch.shop_id, conversationId, text: e.text, channel: "instagram" }).catch(() => FALLBACK),
+    license !== "ok" ? { ...FALLBACK, reason: license } : limited ? RATE_LIMITED : deps.runConsult({ shopId: ch.shop_id, conversationId, text: e.text, channel: "instagram" }).catch(() => FALLBACK),
     deps.replyContext(ch.shop_id, conversationId).catch(() => NO_DISCLOSE),
   ]);
 

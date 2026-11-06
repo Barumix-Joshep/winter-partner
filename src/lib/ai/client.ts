@@ -111,6 +111,8 @@ export type StructuredCall<T> = {
   retries?: number; // 실패 뒤 다시 부르는 횟수, 기본 1
   // 짧은 시간 호출 제한을 셀 단위. 기본은 userId ?? shopId. AI 상담은 손님이 로그인하지 않으므로 대화 단위("consult:<대화 id>")로 센다.
   rateSubject?: string | null;
+  // 게이트 결과를 알고 싶을 때(AI 상담은 막힌 이유 no_license·monthly_quota를 지표·로그에 남긴다, P23-2)
+  onGate?: (gate: Gate | null) => void;
 };
 
 export async function callStructured<T>(call: StructuredCall<T>, deps: AiDeps = defaultDeps): Promise<T | null> {
@@ -119,6 +121,7 @@ export async function callStructured<T>(call: StructuredCall<T>, deps: AiDeps = 
   const subject = call.rateSubject !== undefined ? call.rateSubject : (call.userId ?? call.shopId);
   if (subject && deps.rateOk && !(await deps.rateOk(subject))) return null; // 수동 흐름
   const gate = await deps.gate(call.shopId, call.feature);
+  call.onGate?.(gate);
   if (!gate?.allowed) return null;
 
   const req: AiRequest = {

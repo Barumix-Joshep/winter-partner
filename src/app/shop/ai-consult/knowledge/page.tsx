@@ -7,6 +7,8 @@ import { KB_ACTIVE_TOTAL_MAX, KB_KIND_LABEL, KB_KINDS, type KbItem } from "@/lib
 import { AddKnowledgeForm, DisclosureForm, KnowledgeItemForm } from "./forms";
 import { instagramConfig } from "@/lib/channels/instagram/config";
 import { disconnectInstagram, setAutoReply } from "./actions";
+import type { LicenseView } from "@/lib/ai/consult/license";
+import { myConsultLicenseView } from "@/lib/ai/consult/license-server";
 
 // AI 상담(P22) 안내 정보: AI는 여기서 "AI 답변에 사용"으로 켠 사실(가격·영업시간·위치·정책)만 손님에게 바로 답한다.
 // 예약 확정·금액 협상·불만·여기 없는 질문은 항상 사장님께 넘긴다(초안만). CLAUDE.md AI 원칙의 예외.
@@ -32,11 +34,14 @@ async function Content({ searchParams }: { searchParams: Promise<{ ig?: string }
   const shop = await getMyShop(user.id);
   if (!shop) redirect("/shop/new");
   const supabase = await createClient();
-  const [{ data: items }, { data: settings }, { data: channels }] = await Promise.all([
+  const [{ data: items }, { data: settings }, { data: channels }, lic] = await Promise.all([
     supabase.from("shop_knowledge").select("id, kind, title, content, is_active").eq("shop_id", shop.id).order("sort").order("created_at"),
     supabase.from("shop_consult_settings").select("auto_reply_enabled, ai_disclosure_text, disclose_first_reply").eq("shop_id", shop.id).maybeSingle(),
     supabase.from("shop_channels").select("channel, enabled, external_id, token_expires_at").eq("shop_id", shop.id),
+    myConsultLicenseView(shop.id),
   ]);
+  // AI 상담 사용권(P23-2). 켜짐 스위치가 꺼져 있으면 show=false → 지금 화면 그대로
+  const blocked = !!lic?.show && !lic.canTurnOn;
   const { ig } = await searchParams;
   const instagram = (channels ?? []).find((c) => c.channel === "instagram") ?? null;
   const kb = (items ?? []) as KbItem[];
@@ -56,16 +61,22 @@ async function Content({ searchParams }: { searchParams: Promise<{ ig?: string }
               {connected.length ? connected.join(", ") : "아직 없음"}
             </p>
           </div>
-          <form action={setAutoReply}>
-            <input type="hidden" name="enabled" value={on ? "false" : "true"} />
-            <button
-              aria-label={`AI 자동 응대 ${on ? "끄기" : "켜기"}`}
-              className={`min-h-11 rounded-lg px-4 text-sm font-medium ${on ? "bg-[#E6F4EA] text-[#1B6B3A]" : "bg-[#EEF1F6] text-ink-muted"}`}
-            >
-              {on ? "켜짐" : "꺼짐"}
-            </button>
-          </form>
+          {/* 사용권이 없으면 켜기 대신 안내(DB도 거부한다). 끄기는 언제나 된다 */}
+          {on || !blocked ? (
+            <form action={setAutoReply}>
+              <input type="hidden" name="enabled" value={on ? "false" : "true"} />
+              <button
+                aria-label={`AI 자동 응대 ${on ? "끄기" : "켜기"}`}
+                className={`min-h-11 rounded-lg px-4 text-sm font-medium ${on ? "bg-[#E6F4EA] text-[#1B6B3A]" : "bg-[#EEF1F6] text-ink-muted"}`}
+              >
+                {on ? "켜짐" : "꺼짐"}
+              </button>
+            </form>
+          ) : (
+            <span className="min-h-11 rounded-lg bg-[#EEF1F6] px-4 py-3 text-sm font-medium text-ink-muted">사용권 필요</span>
+          )}
         </div>
+        {lic?.show && <LicenseBox view={lic} />}
         {on && !active.length && (
           <p role="status" className="rounded-lg bg-[#FFF1E0] p-3 text-sm text-[#7A3E06]">
             &lsquo;AI 답변에 사용&rsquo;으로 켠 안내 정보가 없어 지금은 모든 문의가 사장님께 넘어갑니다.
@@ -78,8 +89,9 @@ async function Content({ searchParams }: { searchParams: Promise<{ ig?: string }
         </p>
       </section>
 
-      <InstagramSection ready={!!instagramConfig()} channel={instagram} notice={ig} />
+      <InstagramSection ready={!!instagramConfig()} channel={instagram} notice={ig} blocked={blocked} />
 
+      {blocked && <p className="text-sm text-ink-muted">사용권이 생기면 AI가 아래 안내 정보로 손님께 답합니다. 지금 미리 채워 두세요.</p>}
       <p className="text-xs text-ink-muted">
         사용 중 {active.length}개 · {used.toLocaleString()} / {KB_ACTIVE_TOTAL_MAX.toLocaleString()}자. 예시 문구(00원)는 실제 내용으로 바꾼 뒤 켜 주세요.
       </p>
@@ -105,8 +117,33 @@ const IG_NOTICE: Record<string, { text: string; ok: boolean }> = {
   denied: { text: "인스타그램 연결을 취소했습니다.", ok: false },
   expired: { text: "연결 시간이 지났습니다. 다시 눌러 주세요.", ok: false },
   taken: { text: "이 인스타그램 계정은 이미 다른 샵에 연결되어 있습니다. 본사에 문의해 주세요.", ok: false },
+  no_license: { text: "AI 상담 사용권이 있어야 인스타그램을 연결할 수 있습니다. 본사에 요청해 주세요.", ok: false },
   error: { text: "인스타그램 연결에 실패했습니다. 잠시 뒤 다시 시도해 주세요.", ok: false },
 };
+
+// AI 상담 사용권 (P23-2): 체험·이용 기간, 이번 달 응답 / 한도, 막혔을 때 안내. 가격은 보이지 않는다(Q17)
+function LicenseBox({ view }: { view: LicenseView }) {
+  const bar = view.level === "full" ? "bg-danger" : view.level === "warn" ? "bg-[#D97706]" : "bg-brand";
+  return (
+    <div aria-label="AI 상담 사용권" role="group" className="flex flex-col gap-2 rounded-lg bg-[#F5F7FB] p-3 text-sm">
+      {!view.canTurnOn && <p className="font-bold">AI 상담 사용권이 필요해요</p>}
+      {view.period && <p className="font-medium">{view.period}</p>}
+      {view.usage && (
+        <>
+          <p className={view.level === "ok" ? "text-ink-muted" : "font-medium text-[#7A3E06]"}>{view.usage}</p>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-[#E3E8F1]" aria-hidden>
+            <div className={`h-full ${bar}`} style={{ width: `${view.percent}%` }} />
+          </div>
+        </>
+      )}
+      {view.notice && (
+        <p role="status" className="rounded-lg bg-[#FFF1E0] p-3 text-[#7A3E06]">
+          {view.notice}
+        </p>
+      )}
+    </div>
+  );
+}
 
 // 요청 때 서버에서 한 번 판단한다(토큰 만료 = 다시 연결 필요)
 const isPast = (iso: string | null) => !!iso && Date.parse(iso) <= Date.now();
@@ -116,10 +153,12 @@ function InstagramSection({
   ready,
   channel,
   notice,
+  blocked,
 }: {
   ready: boolean;
   channel: { enabled: boolean; external_id: string | null; token_expires_at: string | null } | null;
   notice: string | undefined;
+  blocked: boolean; // AI 상담 사용권 없음(P23-2): 새 연결 버튼을 숨긴다. 이미 연결된 채널은 그대로(문의는 사장님께)
 }) {
   const msg = notice ? IG_NOTICE[notice] : undefined;
   const connected = !!channel?.enabled && !!channel.external_id;
@@ -137,10 +176,12 @@ function InstagramSection({
                 ? "연결이 만료되었습니다. 다시 연결해 주세요."
                 : connected
                   ? `연결됨${until ? ` · ${until}까지 자동 갱신` : ""}. 손님 마지막 메시지 후 24시간이 지나면 자동 답변을 보내지 않습니다.`
-                  : "인스타그램 비즈니스(프로페셔널) 계정으로 로그인해 연결합니다. 페이스북 페이지는 필요 없습니다."}
+                  : blocked
+                    ? "AI 상담 사용권이 있어야 연결할 수 있습니다. 본사에 요청해 주세요."
+                    : "인스타그램 비즈니스(프로페셔널) 계정으로 로그인해 연결합니다. 페이스북 페이지는 필요 없습니다."}
           </p>
         </div>
-        {ready && (!connected || expired) && (
+        {ready && !blocked && (!connected || expired) && (
           <a href="/api/channels/instagram/connect" className="inline-flex min-h-11 items-center rounded-lg bg-[#1E4FD8] px-4 text-sm font-medium text-white">
             인스타그램 연결하기
           </a>

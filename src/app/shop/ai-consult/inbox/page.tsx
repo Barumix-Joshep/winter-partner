@@ -16,6 +16,7 @@ import {
   kstToday,
   sortConversations,
 } from "@/lib/channels/inbox";
+import { myConsultLicenseView } from "@/lib/ai/consult/license-server";
 import { LiveRefresh } from "./live";
 import { WrongButton } from "./reply-panel";
 
@@ -57,9 +58,19 @@ async function Content({ searchParams }: { searchParams: Promise<Search> }) {
   const user = await requireArea("shop");
   const shop = await getMyShop(user.id);
   if (!shop) redirect("/shop/new");
-  const { tab, day } = await searchParams;
-  if (tab === "log") return <AutoReplyLog shopId={shop.id} day={kstDayRange(day) ? day! : kstToday()} />;
-  return <Conversations shopId={shop.id} />;
+  const [{ tab, day }, license] = await Promise.all([searchParams, myConsultLicenseView(shop.id)]);
+  // AI 상담 사용권(P23-2): 사용권이 없거나 이번 달 포함 응답을 다 썼으면 띠. 읽기·답장·복사·닫기·강습 등록은 그대로 쓴다
+  const banner = license?.banner ?? null;
+  return (
+    <>
+      {banner && (
+        <p role="status" aria-label="AI 상담 사용권 안내" className="rounded-[14px] bg-[#FFF1E0] p-4 text-sm font-medium text-[#7A3E06]">
+          {banner}
+        </p>
+      )}
+      {tab === "log" ? <AutoReplyLog shopId={shop.id} day={kstDayRange(day) ? day! : kstToday()} /> : <Conversations shopId={shop.id} />}
+    </>
+  );
 }
 
 async function Conversations({ shopId }: { shopId: string }) {
