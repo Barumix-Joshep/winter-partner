@@ -109,6 +109,26 @@ order by created_at desc;
 ```
 Vercel 쪽도 한 번: Vercel 대시보드 → winter-partner → **Logs**에서 시간을 03:00 전후로 두고 `daily maintenance failed`를 검색한다(없어야 정상). Settings → Cron Jobs에서 `/api/maintenance/daily`의 마지막 실행이 성공인지도 본다.
 
+**⑥ AI 상담 사용권 정리(P23-2, 2026-11-06 적용) — 정리 작업 결과의 `consultLicenses`와 사용권 표**
+```sql
+select created_at at time zone 'Asia/Seoul' as kst, ok,
+       case when ok then detail::jsonb -> 'consultLicenses' end as consult_licenses_sweep
+from ops_events
+where kind = 'cron_run' and source = '/api/maintenance/daily'
+order by created_at desc
+limit 3;
+```
+```sql
+select
+  (select count(*) from consult_plans)                                  as plans,
+  (select count(*) from consult_plans where code = 'standard_v1' and active) as standard_v1_active,
+  (select count(*) from consult_licenses)                               as licenses,
+  (select count(*) from consult_licenses where status = 'suspended')    as suspended,
+  (select count(*) from consult_usage_packs)                            as packs,
+  (select value #>> '{}' from private.app_settings where key = 'consult_license_required') as license_required;
+```
+정리 작업이 실패하면 ①의 `error` 칸에 `consult_license_sweep` 관련 문장이 나온다(이 작업은 사용권 정리가 실패해도 전체를 실패로 남긴다).
+
 ### 정상 기준
 **지금(실사용자 0명, 2026-11-07 첫 실행)** — 아래가 모두 맞으면 정상이다.
 | 확인 | 정상 |
@@ -120,6 +140,8 @@ Vercel 쪽도 한 번: Vercel 대시보드 → winter-partner → **Logs**에서
 | ② `old_conversations`·`old_messages` | `0`, `0` |
 | ③ `kept_inquiries_with_contact` | `0` |
 | ⑤ 서버 오류 | 0건, Vercel 로그에 `daily maintenance failed` 없음 |
+| ⑥ `consult_licenses_sweep` | `{"required": false, "trial_started": 0, "suspended": 0, "expiry_notices": 0, "quota_warnings": 0, "quota_reached": 0}` (스위치 꺼짐) |
+| ⑥ 사용권 표 | `plans` 1, `standard_v1_active` 1, `licenses` 0, `suspended` 0, `packs` 0, `license_required` `false` (본사가 사용권을 부여하기 전) |
 
 즉 **대상 0건, 오류 0건이면 정상**이다(운영 상담 표는 2026-11-05에 만들어져 실제로 지울 대상은 2027-02 이후에 처음 생긴다).
 
@@ -133,6 +155,7 @@ Vercel 쪽도 한 번: Vercel 대시보드 → winter-partner → **Logs**에서
 | ③ | 언제나 `0` |
 | ④ `anonymized_last_24h` | 시즌이 바뀌는 시점(보존 3시즌이 끝나는 손님)에만 몰려서 생긴다. 시즌 중 매일 큰 숫자면 이상 |
 | ⑤ | 정리 작업 관련 오류 0 |
+| ⑥ | `required`가 스위치 값과 같다. 스위치가 true면 `suspended`·`expiry_notices`는 본사 사용권 표의 "끝남"·"3일 안에 끝남" 샵 수와 맞아야 한다. 사용권 수는 본사가 부여한 수와 같다 |
 
 ### 이상할 때
 | 증상 | 할 일 |
@@ -141,4 +164,5 @@ Vercel 쪽도 한 번: Vercel 대시보드 → winter-partner → **Logs**에서
 | ① `ok = false` | `error` 칸 문장 그대로 Claude Code에 전달. 예: `function public.purge_consult_data() does not exist` → 마이그레이션 미적용(`docs/pending-migrations.md` 확인). 다음 날 03:00에 자동으로 다시 돈다 |
 | ② 0이 아님 | 정리가 덜 됐다. 다음 실행 뒤에도 남아 있으면 Claude Code에 숫자와 함께 알린다(행 내용은 보내지 않는다) |
 | ③ 0이 아님 | **개인정보 사고 후보.** 연락처가 남은 문의가 있다는 뜻이므로 바로 Claude Code에 알리고, 그 사이 손님에게 새 연락은 하지 않는다 |
+| ⑥ `license_required`가 `true`인데 켠 적이 없음 | 누가 바꿨는지 Claude Code에 알린다(되돌리기: `docs/ai-consult/pilot-license-runbook.md`의 false SQL). 사용권 없는 샵은 모두 AI 상담이 꺼진다 |
 | ① 숫자가 비정상적으로 큼 | 잘못 지웠을 수 있다. 정리는 되돌릴 수 없으므로 **다음 03:00 전에** Claude Code에 알려 크론을 멈출지 정한다(크론 끄기는 Vercel 설정이라 사장님이 한다). Pro 요금제라면 백업 시점도 함께 확인 |
