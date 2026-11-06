@@ -11,6 +11,7 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 
 | 마이그레이션 | 작업 | 데이터 변경 | 적용 순서 |
 |---|---|---|---|
+| `20261106055522_private_fn_revoke.sql` | P21-13 나머지: private 함수 65개의 PUBLIC 실행 회수(service_role에 같은 65개, authenticated에 정책·검사 제약·뷰·invoker 함수용 24개 다시 부여, anon 0) + public 시퀀스 7개 anon UPDATE 회수 | 없음 (권한만) | **사장님 승인 대기 — 승인 전에는 병합도 하지 않는다.** 새 표·열을 읽는 화면 없음. 적용 전·후 확인 방법: docs/security/p21-13-analysis.md 7·8절 |
 
 ## 적용 기록
 
