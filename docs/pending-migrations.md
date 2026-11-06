@@ -11,6 +11,7 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 
 | 마이그레이션 | 작업 | 데이터 변경 | 적용 순서 |
 |---|---|---|---|
+| `20261106032439_table_write_revoke.sql` | P21-12 public 모든 표에서 anon·PUBLIC 쓰기(INSERT·UPDATE·DELETE)와 anon·authenticated·PUBLIC의 TRUNCATE·REFERENCES·TRIGGER 회수 (SELECT 그대로) | 없음 (권한 회수만) | 사장님 승인 뒤. 새 표·열을 읽는 화면 없음 — 병합 전후 어느 쪽도 가능하나 승인 전에는 병합하지 않는다. 분석·확인 방법: docs/security/p21-12-analysis.md |
 
 ## 적용 기록
 
