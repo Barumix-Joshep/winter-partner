@@ -94,3 +94,24 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 14
+
+  # main 병합 뒤(push) 실행이 실패하면 이슈를 남긴다. PR끼리 병합 순서가 엇갈려 합친 상태가 깨졌을 때
+  # 아무도 모르고 지나가지 않게 한다(2026-11-06). 풀 리퀘스트에서는 돌지 않는다(PR 화면에 이미 보인다).
+  report-failure:
+    needs: [unit, db, e2e-core]
+    if: failure() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: 실패 이슈 남기기
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="main CI 실패 (병합 뒤)"
+          n=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number')
+          body="실행: $RUN_URL (커밋 ${GITHUB_SHA::7}). 이 커밋은 이미 운영에 배포됐을 수 있습니다. 실패한 작업(unit·db·e2e-core)의 로그를 먼저 보고, Docker 내려받기 오류면 재실행, 진짜 실패면 고치는 PR을 바로 올리세요(docs/ci.md)."
+          if [ -n "$n" ]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$title" --body "$body"; fi
