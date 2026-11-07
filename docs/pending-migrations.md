@@ -11,7 +11,7 @@ main에 들어왔지만 운영 DB(winter-partner)에 아직 적용하지 않은 
 
 | 마이그레이션 | 작업 | 데이터 변경 | 적용 순서 |
 |---|---|---|---|
-| (없음) | | | |
+| `20261107064020_p21_14_maintain_revoke.sql` | P21-14: public 표·뷰의 anon·authenticated MAINTAIN 회수, anon의 private 스키마 USAGE 회수, public 시퀀스 anon 전부·authenticated SELECT·UPDATE 회수(authenticated USAGE 유지) | 없음 (권한만) | **사장님 승인 대기 — 승인 전에는 병합도 하지 않는다.** 새 표·열을 읽는 화면 없음. 적용 전·후 확인 방법: docs/security/p21-14-analysis.md 5·6절 |
 
 ## 적용 기록
 
