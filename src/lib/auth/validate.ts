@@ -77,9 +77,26 @@ const MESSAGES: Record<string, string> = {
   "User already registered": "이미 가입된 이메일입니다.",
 };
 
+// 서버(Supabase) 비밀번호 규칙은 대시보드 설정이라 앱 규칙보다 엄격할 수 있다. 서버가 요구한 글자 종류를 그대로 알려 준다.
+// 예: "…of each: abcdefghijklmnopqrstuvwxyz, ABCDEFGHIJKLMNOPQRSTUVWXYZ, 0123456789, !@#…"
+function charClassMessage(message: string) {
+  const sets = message.slice(message.indexOf(":") + 1).split(/,\s+/).map((x) => x.trim()).filter(Boolean);
+  const names = sets.map((x) => {
+    const lower = x.includes("abc"), upper = x.includes("ABC");
+    if (lower && upper) return "영문";
+    if (lower) return "영문 소문자";
+    if (upper) return "영문 대문자";
+    if (x.includes("012")) return "숫자";
+    return "특수문자(!@# 등)";
+  });
+  const uniq = [...new Set(names)];
+  if (uniq.length === 2 && uniq[0] === "영문" && uniq[1] === "숫자") return "비밀번호에 영문과 숫자를 함께 넣어 주세요.";
+  return `비밀번호에 ${uniq.join(", ")}를 모두 넣어 주세요.`;
+}
+
 export function authErrorMessage(message: string) {
   // 서버 비밀번호 규칙(앱 검사를 거치지 않은 경우의 안전망)
-  if (/^Password should contain at least one character/.test(message)) return "비밀번호에 영문과 숫자를 함께 넣어 주세요.";
+  if (/^Password should contain at least one character/.test(message)) return charClassMessage(message);
   if (/^Password should be at least \d+ characters/.test(message)) return "비밀번호는 8자 이상이어야 합니다.";
   return MESSAGES[message] ?? "잠시 후 다시 시도해 주세요.";
 }
