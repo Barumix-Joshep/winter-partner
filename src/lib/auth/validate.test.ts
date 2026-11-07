@@ -125,4 +125,13 @@ describe("passwordProblem", () => {
     expect(authErrorMessage("Password should contain at least one character of each: abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ, 0123456789.")).toMatch(/영문과 숫자/);
     expect(authErrorMessage("Password should be at least 8 characters.")).toMatch(/8자/);
   });
+  it("서버 규칙이 앱보다 엄격하면 서버가 요구한 글자 종류를 그대로 알려 준다", () => {
+    const sym = "!@#$%^&*()_+-=[]{};'\\:\"|<>?,./`~";
+    expect(
+      authErrorMessage(`Password should contain at least one character of each: abcdefghijklmnopqrstuvwxyz, ABCDEFGHIJKLMNOPQRSTUVWXYZ, 0123456789.`),
+    ).toBe("비밀번호에 영문 소문자, 영문 대문자, 숫자를 모두 넣어 주세요.");
+    expect(
+      authErrorMessage(`Password should contain at least one character of each: abcdefghijklmnopqrstuvwxyz, ABCDEFGHIJKLMNOPQRSTUVWXYZ, 0123456789, ${sym}.`),
+    ).toBe("비밀번호에 영문 소문자, 영문 대문자, 숫자, 특수문자(!@# 등)를 모두 넣어 주세요.");
+  });
 });
