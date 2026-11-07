@@ -92,6 +92,8 @@ GitHub 저장소 → **Settings → Rules → Rulesets → New ruleset → New b
   node --env-file=.env.local --env-file=.env.rehearsal.local scripts/rehearsal/prod-smoke.mjs   # SMOKE_MAX_AI=0이면 AI 없이 화면만
   ```
   큰 배포(마이그레이션 적용 직후 등) 뒤에 사람이 한 번 돌린다.
+  - **본사 화면(선택)**: `.env.rehearsal.local`(git 제외)에 `SMOKE_ADMIN_EMAIL`(`@winter-partner.test` 계정만)과 `SMOKE_ADMIN_PASSWORD`를 넣으면 스모크가 본사 로그인 → `/admin`·`/admin/ai/consult`(사용권 관리)가 열리는지도 본다. 읽기만 하고 아무것도 누르지 않는다. 로그인 뒤 `/admin`으로 가지 않으면(본사 역할이 아니면) 실패로 남긴다. 값이 없으면 건너뛰고 결과에 `adminSkipped: true`.
+  - 운영에는 2026-11-07 기준 **본사 역할 계정이 없다.** 스모크용 본사 계정은 사장님이 만든다: 새 이메일(예: `test-hq@winter-partner.test`)로 가입 → Supabase SQL Editor에서 `select private.grant_platform_admin('<그 이메일>');`(P12-1) → 그 비밀번호를 `.env.rehearsal.local`에만. `test-admin@winter-partner.test`는 강사 행에 연결돼 있어 이 함수가 거부한다. 본사 권한이라 `REHEARSAL_PASSWORD`와 다른 비밀번호를 쓴다.
 
 ## 마이그레이션 원격 적용 (자동화하지 않음)
 1. 병합된 마이그레이션은 `docs/pending-migrations.md` 대기 목록에 있다.
