@@ -13,7 +13,7 @@
 | | | report-failure | **main 푸시에서만**, 위 셋 중 하나라도 실패하면 이슈 "main CI 실패 (병합 뒤)"(열린 같은 이슈가 있으면 댓글). PR끼리 병합 순서가 엇갈려 합친 상태가 깨진 것을 놓치지 않게 한다. main 푸시 실행은 병합(=배포)과 동시에 돌아 막지는 못하고 알리기만 한다. 막으려면 브랜치 보호의 "Require branches to be up to date"(사장님 설정) |
 | `e2e-full.yml` | main 푸시, 매일 03:00 KST, 수동 | e2e-full | Playwright 전체(리허설·시즌 포함). 실패하면 이슈 "전체 E2E 실패 (main·야간)" |
 | `migration-pr.yml` | PR | migration-check | 마이그레이션이 바뀐 PR이면 되돌리기 메모·`docs/pending-migrations.md` 등록 확인(없으면 실패), `migration-pending` 라벨·안내 댓글 |
-| `post-deploy.yml` | Vercel 운영 배포 완료(main 커밋의 Vercel 상태 success, 또는 deployment_status) | check-prod | 읽기 전용 `check:prod`(GET만, 로그인 없음). 실패하면 이슈 "운영 배포 뒤 점검 실패" |
+| `post-deploy.yml` | Vercel 운영 배포 완료(main 커밋의 Vercel 상태 success, 또는 deployment_status) | check-prod | 읽기 전용 `check:prod`(GET만, 로그인 없음). 주소는 저장소 변수 `PROD_URL`, 없으면 vercel.app (docs/domain-cutover.md). 실패하면 이슈 "운영 배포 뒤 점검 실패" |
 
 공통: `permissions: contents: read`(이슈·라벨 쓰는 작업만 그 권한을 따로), 작업별 `timeout-minutes`, 같은 PR의 이전 실행은 새 푸시가 오면 취소(`concurrency`).
 

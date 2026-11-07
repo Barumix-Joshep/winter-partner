@@ -7,7 +7,7 @@ import { KNOWLEDGE_PATH } from "@/lib/channels/instagram/connect";
 import { authorizeUrl, CALLBACK_PATH, NONCE_COOKIE, signState, STATE_TTL_MS } from "@/lib/channels/instagram/oauth";
 import { licenseView } from "@/lib/ai/consult/license";
 import { myConsultLicense } from "@/lib/ai/consult/license-server";
-import { siteOrigin } from "@/lib/origin";
+import { requestOrigin } from "@/lib/origin";
 import { getMyShop } from "@/lib/shop/my-shop";
 
 // 샵 관리자가 "인스타그램 연결하기"를 누르면 인스타 로그인 화면으로 보낸다 (P22-4).
@@ -24,7 +24,7 @@ export async function GET() {
   if (license && !licenseView(license, Date.now()).canTurnOn) redirect(`${KNOWLEDGE_PATH}?ig=no_license`);
   const nonce = randomBytes(16).toString("hex");
   const state = signState({ s: shop.id, u: user.id, n: nonce, e: Date.now() + STATE_TTL_MS }, cfg.appSecret);
-  const res = NextResponse.redirect(authorizeUrl(cfg, `${await siteOrigin()}${CALLBACK_PATH}`, state));
+  const res = NextResponse.redirect(authorizeUrl(cfg, `${await requestOrigin()}${CALLBACK_PATH}`, state));
   res.cookies.set(NONCE_COOKIE, nonce, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

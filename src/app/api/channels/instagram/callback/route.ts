@@ -4,7 +4,7 @@ import { requireArea } from "@/lib/auth/session";
 import { instagramConfig } from "@/lib/channels/instagram/config";
 import { handleInstagramCallback, KNOWLEDGE_PATH } from "@/lib/channels/instagram/connect";
 import { CALLBACK_PATH, completeInstagramLogin, NONCE_COOKIE } from "@/lib/channels/instagram/oauth";
-import { siteOrigin } from "@/lib/origin";
+import { requestOrigin } from "@/lib/origin";
 import { getMyShop } from "@/lib/shop/my-shop";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   if (!cfg) return new NextResponse("not found", { status: 404 });
   const user = await requireArea("shop");
   const shop = await getMyShop(user.id);
-  const origin = await siteOrigin();
+  const origin = await requestOrigin();
   const redirectUri = `${origin}${CALLBACK_PATH}`;
   const outcome = await handleInstagramCallback(req.nextUrl.searchParams, {
     config: cfg,

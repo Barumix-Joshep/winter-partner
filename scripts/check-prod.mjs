@@ -1,7 +1,7 @@
 // 운영 사이트 읽기 전용 점검 (P12-4). GET만 보내고 로그인·데이터 생성은 하지 않는다.
-//   npm run check:prod                 → https://winter-partner.vercel.app
-//   npm run check:prod -- https://…    → 다른 주소
-const base = (process.argv[2] ?? "https://winter-partner.vercel.app").replace(/\/$/, "");
+//   npm run check:prod                 → PROD_URL 환경변수, 없으면 https://winter-partner.vercel.app
+//   npm run check:prod -- https://…    → 다른 주소 (도메인 전환 뒤: https://winter-partner.co.kr, docs/domain-cutover.md)
+const base = (process.argv[2] || process.env.PROD_URL || "https://winter-partner.vercel.app").replace(/\/$/, "");
 const results = [];
 
 async function get(path, init) {

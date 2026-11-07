@@ -7,7 +7,7 @@
 import { chromium } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
-const U = process.env.SMOKE_URL ?? "https://winter-partner.vercel.app";
+const U = process.env.SMOKE_URL || process.env.PROD_URL || "https://winter-partner.vercel.app"; // 도메인 전환 뒤 PROD_URL=https://winter-partner.co.kr
 const PW = process.env.REHEARSAL_PASSWORD;
 const MAX_AI = Number(process.env.SMOKE_MAX_AI ?? 6);
 if (!PW) throw new Error("REHEARSAL_PASSWORD가 필요합니다");
