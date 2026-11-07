@@ -55,6 +55,8 @@ SMTP를 연결하면 Supabase의 시간당 메일 한도(`email_sent`)를 30 정
 4. 인스타 장기 토큰 갱신(만료 7일 전) → `instagramTokens` (메타 환경변수가 없으면 건너뜀)
 
 결과는 `ops_events`에 한 줄 남는다(`kind = 'cron_run'`, `source = '/api/maintenance/daily'`). 성공이면 `ok = true`이고 `detail`에 건수 JSON, 실패면 `ok = false`이고 `detail`이 `실패: …`다. 개인정보는 남기지 않고 건수만 남긴다.
+**`detail`은 300자까지라서, 안쪽 건수 중 0인 항목은 기록에서 뺀다(없는 항목 = 0).** 예: `purgedConsult`가 `{}`이면 다섯 건수가 모두 0이다. 건수가 아주 커서 그래도 300자를 넘으면 맨 위 값만 남기고 `"cut": true`를 붙인다. 빠짐없는 결과는 언제나 Vercel 로그의 `cron maintenance/daily` 줄에 있다.
+**2026-11-07 03:00 기록은 이 규칙 전에 남아 300자에서 잘렸다**(JSON이 깨져 ①의 `error` 칸에 "기록 잘림"으로 보인다). 그 실행의 전체 결과는 Vercel 로그에서 확인했다: 모든 건수 0, `consultLicenses.required = false`, 인스타 `skipped: true`(`docs/evening-report-2.md`).
 
 **P22-6 코드로 도는 첫 실행: 2026-11-07 03:00 KST.**
 
@@ -64,11 +66,12 @@ Supabase 대시보드 → 프로젝트 winter-partner → **SQL Editor**에서 �
 **① 최근 실행 3회 — 돌았는지, 성공했는지, 건수**
 ```sql
 select created_at at time zone 'Asia/Seoul' as kst, ok,
-       case when ok then detail::jsonb -> 'anonymizedCustomers' end as anonymized_customers,
-       case when ok then detail::jsonb -> 'purgedAccessLogs' end as purged_access_logs,
-       case when ok then detail::jsonb -> 'purgedConsult' end as purged_consult,
-       case when ok then detail::jsonb -> 'instagramTokens' end as instagram_tokens,
-       case when not ok then detail end as error
+       case when ok and pg_input_is_valid(detail, 'jsonb') then detail::jsonb -> 'anonymizedCustomers' end as anonymized_customers,
+       case when ok and pg_input_is_valid(detail, 'jsonb') then detail::jsonb -> 'purgedAccessLogs' end as purged_access_logs,
+       case when ok and pg_input_is_valid(detail, 'jsonb') then detail::jsonb -> 'purgedConsult' end as purged_consult,
+       case when ok and pg_input_is_valid(detail, 'jsonb') then detail::jsonb -> 'instagramTokens' end as instagram_tokens,
+       case when not ok then detail
+            when not pg_input_is_valid(detail, 'jsonb') then '기록 잘림 — 전체 결과는 Vercel 로그 "cron maintenance/daily"' end as error
 from ops_events
 where kind = 'cron_run' and source = '/api/maintenance/daily'
 order by created_at desc
@@ -112,7 +115,7 @@ Vercel 쪽도 한 번: Vercel 대시보드 → winter-partner → **Logs**에서
 **⑥ AI 상담 사용권 정리(P23-2, 2026-11-06 적용) — 정리 작업 결과의 `consultLicenses`와 사용권 표**
 ```sql
 select created_at at time zone 'Asia/Seoul' as kst, ok,
-       case when ok then detail::jsonb -> 'consultLicenses' end as consult_licenses_sweep
+       case when ok and pg_input_is_valid(detail, 'jsonb') then detail::jsonb -> 'consultLicenses' end as consult_licenses_sweep
 from ops_events
 where kind = 'cron_run' and source = '/api/maintenance/daily'
 order by created_at desc
@@ -153,17 +156,17 @@ select * from t order by (anon_write = '' and auth_trt = ''), tbl;
 ```
 
 ### 정상 기준
-**지금(실사용자 0명, 2026-11-07 첫 실행)** — 아래가 모두 맞으면 정상이다.
+**지금(실사용자 0명, 2026-11-08 이후)** — 아래가 모두 맞으면 정상이다.
 | 확인 | 정상 |
 |---|---|
-| ① 11-07 03:00 KST 무렵 줄이 있다 | 있음, `ok = true` |
+| ① 03:00 KST 무렵 줄이 있다 | 있음, `ok = true` (11-07 줄만 `error` 칸에 "기록 잘림" — 위 설명) |
 | ① `anonymized_customers`·`purged_access_logs` | `0` |
-| ① `purged_consult` | `{"conversations": 0, "messages": 0, "feedback": 0, "inquiries_deleted": 0, "inquiries_kept": 0}` |
-| ① `instagram_tokens` | `skipped: true`(메타 환경변수 없음) 또는 `refreshed: 0, failed: 0` |
+| ① `purged_consult` | `{}` (0인 항목은 빠진다 = 모두 0) |
+| ① `instagram_tokens` | `{"skipped": true}`(메타 환경변수 없음) 또는 `{}`(갱신·실패 0) |
 | ② `old_conversations`·`old_messages` | `0`, `0` |
 | ③ `kept_inquiries_with_contact` | `0` |
 | ⑤ 서버 오류 | 0건, Vercel 로그에 `daily maintenance failed` 없음 |
-| ⑥ `consult_licenses_sweep` | `{"required": false, "trial_started": 0, "suspended": 0, "expiry_notices": 0, "quota_warnings": 0, "quota_reached": 0}` (스위치 꺼짐) |
+| ⑥ `consult_licenses_sweep` | `{"required": false}` (스위치 꺼짐, 나머지 건수 0이라 빠짐) |
 | ⑥ 사용권 표 | `plans` 1, `standard_v1_active` 1, `licenses` 0, `suspended` 0, `packs` 0, `license_required` `false` (본사가 사용권을 부여하기 전) |
 | ⑦ 표 권한 | 52줄(표 수). **모든 줄의 `anon_write`·`auth_trt`가 빈칸**. `auth_rw`는 2026-11-06 적용 직후와 같다(전체 표 기준 SELECT 49·INSERT 45·UPDATE 43·DELETE 44. `auth_rw`가 빈칸인 3줄 consult_licenses·conversations·shop_channels는 열 단위 권한이거나 서버 전용이라 정상). 빈칸이 아닌 줄이 있으면 맨 위에 모여 보인다 |
 

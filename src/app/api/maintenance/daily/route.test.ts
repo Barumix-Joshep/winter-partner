@@ -91,4 +91,13 @@ describe("GET /api/maintenance/daily", () => {
     expect(state.ops[0][3]).toBe(false);
     expect(String(state.ops[0][2])).toContain("consult_license_sweep failed");
   });
+
+  it("운영 기록은 300자 안의 올바른 JSON이다(2026-11-07 기록이 잘렸던 것) — 0인 안쪽 항목은 빠진다", async () => {
+    await GET(req("Bearer unit-cron-secret"));
+    const detail = String(state.ops[0][2]);
+    expect(detail.length).toBeLessThanOrEqual(300);
+    const d = JSON.parse(detail);
+    expect(d.consultLicenses).toEqual({ required: true, trial_started: 1, suspended: 2, expiry_notices: 1 });
+    expect(d.instagramTokens).toEqual({ skipped: true });
+  });
 });

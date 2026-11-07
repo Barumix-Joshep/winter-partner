@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordOpsEvent } from "@/lib/ops/record";
+import { cronDetail } from "@/lib/ops/event";
 import { refreshInstagramTokens } from "@/lib/channels/instagram/deps";
 
 // 매일 도는 정리 작업 (Vercel Cron). Authorization: Bearer CRON_SECRET
@@ -40,6 +41,6 @@ export async function GET(req: NextRequest) {
     instagramTokens: instagram,
   };
   console.info("cron maintenance/daily", JSON.stringify(result));
-  await recordOpsEvent("cron_run", "/api/maintenance/daily", JSON.stringify(result), true);
+  await recordOpsEvent("cron_run", "/api/maintenance/daily", cronDetail(result), true);
   return NextResponse.json(result);
 }
