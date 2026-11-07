@@ -2,6 +2,8 @@
 // P18-5 운영 스모크: [테스트] 계정으로 로그인·읽기만 확인 + 실제 AI 접수 해석 몇 번 (저장하지 않는다).
 // 390px로 주요 화면을 열어 오류·가로 넘침을 본다. 비밀번호는 환경변수에서만 읽고 출력하지 않는다.
 // 실행: node --env-file=.env.local --env-file=.env.rehearsal.local scripts/rehearsal/prod-smoke.mjs
+// 본사 화면: .env.rehearsal.local(git 제외)에 SMOKE_ADMIN_EMAIL(@winter-partner.test만)·SMOKE_ADMIN_PASSWORD가 있으면
+// 본사 로그인 → /admin·/admin/ai/consult(사용권 관리)가 열리는지만 본다. 아무것도 누르지 않는다. 없으면 건너뛴다(adminSkipped).
 import { chromium } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
@@ -20,6 +22,13 @@ const SCREENS = {
   "test-inst3": ["/instructor", "/instructor/schedule"],
   "test-inst4": ["/instructor", "/instructor/bids"],
 };
+// 본사 테스트 계정(선택). 운영 본사 권한이라 비밀번호는 REHEARSAL_PASSWORD와 따로 둔다.
+const ADMIN_EMAIL = process.env.SMOKE_ADMIN_EMAIL ?? "";
+const ADMIN_PW = process.env.SMOKE_ADMIN_PASSWORD ?? "";
+if (ADMIN_EMAIL && !ADMIN_EMAIL.endsWith("@winter-partner.test")) throw new Error("SMOKE_ADMIN_EMAIL은 @winter-partner.test 테스트 계정만 씁니다");
+const ADMIN_SCREENS = ["/admin", "/admin/ai/consult"];
+const ACCOUNTS = Object.entries(SCREENS).map(([acct, paths]) => ({ acct, email: `${acct}@winter-partner.test`, pw: PW, paths }));
+if (ADMIN_EMAIL && ADMIN_PW) ACCOUNTS.push({ acct: "test-hq", email: ADMIN_EMAIL, pw: ADMIN_PW, paths: ADMIN_SCREENS, home: "/admin" });
 const INTAKE = [
   "토요일 오전 10시 스키 1:1 강습 처음이에요",
   "다음 주 일요일 오후 1시 보드 2명 초급",
@@ -30,17 +39,23 @@ const INTAKE = [
 const b = await chromium.launch();
 const results = [];
 const before = await aiCount();
-for (const [acct, paths] of Object.entries(SCREENS)) {
+for (const { acct, email, pw, paths, home } of ACCOUNTS) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
   const p = await ctx.newPage();
   await p.goto(U + "/login");
-  await p.getByRole("textbox", { name: "이메일" }).fill(`${acct}@winter-partner.test`);
-  await p.getByLabel("비밀번호").fill(PW);
+  await p.getByRole("textbox", { name: "이메일" }).fill(email);
+  await p.getByLabel("비밀번호").fill(pw);
   await p.getByRole("button", { name: "로그인" }).click();
   try {
     await p.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 30000 });
   } catch {
     results.push({ acct, path: "/login", ok: false, why: "로그인 실패" });
+    await ctx.close();
+    continue;
+  }
+  // 본사 계정은 로그인 뒤 /admin으로 가야 한다(역할이 본사가 아니면 다른 구역으로 간다)
+  if (home && !new URL(p.url()).pathname.startsWith(home)) {
+    results.push({ acct, path: "/login", ok: false, why: `로그인 뒤 ${home}가 아님(본사 역할 확인)` });
     await ctx.close();
     continue;
   }
@@ -75,4 +90,4 @@ for (const [acct, paths] of Object.entries(SCREENS)) {
 }
 await b.close();
 const aiCalls = (await aiCount()) - before;
-console.log(JSON.stringify({ aiCalls, failed: results.filter((r) => !r.ok), results }, null, 1));
+console.log(JSON.stringify({ aiCalls, adminSkipped: !(ADMIN_EMAIL && ADMIN_PW), failed: results.filter((r) => !r.ok), results }, null, 1));

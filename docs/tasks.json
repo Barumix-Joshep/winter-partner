@@ -720,6 +720,14 @@
   "note": "docs/simulation-report.md 작성. P0 3·P1 7 수정(로컬 커밋), 승인 후 원격 마이그레이션 2개(settlement_integrity·access_hardening) 적용·배포 완료, check:prod 17/17, 운영 스모크 21화면 통과(AI 0회) (11/3)"
  },
  {
+  "id": "P18-7",
+  "phase": "18 시범 전 전체 시뮬레이션 (망가뜨려 보기)",
+  "title": "운영 스모크에 본사 화면(/admin·/admin/ai/consult) 추가",
+  "status": "blocked",
+  "due": "2026-11-20",
+  "note": "2026-11-07 스모크 코드 준비(SMOKE_ADMIN_EMAIL·SMOKE_ADMIN_PASSWORD가 .env.rehearsal.local에 있을 때만, 읽기만, 로그인 뒤 /admin이 아니면 실패). 막힘: 운영에 본사 역할 계정이 0개(profiles: 강사 5·샵 관리자 2). test-admin@winter-partner.test는 강사 행에 연결돼 grant_platform_admin이 거부. 새 테스트 본사 계정 생성은 사장님 승인 사항 — 방법은 docs/ci.md '운영 확인'"
+ },
+ {
   "id": "P19-1",
   "phase": "19 시범 샵 전 필수 보완",
   "title": "강사별 지급 방식 설정 (전속 원천징수 대비)",
