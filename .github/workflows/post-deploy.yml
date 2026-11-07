@@ -25,8 +25,11 @@ jobs:
         with:
           node-version: 22
       - name: 운영 읽기 전용 점검 (check:prod)
-        # 배포별 주소는 Vercel 로그인 보호가 걸려 있어, 고정 운영 주소로 확인한다
-        run: node scripts/check-prod.mjs https://winter-partner.vercel.app
+        # 배포별 주소는 Vercel 로그인 보호가 걸려 있어, 고정 운영 주소로 확인한다.
+        # 저장소 변수 PROD_URL(Settings → Variables, 비밀값 아님)이 있으면 그 주소, 없으면 vercel.app (docs/domain-cutover.md)
+        env:
+          PROD_URL: ${{ vars.PROD_URL }}
+        run: node scripts/check-prod.mjs
 
   report-failure:
     needs: check-prod

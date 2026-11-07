@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notificationMessage } from "./messages";
 import { pushErrorSummary } from "./error-summary";
+import { vapidSubject } from "@/lib/site-url";
 
 const configured = () =>
   !!(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -12,7 +13,7 @@ const configured = () =>
 // 알림톡이 승인되면 여기서 채널을 나눈다 (P8-1).
 export async function dispatchPending(limit = 50) {
   if (!configured()) return { sent: 0, skipped: "웹푸시 키가 없습니다" };
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT ?? "https://winter-partner.vercel.app", process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!, process.env.VAPID_PRIVATE_KEY!);
+  webpush.setVapidDetails(vapidSubject(), process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!, process.env.VAPID_PRIVATE_KEY!);
   const db = createAdminClient();
 
   const { data: rows } = await db.rpc("claim_notifications", { p_limit: limit });

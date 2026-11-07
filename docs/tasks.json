@@ -1038,5 +1038,13 @@
   "status": "todo",
   "due": "2026-12-31",
   "note": "설계 7절·4-5·4-6. P22-8 시범 일정에 맞춰 시작일 지정 체험 부여, 사장님 승인 뒤 (목표일은 임시 — 사장님 조정) → 2026-11-06 런북 docs/ai-consult/pilot-license-runbook.md 작성(부여 클릭 순서·스위치 켜기/끄기 SQL·확인 쿼리·첫 주 비용 쿼리·차단 시험). 실행은 사장님(타타타 가입·채널 연결 뒤)"
+ },
+ {
+  "id": "P24-1",
+  "phase": "24 도메인",
+  "title": "서비스 주소 전환 (winter-partner.vercel.app → winter-partner.co.kr), 메일 발송 mail.winter-partner.co.kr",
+  "status": "blocked",
+  "due": "2026-11-30",
+  "note": "사장님 설정 대기(후이즈 DNS·Vercel 도메인·SITE_URL·Supabase URL·Resend·메타·GitHub 변수 PROD_URL). 준비 완료: docs/domain-cutover.md(쓰이는 곳 표·전환 순서·확인·되돌리기·위험), 공유 링크가 SITE_URL을 따르게(없으면 요청 주소, 지금 운영 동작 그대로), 점검 스크립트·post-deploy 주소를 PROD_URL로 바꿀 수 있게(기본값 vercel.app). 운영 설정은 바꾸지 않음. 전환 확인 뒤 기본값·문서 주소 교체 PR (목표일은 임시 — 사장님 조정)"
  }
 ]
