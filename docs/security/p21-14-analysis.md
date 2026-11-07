@@ -36,7 +36,7 @@ storage·auth·realtime 등 Supabase가 관리하는 스키마는 건드리지 �
 |---|---|---|---|
 | 1 | 로그인 사용자의 모든 RLS 조회·쓰기(샵·강습팀·강사·본사) | authenticated의 private USAGE·함수 실행은 그대로. MAINTAIN은 조회·쓰기와 무관 | pgTAP 전체(859개), 테스트 8번(authenticated RLS 조회), E2E 핵심, 적용 뒤 스모크 21화면 |
 | 2 | 로그인 전 화면(로그인·가입·/join·/consent·안내) | anon 정책은 resorts·sports `true`뿐이고 private를 쓰지 않는다. 나머지는 Auth API·service_role RPC | E2E 셀프 등록·동의 링크·로그인, check:prod(로그인 전 화면) |
-| 3 | anon이 `customer_consent_state` 뷰 조회 | 원래도 실패한다(P21-13 뒤 is_minor 실행 불가). 오류 문구만 "schema private" 권한으로 바뀐다(둘 다 42501). 앱은 anon으로 이 뷰를 읽지 않는다 | pgTAP customer_consents·view_grants |
+| 3 | anon이 `customer_consent_state` 뷰 조회 | anon이 볼 수 있는 손님 행이 없어(RLS) 오류 없이 0행이 나온다(2026-11-07 적용 뒤 운영 확인). 행이 있어 is_minor까지 가면 42501. 어느 쪽이든 노출은 없다. 앱은 anon으로 이 뷰를 읽지 않는다 | pgTAP customer_consents·view_grants |
 | 4 | 본사의 스키장·종목 추가(serial 열) | authenticated USAGE 유지(nextval 가능) | 테스트 4번 |
 | 5 | 접속 기록·AI 사용량·동의 기록·피드백·운영 기록 쓰기 | identity 열이라 시퀀스 권한이 필요 없다. 대부분 security definer RPC로 쓴다 | pgTAP access_logs·ai_usage·customer_consents·feedback·ops_alerts, E2E 피드백 |
 | 6 | 서버(service_role: 웹훅·크론·RPC) | service_role 권한은 하나도 바꾸지 않는다 | E2E 웹훅·셀프 등록, 다음 03:00 정리 작업 기록 |
