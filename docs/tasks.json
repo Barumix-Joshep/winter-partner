@@ -936,6 +936,14 @@
   "note": "위험도 P3. 2026-11-06 저녁 P21-12 적용 전후 운영 덤프에서 확인: public 표·뷰에 anon·authenticated MAINTAIN(VACUUM·ANALYZE·REINDEX·REFRESH·LOCK TABLE) 권한이 Supabase 기본 권한으로 남아 있다(P21-12 범위 밖). REST로는 보낼 수 없어 바로 악용 불가. 함께 정리할 것: anon의 private 스키마 USAGE, public 시퀀스 anon USAGE·SELECT(anon은 표 INSERT가 없다). P21-13 나머지(#52) 적용 뒤에 착수. docs/evening-report.md — 2026-11-07 준비 완료(PR, CI 통과, 사장님 승인 대기 — 적용·병합 전). 마이그레이션 20261107064020_p21_14_maintain_revoke.sql + maintain_grants 일반 테스트 8개 + docs/security/p21-14-analysis.md(깨질 수 있는 경로 9가지). 로컬 pgTAP 859 통과 → 2026-11-07 19:42 KST 운영 적용(사장님 조건부 사전 승인, 2026-11-07 지시). 적용 뒤 MAINTAIN 0곳·시퀀스 authenticated USAGE만·anon private USAGE 없음, check:prod 17/17·스모크 21/21. PR #54 병합"
  },
  {
+  "id": "P21-15",
+  "phase": "21 보안",
+  "title": "본사 화면 회귀 시험: 본사 역할로 화면이 쓰는 표·RPC 호출(pgTAP)",
+  "status": "done",
+  "due": "2027-01-31",
+  "note": "2026-11-07 밤, 운영 본사 계정 1개 생성 뒤 [2] 점검. 운영 덤프(P21-14 적용 뒤)로 본사 화면이 읽는 표 11개·RPC 20개의 authenticated 권한·본사 정책 확인(모두 정상). 기존 pgTAP은 RPC 19개를 다뤘고 ai_admin_settings와 화면 열 단위 조회가 없어 supabase/tests/admin_screens.test.sql(33개) 추가. 권한을 빼면 실패함을 로컬에서 확인"
+ },
+ {
   "id": "P22-1",
   "phase": "22 AI 상담",
   "title": "스키마·RLS·웹훅 RPC, 암호화·해시 유틸, 안내 정보 화면",
